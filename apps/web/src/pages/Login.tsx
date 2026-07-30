@@ -67,7 +67,7 @@ export default function LoginPage() {
                 type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
+                placeholder="请输入密码"
                 className="bg-[#F8FAFC] border-[#E2E8F0] h-10 pr-10 text-sm"
                 required
               />

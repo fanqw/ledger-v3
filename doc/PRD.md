@@ -610,6 +610,19 @@ store/
 
 ---
 
+### 10.0 UI 开发强制约束
+
+> **强制规则**：所有前端页面和组件的开发必须以 `design/` 目录下的 Pencil UI 设计稿为准。
+> 
+> - **设计源文件**：`design/v3-ui.pen`（Pencil 格式，通过 Pencil MCP 读取）
+> - **HTML 参考**：`design/v3-ui.html`（Pencil 导出的 Tailwind HTML，可直接查看）
+> - **禁止行为**：禁止凭个人理解或推测进行 UI 开发；禁止使用设计稿中不存在的布局、配色、字号
+> - **允许行为**：在 shadcn/ui 组件体系下，将设计稿中的视觉常量（颜色、间距、字号、圆角）映射为 Tailwind class；设计稿未覆盖的交互状态（hover、disabled、loading）可在保持视觉一致的前提下合理推断
+> - **检查机制**：每个 Phase 完成后，对照 `design/v3-ui.html` 进行视觉比对，确认关键页面布局、配色、组件样式与设计稿一致
+>
+> 设计稿中的关键视觉常量已在 `openspec/changes/layout-shell/design.md` 的 Visual Design Constants 表中汇总，后续所有 UI 开发均以此表为基准。
+
+
 ## 10. UI 设计稿方案
 
 ### 10.1 工具链

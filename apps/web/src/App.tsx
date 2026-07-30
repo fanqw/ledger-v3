@@ -1,8 +1,10 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { ThemeProvider } from './lib/theme';
 import { AuthProvider, useAuth } from './lib/auth';
 import { setGlobalAuth } from './lib/api';
 import { useEffect } from 'react';
 import LoginPage from './pages/Login';
+import AppShell from './components/layout/AppShell';
 
 function AuthInit({ children }: { children: React.ReactNode }) {
   const auth = useAuth();
@@ -28,32 +30,31 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-export default function App() {
-  return (
-    <AuthProvider>
-      <AuthInit>
-        <Routes>
-          <Route path="/login" element={<LoginRedirect />} />
-          <Route
-            path="/*"
-            element={
-              <ProtectedRoute>
-                <Routes>
-                  <Route path="/dashboard" element={<div className="p-8 text-xl">仪表台（开发中）</div>} />
-                  <Route path="*" element={<Navigate to="/dashboard" replace />} />
-                </Routes>
-              </ProtectedRoute>
-            }
-          />
-        </Routes>
-      </AuthInit>
-    </AuthProvider>
-  );
-}
-
 function LoginRedirect() {
   const { user, loading } = useAuth();
   if (loading) return null;
   if (user) return <Navigate to="/dashboard" replace />;
   return <LoginPage />;
+}
+
+export default function App() {
+  return (
+    <ThemeProvider>
+      <AuthProvider>
+        <AuthInit>
+          <Routes>
+            <Route path="/login" element={<LoginRedirect />} />
+            <Route
+              path="/*"
+              element={
+                <ProtectedRoute>
+                  <AppShell />
+                </ProtectedRoute>
+              }
+            />
+          </Routes>
+        </AuthInit>
+      </AuthProvider>
+    </ThemeProvider>
+  );
 }
