@@ -1,8 +1,9 @@
 <!--
-  PRD 版本：v5.0-draft
+  PRD 版本：v5.2
   创建日期：2026-07-29
-  状态：待审核
-  范围：台帐系统 V3 全栈重构
+  更新日期：2026-07-30
+  状态：已审核
+  范围：台帐系统 V3 全栈重构（迁移基准 V1）
 -->
 
 # 台帐系统 V3 全栈重构 — 产品需求文档
@@ -543,39 +544,45 @@ pnpm --filter server db:create-user --username xxx --password xxx --role admin
 
 ---
 
-## 8. 工作台数据分析（重构版）
+## 8. 工作台数据分析
 
-基于进销存/ERP 行业惯例重新设计统计维度，替代 V2 的现有方案。
+基于 UI 设计稿重新设计统计维度，对齐 analytics-workbench spec。
 
-### 8.1 KPI 概览卡片
+### 8.1 时间范围筛选
 
-| 指标 | 计算方式 | 辅助信息 |
-|------|----------|----------|
-| 采购总额 | 时间范围内所有 OrderItem.lineTotal 之和 | 环比上期 ↑/↓ 百分比 |
-| 订单总数 | 时间范围内创建的非删除订单数 | 环比上期 ↑/↓ 百分比 |
-| 商品种类 | 时间范围内出现过的不同 Commodity 数 | 本期新增种类 |
-| 本月新增 | 本月创建的订单数 | 日均订单数 |
+工作台顶部提供 Chip 式时间范围选择器，预设选项为：近1个月、近3个月、近6个月、近12个月、自定义。进入工作台时默认选中"近1个月"，所有 KPI 和图表以此时间范围为条件查询数据。
 
-### 8.2 图表矩阵
+### 8.2 KPI 概览卡片
+
+顶部展示 4 张 KPI 指标卡片，不显示环比变化率：
+
+| 指标 | 计算方式 |
+|------|----------|
+| 采购总金额（元） | 时间范围内所有 OrderItem.lineTotal 之和 |
+| 订单总数 | 时间范围内创建的非删除订单数 |
+| 商品种类 | 时间范围内出现过的不同 Commodity 数 |
+| 本月订单数 | 本月创建的订单数 |
+
+### 8.3 图表矩阵
 
 | 序号 | 图表 | 类型 | 说明 |
 |:---:|------|------|------|
-| 1 | 月度采购趋势 | 柱状图 + 折线图（双 Y 轴） | 近 12 月订单金额（柱）+ 订单数量（折线），按月聚合 |
-| 2 | 分类金额占比 | 环形图 (Donut) | 各 Category 采购金额占比，中心显示总金额 |
-| 3 | 进货地采购排行 | 横向柱状图 | Top 10 进货地，按采购金额降序 |
-| 4 | 热购商品排行 | 横向柱状图 | Top 10 商品，按采购金额降序 |
-| 5 | 商品价格波动 | 折线图（含均线） | 选定商品近 12 月 unitPrice 走势 + 移动平均线 |
-| 6 | 订单规模分布 | 直方图 (Histogram) | 按订单总金额分桶统计订单数量（如 0-1k, 1k-5k, 5k-10k, 10k-50k, 50k+） |
+| 1 | 每日采购趋势 | 堆叠柱状图（每块=当日一笔订单金额） | X 轴为日期，Y 轴为金额，支持 Zoom 拖拽；hover 显示日期+各订单金额+当日总额 |
+| 2 | 分类金额占比 | 环形图 (Donut) | 各 Category 采购金额占比，中心显示总金额；hover 显示分类名、占比、金额、商品数、订单数 |
+| 3 | 进货地金额占比 | 环形图 (Donut) | 各 PurchasePlace 采购金额占比；hover 显示进货地名、占比、金额、订单数 |
+| 4 | 热购商品排行 | Tab 切换列表（数量排行 / 金额排行） | Top 10 商品，默认显示金额排行 |
+| 5 | 订单规模分布 | 直方图 (Histogram) | 按订单总金额分桶（0-1k, 1k-5k, 5k-10k, 10k-50k, 50k+），Y 轴为订单数量 |
 
-### 8.3 筛选控制
+### 8.4 交互特性
 
-- 时间范围选择器（预设：近 1 月 / 近 3 月 / 近 6 月 / 近 12 月 / 自定义）
-- 图 5 特定：商品下拉选择器
-- 全局：进货地筛选（可选）
+- 时间筛选 Chip 切换时，所有 KPI 和图表联动更新
+- 每日采购趋势支持底部 Zoom Bar 拖拽缩放时间区间
+- 热购排行支持「数量排行」/「金额排行」Tab 切换
+- 环形图扇区 hover 显示详细 tooltip
 
 ---
 
-## 9. 前端状态管理
+## 9. 前端状态管理## 9. 前端状态管理
 
 采用 Redux Toolkit + RTK Query：
 
@@ -695,8 +702,8 @@ store/
 
 ### 14.2 功能假设
 
-- V3 为新建仓库，不从 V2 fork；代码参考 V2，git 历史独立
-- 不迁移 V1 MongoDB 历史数据，仅从 V2 PostgreSQL 迁移（见第 15 节）
+- V3 为新建仓库，不从 V2 fork；代码参考 V1/V2，git 历史独立
+- 从 V1 MongoDB 迁移历史数据到 V3 PostgreSQL（见第 15 节）
 - 用户通过 seed 脚本或 CLI 创建，不提供 Web 注册页面
 - 不做历史数据修改审计日志（数据量小，deletedAt 已提供基本追溯）
 
@@ -721,79 +728,90 @@ store/
 
 ```
 ┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
-│  V2 DB (source) │ ──▶ │ 迁移脚本 (transform) │ ──▶ │  V3 DB (target) │
-│  PostgreSQL     │     │  TypeScript/Node  │     │  PostgreSQL     │
+│  V1 MongoDB     │ ──▶ │ 迁移脚本 (transform) │ ──▶ │  V3 DB (target) │
+│  (source)       │     │  TypeScript/Node  │     │  PostgreSQL     │
 └─────────────────┘     └──────────────────┘     └─────────────────┘
 ```
 
-- V2 和 V3 使用**不同的数据库**（如 `recon` 和 `ledger_v3`），互不影响
+- V1 使用 MongoDB，V3 使用 PostgreSQL，两个数据库独立，互不影响
+- 先从 V1 MongoDB 导出数据（`mongodump` 或 `mongoexport`），再经转换脚本写入 V3
 - V3 先执行 Prisma migrate 建立空表结构，再运行迁移脚本填充数据
-- V2 数据库全程只读，不修改原有数据
+- V1 数据库全程只读，不修改原有数据
 - 迁移脚本可重复执行（幂等），支持中断后重跑
 
 ### 15.2 数据转换映射
 
 #### 15.2.1 模型名变更
 
-| V2 表名 | V3 表名 | 处理方式 |
-|---------|---------|----------|
-| `Category` | `Category` | 直搬 |
-| `Unit` | `Unit` | 直搬 |
-| `Commodity` | `Commodity` | 直搬 |
-| `PurchasePlace` | `PurchasePlace` | 直搬 |
-| `Order` | `Order` | 直搬 |
-| `User` | `User` | 直搬 |
-| `OrderCommodity` | `OrderItem` | 重命名映射 |
+| V1 Collection | V3 表名 | 处理方式 |
+|--------------|---------|----------|
+| `users` | `User` | 直搬 |
+| `categories` | `Category` | 直搬 |
+| `units` | `Unit` | 直搬 |
+| `commodities` | `Commodity` | 直搬 |
+| `orders` | `Order` | 直搬 |
+| `ordercommodities` | `OrderItem` | 重命名映射 |
+| （无） | `PurchasePlace` | V1 不存在，跳过 |
+
+> V1 没有 PurchasePlace 模型（V2 新增）。V1 订单中的进货地信息作为纯文本字段存储，迁移时可选择创建基础 PurchasePlace 记录或暂时留空 `purchasePlaceId`。
 
 #### 15.2.2 字段变更
 
-| V2 字段 | V3 字段 | 转换逻辑 |
+| V1 字段 | V3 字段 | 转换逻辑 |
 |---------|---------|----------|
+| `_id` (ObjectId) | `id` (String) | ObjectId → 24 位 hex 字符串 |
 | `desc` | `description` | 直接映射 |
 | `count` | `quantity` | 直接映射 |
 | `price` | `unitPrice` | 直接映射 |
 | `lineTotal` | `lineTotal` | 直接映射 |
+| `create_at` | `createdAt` | 直接映射 |
+| `update_at` | `updatedAt` | 直接映射 |
 | `deleted` = false | `deletedAt` = null | 未删除 → null |
 | `deleted` = true | `deletedAt` = `updatedAt` | 取 updatedAt 作为删除时间 |
-| `createdAt` | `createdAt` | 保持 |
-| `updatedAt` | `updatedAt` | 保持 |
-| `id` (cuid) | `id` | 保持（V2 和 V3 都用 cuid，可直接复用） |
 | 无 | `role` (User) | 默认设为 `"admin"` |
+
+V1 Mongoose 默认使用 `_id: ObjectId`，迁移时通过 `.toString()` 转为 24 位 hex 字符串作为 V3 的主键。Prisma 的 `String @id` 接受任意字符串，因此可保留 V1 的 ObjectId 值。
 
 #### 15.2.3 关联字段
 
-| V2 关联字段 | V3 关联字段 | 处理 |
+| V1 关联字段 | V3 关联字段 | 处理 |
 |------------|------------|------|
-| `OrderCommodity.orderId` | `OrderItem.orderId` | 直接映射（cuid 可跨库复用） |
-| `OrderCommodity.commodityId` | `OrderItem.commodityId` | 同上 |
-| `Order.purchasePlaceId` | `Order.purchasePlaceId` | 同上 |
-| `Commodity.categoryId` | `Commodity.categoryId` | 同上 |
-| `Commodity.unitId` | `Commodity.unitId` | 同上 |
+| `OrderCommodity.orderId` (ObjectId) | `OrderItem.orderId` (String) | ObjectId → hex 字符串 |
+| `OrderCommodity.commodityId` (ObjectId) | `OrderItem.commodityId` (String) | 同上 |
+| `Order.purchasePlace` (String) | `Order.purchasePlaceId` (String?) | 迁移时缺省留空或自动创建 |
+| `Commodity.categoryId` (ObjectId) | `Commodity.categoryId` (String) | ObjectId → hex 字符串 |
+| `Commodity.unitId` (ObjectId) | `Commodity.unitId` (String) | 同上 |
 
-关键前提：V2 和 V3 都使用 Prisma 的 `cuid()` 生成主键，且迁移脚本**原样保留 V2 的 id 值**，因此外键关联在迁移后自动保持正确。
+关键前提：所有 ObjectId 外键先转为 hex 字符串，再按**统一映射表**将旧 ObjectId 替换为对应记录的新 id，确保引用完整性。详见 15.3 的 ID 映射策略。
 
 #### 15.2.4 密码哈希兼容性
 
-V2 和 V3 均使用 `bcryptjs` 加密密码。`passwordHash` 字段可直接迁移，V3 无需重新加密。
+V1 和 V3 均使用 `bcryptjs` 加密密码。`passwordHash` 字段可直接迁移，V3 无需重新加密。
 
 ### 15.3 迁移脚本设计
 
-脚本位置：`apps/server/prisma/migrate-from-v2.ts`
+脚本位置：`apps/server/prisma/migrate-from-v1.ts`
+
+#### ID 映射策略
+
+由于 V1 使用 MongoDB ObjectId（12 字节），V3 使用 Prisma cuid()（字符串），迁移脚本需要维护一张 `旧ObjectId → 新 id` 的映射表，保证所有记录及其外键引用正确关联：
+
+1. 按依赖顺序逐表迁移：User → Category → Unit → Commodity → Order → OrderItem
+2. 每迁移一条记录，将其 V1 ObjectId 的 hex 字符串作为 V3 的 `id`（Prisma `String @id` 兼容任意字符串）
+3. 所有外键字段通过映射表查找对应记录的新 id
 
 执行方式：
 
 ```bash
-# 设置 V2 数据库连接串
-export V2_DATABASE_URL="postgresql://recon:recon@localhost:5432/recon"
+# 设置 V1 MongoDB 连接串
+export V1_MONGO_URL="mongodb://localhost:27017/ledger_v1"
 
 # 先建 V3 空表
 pnpm --filter server prisma migrate deploy
 
 # 再迁移数据
-pnpm --filter server db:migrate-from-v2
+pnpm --filter server db:migrate-from-v1
 ```
-
-迁移顺序：User → Category → Unit → PurchasePlace → Commodity → Order → OrderItem（先主数据后业务数据，确保外键引用的记录已存在）。
 
 ### 15.4 幂等性设计
 
@@ -803,36 +821,39 @@ pnpm --filter server db:migrate-from-v2
 
 | 检查项 | 验证方法 |
 |--------|----------|
-| 记录数一致 | 各表 `SELECT COUNT(*)` 对比 V2（排除 deleted=true）和 V3（排除 deletedAt IS NOT NULL） |
+| 记录数一致 | 各表 `SELECT COUNT(*)` 对比 V1（排除 deleted=true）和 V3（排除 deletedAt IS NOT NULL） |
 | 金额汇总一致 | SUM(lineTotal) 对比 |
 | 外键完整性 | 检查所有 OrderItem.orderId / commodityId 在 V3 中存在 |
-| 密码可登录 | 用 V2 用户密码在 V3 登录测试 |
-| 删除记录标记 | 检查 V3 中 deletedAt 不为 null 的记录与 V2 中 deleted=true 的记录对应 |
+| 密码可登录 | 用 V1 用户密码在 V3 登录测试 |
+| 删除记录标记 | 检查 V3 中 deletedAt 不为 null 的记录与 V1 中 deleted=true 的记录对应 |
+| ObjectId 映射 | 抽查若干记录，确认 id 与 V1 ObjectId hex 一致 |
 
 ### 15.6 迁移流程总览
 
 ```
-1. docker compose up -d postgres redis      # 启动 V3 基础设施
-2. 复制 .env.example → apps/server/.env      # 配置 V3 数据库
-3. pnpm --filter server prisma migrate deploy # 建 V3 空表
-4. pnpm --filter server prisma db seed       # 初始化 V3 用户（覆盖迁移脚本的用户）
-5. 设置 V2_DATABASE_URL 环境变量
-6. pnpm --filter server db:migrate-from-v2   # 执行数据迁移
-7. 执行验证清单
-8. 启动 V3 应用验证功能
+1. 确保 V1 MongoDB 服务可访问
+2. docker compose up -d postgres redis          # 启动 V3 基础设施
+3. 复制 .env.example → apps/server/.env          # 配置 V3 数据库
+4. pnpm --filter server prisma migrate deploy     # 建 V3 空表
+5. pnpm --filter server prisma db seed           # 初始化 V3 用户（覆盖迁移脚本的用户）
+6. 设置 V1_MONGO_URL 环境变量
+7. pnpm --filter server db:migrate-from-v1       # 执行数据迁移
+8. 执行验证清单
+9. 启动 V3 应用验证功能
 ```
 
 ### 15.7 回滚方案
 
-迁移脚本只写 V3 库，不修改 V2 库。如需回滚：
+迁移脚本只写 V3 库，不修改 V1 MongoDB。如需回滚：
 
 ```bash
 # 清空 V3 数据库
 pnpm --filter server prisma migrate reset --force
-# 重新从步骤 3 执行
+# 重新从步骤 4 执行
 ```
 
-V2 系统在此期间可继续独立运行，不受影响。
+V1 系统在此期间可继续独立运行，不受影响。
+
 
 ## 16. 附录
 
@@ -853,4 +874,5 @@ V2 系统在此期间可继续独立运行，不受影响。
 | v2.0 | 2026-07-29 | 基于 recon 最新代码重写 |
 | v3.0 | 2026-07-29 | 整合 7 项需求澄清：命名规范化、用户初始化、工作台重构、UI 组件选型分析、Redux 生态、UI 设计稿方案 |
 | v4.0 | 2026-07-29 | 新增数据迁移方案（导出→转换→导入 三步策略、字段映射、幂等脚本、验证清单、回滚方案） |
-| v5.0 | 2026-07-29 | 基于实际规模（2-3 人 / 日订单 <10）精简设计：去除过度设计项；新增运维方案（备份/日志）、权限简化、Nginx 配置要点、健康检查端点、SameSite CSRF 防护 |（导出→转换→导入 三步策略、字段映射、幂等脚本、验证清单、回滚方案） |澄清：命名规范化、用户初始化、工作台重构、UI 组件选型分析、Redux 生态、UI 设计稿方案 |
+| v5.0 | 2026-07-29 | 基于实际规模（2-3 人 / 日订单 <10）精简设计：去除过度设计项；新增运维方案（备份/日志）、权限简化、Nginx 配置要点、健康检查端点、SameSite CSRF 防护 |
+| v5.2 | 2026-07-30 | 合并 PRD v5.1；迁移基准改为 V1 MongoDB；状态更新为已审核 |
