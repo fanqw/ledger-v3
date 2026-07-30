@@ -109,3 +109,9 @@ export interface OrderDistributionDto {
   range: string;
   count: number;
 }
+
+export interface SessionDto {
+  id: string;
+  username: string;
+  role: string;
+}

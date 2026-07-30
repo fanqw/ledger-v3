@@ -3,5 +3,10 @@
   "version": "0.0.0",
   "private": true,
   "main": "index.js",
-  "files": ["*.json", "*.js", "*.mjs"]
+  "files": [
+    "*.json",
+    "*.js",
+    "*.mjs",
+    "tsconfig.base.json"
+  ]
 }

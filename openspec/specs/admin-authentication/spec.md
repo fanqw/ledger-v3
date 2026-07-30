@@ -14,7 +14,7 @@
 #### Scenario: 凭据正确时登录成功
 
 - WHEN 客户端使用数据库中存在的用户名与正确密码提交 POST /api/auth/login
-- THEN 系统 SHALL 返回 HTTP 200，响应体包含 accessToken（15min 有效期）和 refreshToken（7d 有效期）
+- THEN 系统 SHALL 返回 HTTP 200，响应体 JSON 包含 accessToken；refreshToken 通过 Set-Cookie 下发（httpOnly, SameSite=Strict, Path=/api/auth）
 - THEN refreshToken SHALL 以 httpOnly Cookie 形式下发（SameSite=Strict）
 
 #### Scenario: 凭据错误时登录失败
