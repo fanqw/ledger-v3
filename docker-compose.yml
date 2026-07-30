@@ -1,0 +1,58 @@
+services:
+  nginx:
+    depends_on:
+    - server
+    image: nginx:1.27-alpine
+    ports:
+    - 80:80
+    volumes:
+    - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    - ./apps/web/dist:/usr/share/nginx/html:ro
+  postgres:
+    environment:
+      POSTGRES_DB: ledger_v3
+      POSTGRES_PASSWORD: ledger
+      POSTGRES_USER: ledger
+    healthcheck:
+      interval: 5s
+      retries: 5
+      test:
+      - CMD-SHELL
+      - pg_isready -U ledger -d ledger_v3
+      timeout: 5s
+    image: postgres:16-alpine
+    ports:
+    - 5432:5432
+    volumes:
+    - postgres-data:/var/lib/postgresql/data
+  redis:
+    healthcheck:
+      interval: 5s
+      retries: 5
+      test:
+      - CMD
+      - redis-cli
+      - ping
+      timeout: 5s
+    image: redis:7-alpine
+    ports:
+    - 6379:6379
+  server:
+    build:
+      context: .
+      dockerfile: apps/server/Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://ledger:ledger@postgres:5432/ledger_v3
+      JWT_REFRESH_SECRET: dev-refresh-secret-change-in-production
+      JWT_SECRET: dev-jwt-secret-change-in-production
+      REDIS_HOST: redis
+      REDIS_PORT: '6379'
+    ports:
+    - 3001:3001
+volumes:
+  postgres-data: null

@@ -1,0 +1,4 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+approveBuilds: '@prisma/client @prisma/engines prisma @nestjs/core esbuild'
