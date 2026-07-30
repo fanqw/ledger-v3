@@ -1,6 +1,7 @@
 import { Controller, Get } from '@nestjs/common';
 import { PrismaService } from './common/prisma.service';
 import { RedisService } from './common/redis.service';
+import { Public } from './modules/auth/jwt-auth.guard';
 
 @Controller('health')
 export class AppController {
@@ -9,6 +10,7 @@ export class AppController {
     private readonly redis: RedisService,
   ) {}
 
+  @Public()
   @Get()
   async health() {
     let db = 'disconnected';
