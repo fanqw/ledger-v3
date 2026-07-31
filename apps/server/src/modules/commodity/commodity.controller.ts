@@ -2,7 +2,7 @@ import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards, Ht
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CommodityService } from './commodity.service';
-import { commoditySchema, paginationSchema } from '@ledger-v3/shared/validators';
+import { commoditySchema, idSchema, paginationSchema } from '@ledger-v3/shared/validators';
 import { ZodValidationPipe } from '../../common/zod-validation.pipe';
 
 @ApiTags('Commodities')
@@ -21,7 +21,7 @@ export class CommodityController {
 
   @Get(':id')
   @ApiOperation({ summary: '获取单个商品' })
-  async findOne(@Param('id') id: string) {
+  async findOne(@Param('id', new ZodValidationPipe(idSchema)) id: string) {
     const data = await this.service.findById(id);
     return { success: true, data };
   }
@@ -35,7 +35,7 @@ export class CommodityController {
 
   @Patch(':id')
   @ApiOperation({ summary: '更新商品' })
-  async update(@Param('id') id: string, @Body(new ZodValidationPipe(commoditySchema.partial())) body: { name?: string; description?: string; categoryId?: string; unitId?: string }) {
+  async update(@Param('id', new ZodValidationPipe(idSchema)) id: string, @Body(new ZodValidationPipe(commoditySchema.partial())) body: { name?: string; description?: string; categoryId?: string; unitId?: string }) {
     const data = await this.service.update(id, body);
     return { success: true, data };
   }
@@ -43,7 +43,7 @@ export class CommodityController {
   @Delete(':id')
   @HttpCode(200)
   @ApiOperation({ summary: '删除商品（软删除）' })
-  async delete(@Param('id') id: string) {
+  async delete(@Param('id', new ZodValidationPipe(idSchema)) id: string) {
     return this.service.delete(id);
   }
 }
