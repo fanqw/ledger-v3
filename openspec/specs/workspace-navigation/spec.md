@@ -4,14 +4,11 @@
 
 定义工作区布局与导航行为规格，包括侧边栏分组导航、面包屑、主题切换、响应式布局。
 
-
 ## Purpose
 
 定义工作区布局与导航行为规格，包括侧边栏分组导航、面包屑、主题切换、响应式布局。
 # workspace-navigation
-
 ## Requirements
-
 ### Requirement: 侧边栏分组导航
 
 系统 SHALL 提供分组式侧边栏导航，包含以下菜单分组：
@@ -77,3 +74,23 @@ Header 区域 SHALL 提供 light / dark 主题切换按钮，选择后持久化�
 
 - WHEN 用户在平板设备（如 MatePad 11）横屏或竖屏访问
 - THEN 侧边栏、顶栏、主内容区 SHALL 不遮挡核心操作入口
+
+### Requirement: 工作区布局壳
+
+系统 SHALL 提供 SideNav + TopBar + 主内容区的三层布局壳，作为所有业务页面的统一框架。
+
+#### Scenario: 登录后进入布局壳
+
+- WHEN 用户登录成功后访问任意业务页面
+- THEN 页面 SHALL 显示左侧 SideNav（240px）+ 顶部 TopBar + 主内容区
+
+### Requirement: 暗色模式
+
+系统 SHALL 支持 light/dark 主题切换，首次访问 fallback 到系统 `prefers-color-scheme` 偏好，选择持久化到 localStorage。
+
+#### Scenario: 主题切换并刷新保持
+
+- WHEN 用户从 light 切换到 dark 主题
+- THEN 页面 SHALL 立即切换为 dark 配色
+- THEN 刷新页面后 SHALL 恢复 dark 主题
+
