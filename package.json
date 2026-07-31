@@ -20,6 +20,9 @@
       "prisma",
       "@nestjs/core",
       "esbuild"
-    ]
+    ],
+    "overrides": {
+      "multer": "^2.2.0"
+    }
   }
 }
