@@ -58,8 +58,8 @@ export default function CommoditiesPage() {
   const loadRefs = async () => {
     try {
       const [catRes, unitRes] = await Promise.all([
-        authFetch("/api/categories?pageSize=1000"),
-        authFetch("/api/units?pageSize=1000"),
+        authFetch("/api/categories?pageSize=100"),
+        authFetch("/api/units?pageSize=100"),
       ]);
       const catJson = await catRes.json();
       const unitJson = await unitRes.json();
