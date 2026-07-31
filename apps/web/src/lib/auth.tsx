@@ -24,7 +24,14 @@ export function useAuth() { return useContext(AuthContext); }
 
 let refreshPromise: Promise<string | null> | null = null;
 
+function hasRefreshTokenCookie() {
+  return document.cookie
+    .split(';')
+    .some((cookie) => cookie.trim().startsWith('refreshTokenPresent=1'));
+}
+
 function getRefreshedToken(): Promise<string | null> {
+  if (!hasRefreshTokenCookie()) return Promise.resolve(null);
   if (!refreshPromise) {
     refreshPromise = fetch('/api/auth/refresh', { method: 'POST', credentials: 'include' })
       .then(async (res) => {

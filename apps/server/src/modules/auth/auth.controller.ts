@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Body, Req, UseGuards, Res, HttpCode, UnauthorizedException } from '@nestjs/common';
+import { Controller, Post, Get, Body, Req, UseGuards, Res, HttpCode } from '@nestjs/common';
 import { Response, Request } from 'express';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard, Public } from './jwt-auth.guard';
@@ -23,22 +23,24 @@ export class AuthController {
         error: { code: 'VALIDATION_ERROR', message: parsed.error.issues[0]?.message || '参数不合法' },
       };
     }
-    try {
-      const result = await this.authService.login(parsed.data.username, parsed.data.password);
+    const result = await this.authService.login(parsed.data.username, parsed.data.password);
 
-      res.cookie('refreshToken', result.refreshToken, {
-        httpOnly: true,
-        sameSite: 'strict',
-        path: '/api/auth',
-        maxAge: result.refreshTokenMaxAge,
-        secure: process.env.NODE_ENV === 'production',
-      });
+    res.cookie('refreshToken', result.refreshToken, {
+      httpOnly: true,
+      sameSite: 'strict',
+      path: '/api/auth',
+      maxAge: result.refreshTokenMaxAge,
+      secure: process.env.NODE_ENV === 'production',
+    });
+    res.cookie('refreshTokenPresent', '1', {
+      httpOnly: false,
+      sameSite: 'strict',
+      path: '/',
+      maxAge: result.refreshTokenMaxAge,
+      secure: process.env.NODE_ENV === 'production',
+    });
 
-      return { success: true, data: { accessToken: result.accessToken } };
-    } catch (err) {
-      if (err instanceof UnauthorizedException) return err.getResponse();
-      throw err;
-    }
+    return { success: true, data: { accessToken: result.accessToken } };
   }
 
   @Public()
@@ -51,6 +53,7 @@ export class AuthController {
     const token = req.headers.authorization?.replace('Bearer ', '');
     if (token) await this.authService.logout(token);
     res.clearCookie('refreshToken', { path: '/api/auth' });
+    res.clearCookie('refreshTokenPresent', { path: '/' });
     return { success: true, data: null };
   }
 
@@ -63,6 +66,7 @@ export class AuthController {
   ) {
     const refreshToken = req.cookies?.refreshToken;
     if (!refreshToken) {
+      res.status(401);
       return {
         success: false,
         error: { code: 'TOKEN_EXPIRED', message: '登录已过期，请重新登录' },
@@ -74,6 +78,13 @@ export class AuthController {
       httpOnly: true,
       sameSite: 'strict',
       path: '/api/auth',
+      maxAge: result.refreshTokenMaxAge,
+      secure: process.env.NODE_ENV === 'production',
+    });
+    res.cookie('refreshTokenPresent', '1', {
+      httpOnly: false,
+      sameSite: 'strict',
+      path: '/',
       maxAge: result.refreshTokenMaxAge,
       secure: process.env.NODE_ENV === 'production',
     });
