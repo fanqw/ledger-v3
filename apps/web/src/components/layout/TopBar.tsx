@@ -16,14 +16,14 @@ const BREADCRUMB_MAP: Record<string, string> = {
 
 function getBreadcrumb(pathname: string): string {
   // Exact match
-  if (BREADCRUMB_MAP[pathname]) return `仪表台 / ${BREADCRUMB_MAP[pathname]}`;
+  if (BREADCRUMB_MAP[pathname]) return `${BREADCRUMB_MAP[pathname]}`;
   // Partial match (e.g. /orders/xxx)
   for (const [prefix, label] of Object.entries(BREADCRUMB_MAP)) {
     if (prefix !== '/dashboard' && pathname.startsWith(prefix)) {
-      return `仪表台 / ${label}`;
+      return `${label}`;
     }
   }
-  return '仪表台';
+  return '';
 }
 
 export default function TopBar() {
@@ -35,7 +35,7 @@ export default function TopBar() {
   const initials = (user?.username || 'U')[0].toUpperCase();
 
   return (
-    <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center justify-between border-b border-[#E2E8F0] bg-white px-6 dark:border-[#1E293B] dark:bg-[#0F172A]">
+    <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center justify-between border-b border-[#E2E8F0] bg-white px-6 dark:border-[#1E293B] dark:bg-[#0F172A] box-content">
       {/* Left: Breadcrumb */}
       <div className="flex items-center gap-1 text-sm">
         {breadcrumb.split(' / ').map((part, i, arr) => (
