@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { DataTable, type Column, type PaginationInfo } from "../components/ui/data-table";
 import { toast } from "../lib/toast";
 import { authFetch } from "../lib/api";
+import { fetchAllPages } from "../lib/paged-request";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 
 interface Category { id: string; name: string; }
@@ -57,14 +58,12 @@ export default function CommoditiesPage() {
 
   const loadRefs = async () => {
     try {
-      const [catRes, unitRes] = await Promise.all([
-        authFetch("/api/categories?pageSize=100"),
-        authFetch("/api/units?pageSize=100"),
+      const [catItems, unitItems] = await Promise.all([
+        fetchAllPages<Category>((page, pageSize) => authFetch(`/api/categories?page=${page}&pageSize=${pageSize}`), 100),
+        fetchAllPages<Unit>((page, pageSize) => authFetch(`/api/units?page=${page}&pageSize=${pageSize}`), 100),
       ]);
-      const catJson = await catRes.json();
-      const unitJson = await unitRes.json();
-      if (catJson.success) setCategories(catJson.data.items);
-      if (unitJson.success) setUnits(unitJson.data.items);
+      setCategories(catItems);
+      setUnits(unitItems);
     } catch {}
   };
 
