@@ -22,7 +22,14 @@
     "react-dom": "^19.0.0",
     "react-router-dom": "^7.0.0",
     "tailwind-merge": "^3.6.0",
-    "tailwindcss-animate": "^1.0.7"
+    "tailwindcss-animate": "^1.0.7",
+    "sonner": "^2.0.0",
+    "@radix-ui/react-dialog": "^1.1.0",
+    "@radix-ui/react-alert-dialog": "^1.1.0",
+    "@radix-ui/react-select": "^2.1.0",
+    "@radix-ui/react-popover": "^1.1.0",
+    "@radix-ui/react-label": "^2.1.0",
+    "cmdk": "^1.1.0"
   },
   "devDependencies": {
     "@types/react": "^19.0.0",

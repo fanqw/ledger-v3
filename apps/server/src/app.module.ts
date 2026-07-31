@@ -2,16 +2,17 @@ import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { AppController } from './app.controller';
 import { AuthModule } from './modules/auth/auth.module';
+import { CategoryModule } from './modules/category/category.module';
+import { UnitModule } from './modules/unit/unit.module';
+import { CommodityModule } from './modules/commodity/commodity.module';
+import { PurchasePlaceModule } from './modules/purchase-place/purchase-place.module';
+import { CommonModule } from './common/common.module';
 import { JwtAuthGuard } from './modules/auth/jwt-auth.guard';
-import { PrismaService } from './common/prisma.service';
-import { RedisService } from './common/redis.service';
 
 @Module({
-  imports: [AuthModule],
+  imports: [CommonModule, AuthModule, CategoryModule, UnitModule, CommodityModule, PurchasePlaceModule],
   controllers: [AppController],
   providers: [
-    PrismaService,
-    RedisService,
     { provide: APP_GUARD, useClass: JwtAuthGuard },
   ],
 })

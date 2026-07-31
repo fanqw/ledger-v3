@@ -1,4 +1,5 @@
 import { Outlet } from 'react-router-dom';
+import { Toaster } from 'sonner';
 import SideNav from './SideNav';
 import TopBar from './TopBar';
 
@@ -12,6 +13,7 @@ export default function AppShell() {
           <Outlet />
         </main>
       </div>
+      <Toaster position="top-right" richColors />
     </div>
   );
 }

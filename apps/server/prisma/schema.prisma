@@ -19,22 +19,26 @@ model User {
 
 model Category {
   id          String      @id @default(cuid())
-  name        String      @unique
+  name        String
   description String?
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
   deletedAt   DateTime?
   commodities Commodity[]
+
+  @@index([name])
 }
 
 model Unit {
   id          String      @id @default(cuid())
-  name        String      @unique
+  name        String
   description String?
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
   deletedAt   DateTime?
   commodities Commodity[]
+
+  @@index([name])
 }
 
 model Commodity {
@@ -50,7 +54,7 @@ model Commodity {
   unit        Unit        @relation(fields: [unitId], references: [id])
   orderItems  OrderItem[]
 
-  @@unique([name, unitId])
+  @@index([name, unitId])
 }
 
 model PurchasePlace {
@@ -63,7 +67,7 @@ model PurchasePlace {
   deletedAt   DateTime?
   orders      Order[]
 
-  @@unique([place, marketName])
+  @@index([place, marketName])
 }
 
 model Order {
@@ -78,7 +82,7 @@ model Order {
   items           OrderItem[]
 
   @@index([purchasePlaceId])
-  @@unique([name, deletedAt])
+  @@index([name])
 }
 
 model OrderItem {
