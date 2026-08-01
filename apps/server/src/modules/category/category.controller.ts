@@ -2,7 +2,7 @@ import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards, Ht
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CategoryService } from './category.service';
-import { categorySchema, paginationSchema } from '@ledger-v3/shared/validators';
+import { categorySchema, idSchema, paginationSchema } from '@ledger-v3/shared/validators';
 import { ZodValidationPipe } from '../../common/zod-validation.pipe';
 
 @ApiTags('Categories')
@@ -21,7 +21,7 @@ export class CategoryController {
 
   @Get(':id')
   @ApiOperation({ summary: '获取单个分类' })
-  async findOne(@Param('id') id: string) {
+  async findOne(@Param('id', new ZodValidationPipe(idSchema)) id: string) {
     const data = await this.service.findById(id);
     return { success: true, data };
   }
@@ -35,7 +35,7 @@ export class CategoryController {
 
   @Patch(':id')
   @ApiOperation({ summary: '更新分类' })
-  async update(@Param('id') id: string, @Body(new ZodValidationPipe(categorySchema.partial())) body: { name?: string; description?: string }) {
+  async update(@Param('id', new ZodValidationPipe(idSchema)) id: string, @Body(new ZodValidationPipe(categorySchema.partial())) body: { name?: string; description?: string }) {
     const data = await this.service.update(id, body);
     return { success: true, data };
   }
@@ -43,7 +43,7 @@ export class CategoryController {
   @Delete(':id')
   @HttpCode(200)
   @ApiOperation({ summary: '删除分类（软删除）' })
-  async delete(@Param('id') id: string) {
+  async delete(@Param('id', new ZodValidationPipe(idSchema)) id: string) {
     return this.service.delete(id);
   }
 }
