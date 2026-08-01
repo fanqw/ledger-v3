@@ -2,13 +2,14 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from './lib/theme';
 import { AuthProvider, useAuth } from './lib/auth';
 import { setGlobalAuth } from './lib/api';
-import { useEffect } from 'react';
-import LoginPage from './pages/Login';
+import { lazy, Suspense, useEffect } from 'react';
 import AppShell from './components/layout/AppShell';
-import CategoriesPage from './pages/Categories';
-import UnitsPage from './pages/Units';
-import CommoditiesPage from './pages/Commodities';
-import PurchasePlacesPage from './pages/PurchasePlaces';
+
+const LoginPage = lazy(() => import('./pages/Login'));
+const CategoriesPage = lazy(() => import('./pages/Categories'));
+const UnitsPage = lazy(() => import('./pages/Units'));
+const CommoditiesPage = lazy(() => import('./pages/Commodities'));
+const PurchasePlacesPage = lazy(() => import('./pages/PurchasePlaces'));
 
 function AuthInit({ children }: { children: React.ReactNode }) {
   const auth = useAuth();
@@ -46,7 +47,12 @@ export default function App() {
     <ThemeProvider>
       <AuthProvider>
         <AuthInit>
-          <Routes>
+          <Suspense fallback={(
+            <div className="flex min-h-screen items-center justify-center">
+              <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
+            </div>
+          )}>
+            <Routes>
             <Route path="/login" element={<LoginRedirect />} />
             <Route
               path="/*"
@@ -64,7 +70,8 @@ export default function App() {
               <Route path="purchase-places" element={<PurchasePlacesPage />} />
               <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Route>
-          </Routes>
+            </Routes>
+          </Suspense>
         </AuthInit>
       </AuthProvider>
     </ThemeProvider>
