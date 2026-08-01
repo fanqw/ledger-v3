@@ -22,6 +22,9 @@ export function getJwtSecrets(): JwtSecrets {
   if (!refreshSecret?.trim() || INSECURE_PLACEHOLDER_SECRETS.has(refreshSecret.trim())) {
     throw new Error('JWT_REFRESH_SECRET is required; refusing to start with a fallback secret');
   }
+  if (accessSecret === refreshSecret) {
+    throw new Error('JWT_SECRET and JWT_REFRESH_SECRET must be different');
+  }
 
   return { accessSecret, refreshSecret };
 }
