@@ -30,7 +30,9 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   }
 
   async onModuleDestroy() {
-    try { await this._client.quit(); } catch {}
+    try { await this._client.quit(); } catch (error) {
+      this.logger.warn('Redis shutdown failed', error);
+    }
   }
 
   async ping(): Promise<string> {
@@ -60,7 +62,9 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   }
 
   async del(key: string): Promise<void> {
-    try { await this._client.del(key); } catch {}
+    try { await this._client.del(key); } catch (error) {
+      this.logger.warn(`Redis DEL failed: ${key}`, error);
+    }
   }
 
   async delOrThrow(key: string): Promise<void> {

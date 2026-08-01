@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
@@ -8,6 +8,8 @@ import { ERROR_CODES, ERROR_MESSAGES } from '@ledger-v3/shared/constants';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly redis: RedisService,
@@ -58,7 +60,9 @@ export class AuthService {
           await this.redis.del(key);
         }
       }
-    } catch {}
+    } catch (error) {
+      this.logger.warn('Failed to revoke old refresh tokens during login rotation', error);
+    }
 
     return {
       accessToken,
