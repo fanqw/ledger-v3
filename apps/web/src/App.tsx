@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './lib/auth';
 import { setGlobalAuth } from './lib/api';
 import { lazy, Suspense, useEffect } from 'react';
 import AppShell from './components/layout/AppShell';
+import ChunkErrorBoundary from './components/ChunkErrorBoundary';
 
 const LoginPage = lazy(() => import('./pages/Login'));
 const CategoriesPage = lazy(() => import('./pages/Categories'));
@@ -47,7 +48,8 @@ export default function App() {
     <ThemeProvider>
       <AuthProvider>
         <AuthInit>
-          <Suspense fallback={(
+          <ChunkErrorBoundary>
+            <Suspense fallback={(
             <div className="flex min-h-screen items-center justify-center">
               <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
             </div>
@@ -71,7 +73,8 @@ export default function App() {
               <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Route>
             </Routes>
-          </Suspense>
+            </Suspense>
+          </ChunkErrorBoundary>
         </AuthInit>
       </AuthProvider>
     </ThemeProvider>
