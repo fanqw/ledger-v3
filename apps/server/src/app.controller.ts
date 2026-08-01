@@ -24,7 +24,7 @@ export class AppController {
       this.logger.warn('Database health check failed', error);
     }
     try {
-      await this.redis.ping();
+      await this.redis.pingOrThrow();
       redis = 'connected';
     } catch (error) {
       this.logger.warn('Redis health check failed', error);

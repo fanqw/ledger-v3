@@ -54,10 +54,10 @@ export class AuthService {
     await this.redis.set(`refresh:${user.id}:${jti}`, '1', 7 * 86400);
     // Revoke old refresh tokens for this user (rotation)
     try {
-      const oldKeys = await this.redis.keys(`refresh:${user.id}:*`);
+      const oldKeys = await this.redis.keysOrThrow(`refresh:${user.id}:*`);
       for (const key of oldKeys) {
         if (key !== `refresh:${user.id}:${jti}`) {
-          await this.redis.del(key);
+          await this.redis.delOrThrow(key);
         }
       }
     } catch (error) {
