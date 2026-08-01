@@ -18,8 +18,8 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await login(username, password);
-    } catch (err: any) {
-      setError(err?.message || '登录失败，请检查用户名和密码');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : '登录失败，请检查用户名和密码');
     } finally {
       setLoading(false);
     }
