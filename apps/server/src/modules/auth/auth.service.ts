@@ -124,12 +124,16 @@ export class AuthService {
 
       // Atomic rotation: delete old token + revoke all others
       await this.redis.delOrThrow(key);
-      try {
-        const oldKeys = await this.redis.keysOrThrow(`refresh:${payload.sub}:*`);
-        for (const k of oldKeys) {
+      const oldKeys = await this.redis.keysOrThrow(`refresh:${payload.sub}:*`);
+      const rotationErrors: unknown[] = [];
+      for (const k of oldKeys) {
+        try {
           await this.redis.delOrThrow(k);
+        } catch (error) {
+          rotationErrors.push(error);
         }
-      } catch {}
+      }
+      if (rotationErrors.length > 0) throw rotationErrors[0];
 
       const user = await this.prisma.user.findUnique({ where: { id: payload.sub } });
       if (!user || user.deletedAt) {
