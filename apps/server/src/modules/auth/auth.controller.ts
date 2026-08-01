@@ -32,6 +32,13 @@ export class AuthController {
       maxAge: result.refreshTokenMaxAge,
       secure: process.env.NODE_ENV === 'production',
     });
+    res.cookie('refreshTokenPresent', '1', {
+      httpOnly: false,
+      sameSite: 'strict',
+      path: '/',
+      maxAge: result.refreshTokenMaxAge,
+      secure: process.env.NODE_ENV === 'production',
+    });
 
     return { success: true, data: { accessToken: result.accessToken } };
   }
@@ -44,12 +51,20 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     const token = req.headers.authorization?.replace('Bearer ', '');
-    try {
-      if (token) await this.authService.logout(token);
-    } finally {
-      res.clearCookie('refreshToken', { path: '/api/auth' });
-    }
+    if (token) await this.authService.logout(token);
+    res.clearCookie('refreshToken', { path: '/api/auth' });
+    res.clearCookie('refreshTokenPresent', { path: '/' });
     return { success: true, data: null };
+  }
+
+  @Public()
+  @Get('refresh-status')
+  @HttpCode(200)
+  refreshStatus(@Req() req: Request) {
+    return {
+      success: true,
+      data: { hasRefreshToken: Boolean(req.cookies?.refreshToken) },
+    };
   }
 
   @Public()
@@ -73,6 +88,13 @@ export class AuthController {
       httpOnly: true,
       sameSite: 'strict',
       path: '/api/auth',
+      maxAge: result.refreshTokenMaxAge,
+      secure: process.env.NODE_ENV === 'production',
+    });
+    res.cookie('refreshTokenPresent', '1', {
+      httpOnly: false,
+      sameSite: 'strict',
+      path: '/',
       maxAge: result.refreshTokenMaxAge,
       secure: process.env.NODE_ENV === 'production',
     });
