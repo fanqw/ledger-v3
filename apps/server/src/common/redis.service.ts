@@ -18,10 +18,13 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
       maxRetriesPerRequest: 1,
       retryStrategy: (times) => Math.min(times * 200, 2000),
     });
-    try {
-      await this._client.connect();
+    const connected = await Promise.race([
+      this._client.connect().then(() => true).catch(() => false),
+      new Promise<boolean>((resolve) => setTimeout(() => resolve(false), 2000)),
+    ]);
+    if (connected) {
       this.logger.log('Redis connected');
-    } catch {
+    } else {
       this.logger.warn('Redis unavailable — operating in degraded mode');
     }
   }
