@@ -104,7 +104,7 @@ export class AuthController {
 
   @UseGuards(JwtAuthGuard)
   @Get('session')
-  async session(@Req() req: any) {
+  async session(@Req() req: Request & { user: { id: string } }) {
     return this.authService.session(req.user.id);
   }
 }

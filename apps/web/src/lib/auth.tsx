@@ -78,7 +78,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const data = await res.json();
             if (data?.data) setUser(data.data);
           }
-        } catch {}
+        } catch (error) {
+          console.warn('Failed to restore the authenticated session', error);
+        }
       }
       if (!cancelled) setLoading(false);
     })();
