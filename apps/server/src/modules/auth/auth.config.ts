@@ -6,6 +6,8 @@ export interface JwtSecrets {
 const INSECURE_PLACEHOLDER_SECRETS = new Set([
   'dev-jwt-secret-change-in-production',
   'dev-refresh-secret-change-in-production',
+  'change-me-in-production',
+  'change-me-refresh-in-production',
 ]);
 
 export function getJwtSecrets(): JwtSecrets {
