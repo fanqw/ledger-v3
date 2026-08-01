@@ -15,10 +15,7 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
       host: process.env.REDIS_HOST || 'redis',
       port: Number(process.env.REDIS_PORT) || 6379,
       lazyConnect: true,
-      retryStrategy: (times) => {
-        if (times > 3) return null;
-        return Math.min(times * 200, 2000);
-      },
+      retryStrategy: (times) => Math.min(times * 200, 2000),
     });
     try {
       await this._client.connect();
