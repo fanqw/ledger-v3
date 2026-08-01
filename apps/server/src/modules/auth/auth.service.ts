@@ -93,7 +93,11 @@ export class AuthService {
       try {
         const keys = await this.redis.keysOrThrow(`refresh:${payload.sub}:*`);
         for (const key of keys) {
-          await this.redis.delOrThrow(key);
+          try {
+            await this.redis.delOrThrow(key);
+          } catch (error) {
+            revocationErrors.push(error);
+          }
         }
       } catch (error) {
         revocationErrors.push(error);
