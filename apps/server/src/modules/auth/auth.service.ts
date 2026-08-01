@@ -5,16 +5,23 @@ import { v4 as uuidv4 } from 'uuid';
 import { PrismaService } from '../../common/prisma.service';
 import { RedisService } from '../../common/redis.service';
 import { ERROR_CODES, ERROR_MESSAGES } from '@ledger-v3/shared/constants';
+import { getJwtSecrets } from './auth.config';
 
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
+  private readonly jwtAccessSecret: string;
+  private readonly jwtRefreshSecret: string;
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly redis: RedisService,
     private readonly jwtService: JwtService,
-  ) {}
+  ) {
+    const secrets = getJwtSecrets();
+    this.jwtAccessSecret = secrets.accessSecret;
+    this.jwtRefreshSecret = secrets.refreshSecret;
+  }
 
   async login(username: string, password: string) {
     const user = await this.prisma.user.findFirst({
@@ -39,14 +46,14 @@ export class AuthService {
     const payload = { sub: user.id, username: user.username, role: user.role, jti };
 
     const accessToken = this.jwtService.sign(payload, {
-      secret: process.env.JWT_SECRET || 'dev-secret',
+      secret: this.jwtAccessSecret,
       expiresIn: '15m',
     });
 
     const refreshToken = this.jwtService.sign(
       { sub: user.id, jti },
       {
-        secret: process.env.JWT_REFRESH_SECRET || 'dev-refresh-secret',
+        secret: this.jwtRefreshSecret,
         expiresIn: '7d',
       },
     );
@@ -80,8 +87,8 @@ export class AuthService {
   async logout(accessToken: string) {
     let payload: { sub?: string; jti?: string; exp?: number } | undefined;
     try {
-      payload = this.jwtService.verify(accessToken, {
-        secret: process.env.JWT_SECRET || 'dev-secret',
+      const payload = this.jwtService.verify(accessToken, {
+        secret: this.jwtAccessSecret,
         ignoreExpiration: true,
       });
     } catch {
@@ -120,7 +127,7 @@ export class AuthService {
   async refresh(refreshToken: string) {
     try {
       const payload = this.jwtService.verify(refreshToken, {
-        secret: process.env.JWT_REFRESH_SECRET || 'dev-refresh-secret',
+        secret: this.jwtRefreshSecret,
       });
 
       const key = `refresh:${payload.sub}:${payload.jti}`;
@@ -157,14 +164,14 @@ export class AuthService {
       const newPayload = { sub: user.id, username: user.username, role: user.role, jti: newJti };
 
       const newAccessToken = this.jwtService.sign(newPayload, {
-        secret: process.env.JWT_SECRET || 'dev-secret',
+        secret: this.jwtAccessSecret,
         expiresIn: '15m',
       });
 
       const newRefreshToken = this.jwtService.sign(
         { sub: user.id, jti: newJti },
         {
-          secret: process.env.JWT_REFRESH_SECRET || 'dev-refresh-secret',
+          secret: this.jwtRefreshSecret,
           expiresIn: '7d',
         },
       );

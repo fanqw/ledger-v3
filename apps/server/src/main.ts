@@ -7,8 +7,10 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
 import { createCorsOptions } from './common/cors.config';
+import { getJwtSecrets } from './modules/auth/auth.config';
 
 async function bootstrap() {
+  getJwtSecrets();
   const app = await NestFactory.create(AppModule);
   app.setGlobalPrefix('api');
 

@@ -48,8 +48,8 @@ services:
         condition: service_healthy
     environment:
       DATABASE_URL: postgresql://ledger:ledger@postgres:5432/ledger_v3
-      JWT_REFRESH_SECRET: dev-refresh-secret-change-in-production
-      JWT_SECRET: dev-jwt-secret-change-in-production
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-}
+      JWT_SECRET: ${JWT_SECRET:-}
       REDIS_HOST: redis
       REDIS_PORT: '6379'
     ports:
