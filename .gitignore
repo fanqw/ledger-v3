@@ -7,3 +7,7 @@ dist/
 output/
 .playwright-cli/
 .codex/
+
+# Codex agent temporary files
+.codex-temp/
+.playwright-mcp/

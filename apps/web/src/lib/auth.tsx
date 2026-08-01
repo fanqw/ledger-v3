@@ -24,14 +24,33 @@ export function useAuth() { return useContext(AuthContext); }
 
 let refreshPromise: Promise<string | null> | null = null;
 
+function hasRefreshTokenCookie() {
+  return document.cookie
+    .split(';')
+    .some((cookie) => cookie.trim().startsWith('refreshTokenPresent=1'));
+}
+
+async function canRefreshSession() {
+  if (hasRefreshTokenCookie()) return true;
+  try {
+    const res = await fetch('/api/auth/refresh-status', { credentials: 'include' });
+    if (!res.ok) return false;
+    const data = await res.json();
+    return Boolean(data?.data?.hasRefreshToken);
+  } catch {
+    return false;
+  }
+}
+
 function getRefreshedToken(): Promise<string | null> {
   if (!refreshPromise) {
-    refreshPromise = fetch('/api/auth/refresh', { method: 'POST', credentials: 'include' })
-      .then(async (res) => {
-        if (!res.ok) return null;
-        const data = await res.json();
-        return data?.data?.accessToken || null;
-      })
+    refreshPromise = (async () => {
+      if (!await canRefreshSession()) return null;
+      const res = await fetch('/api/auth/refresh', { method: 'POST', credentials: 'include' });
+      if (!res.ok) return null;
+      const data = await res.json();
+      return data?.data?.accessToken || null;
+    })()
       .catch(() => null)
       .finally(() => { refreshPromise = null; });
   }
@@ -59,7 +78,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const data = await res.json();
             if (data?.data) setUser(data.data);
           }
-        } catch {}
+        } catch (error) {
+          console.warn('Failed to restore the authenticated session', error);
+        }
       }
       if (!cancelled) setLoading(false);
     })();

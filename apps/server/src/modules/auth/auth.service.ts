@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
@@ -61,13 +61,21 @@ export class AuthService {
     await this.redis.set(`refresh:${user.id}:${jti}`, '1', 7 * 86400);
     // Revoke old refresh tokens for this user (rotation)
     try {
-      const oldKeys = await this.redis.keys(`refresh:${user.id}:*`);
+      const oldKeys = await this.redis.keysOrThrow(`refresh:${user.id}:*`);
+      const rotationErrors: unknown[] = [];
       for (const key of oldKeys) {
         if (key !== `refresh:${user.id}:${jti}`) {
-          await this.redis.del(key);
+          try {
+            await this.redis.delOrThrow(key);
+          } catch (error) {
+            rotationErrors.push(error);
+          }
         }
       }
-    } catch {}
+      if (rotationErrors.length > 0) throw rotationErrors[0];
+    } catch (error) {
+      this.logger.warn('Failed to revoke old refresh tokens during login rotation', error);
+    }
 
     return {
       accessToken,

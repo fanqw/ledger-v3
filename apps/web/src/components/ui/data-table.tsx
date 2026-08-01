@@ -4,7 +4,7 @@ import { Button } from "./button";
 import { ChevronLeft, ChevronRight, Inbox } from "lucide-react";
 
 export interface Column<T> {
-  key: string;
+  key: (keyof T & string) | 'actions';
   label: string;
   render?: (value: unknown, row: T) => ReactNode;
   width?: string;
@@ -24,7 +24,7 @@ interface DataTableProps<T> {
   onPageChange: (page: number) => void;
 }
 
-export function DataTable<T extends Record<string, any>>({
+export function DataTable<T extends { id: string }>({
   columns,
   data,
   loading,
@@ -68,15 +68,18 @@ export function DataTable<T extends Record<string, any>>({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {data.map((row, idx) => (
-            <TableRow key={(row.id as string) || idx}>
-              {columns.map((col) => (
-                <TableCell key={col.key}>
-                  {col.render
-                    ? col.render(row[col.key], row)
-                    : (row[col.key] as ReactNode) ?? "-"}
-                </TableCell>
-              ))}
+          {data.map((row) => (
+            <TableRow key={row.id}>
+              {columns.map((col) => {
+                const value = col.key === 'actions' ? undefined : row[col.key];
+                return (
+                  <TableCell key={col.key}>
+                    {col.render
+                      ? col.render(value, row)
+                      : (value as ReactNode) ?? "-"}
+                  </TableCell>
+                );
+              })}
             </TableRow>
           ))}
         </TableBody>
