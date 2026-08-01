@@ -44,8 +44,11 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     const token = req.headers.authorization?.replace('Bearer ', '');
-    if (token) await this.authService.logout(token);
-    res.clearCookie('refreshToken', { path: '/api/auth' });
+    try {
+      if (token) await this.authService.logout(token);
+    } finally {
+      res.clearCookie('refreshToken', { path: '/api/auth' });
+    }
     return { success: true, data: null };
   }
 
