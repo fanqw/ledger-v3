@@ -22,6 +22,7 @@
       "esbuild"
     ],
     "overrides": {
+      "@angular-devkit/core>picomatch": "4.0.5",
       "multer": "^2.2.0"
     }
   }
