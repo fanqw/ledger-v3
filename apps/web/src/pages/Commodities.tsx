@@ -64,7 +64,10 @@ export default function CommoditiesPage() {
       ]);
       setCategories(catItems);
       setUnits(unitItems);
-    } catch {}
+    } catch (error) {
+      console.error('Failed to load commodity references', error);
+      toast.error('分类和单位加载失败');
+    }
   };
 
   const openCreate = () => { setEditing(null); setForm({ name: "", description: "", categoryId: "", unitId: "" }); loadRefs(); setDialogOpen(true); };
