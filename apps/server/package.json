@@ -6,7 +6,7 @@
     "dev": "nest start --watch",
     "build": "nest build",
     "start": "node dist/main",
-    "lint": "ESLINT_USE_FLAT_CONFIG=true eslint src/",
+    "lint": "cross-env ESLINT_USE_FLAT_CONFIG=true eslint src/",
     "test": "jest --passWithNoTests",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
