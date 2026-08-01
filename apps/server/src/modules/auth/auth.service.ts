@@ -55,11 +55,17 @@ export class AuthService {
     // Revoke old refresh tokens for this user (rotation)
     try {
       const oldKeys = await this.redis.keysOrThrow(`refresh:${user.id}:*`);
+      const rotationErrors: unknown[] = [];
       for (const key of oldKeys) {
         if (key !== `refresh:${user.id}:${jti}`) {
-          await this.redis.delOrThrow(key);
+          try {
+            await this.redis.delOrThrow(key);
+          } catch (error) {
+            rotationErrors.push(error);
+          }
         }
       }
+      if (rotationErrors.length > 0) throw rotationErrors[0];
     } catch (error) {
       this.logger.warn('Failed to revoke old refresh tokens during login rotation', error);
     }
