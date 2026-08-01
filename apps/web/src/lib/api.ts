@@ -57,10 +57,12 @@ function authFetch(url: string, options: RequestInit = {}): Promise<Response> {
   if (!request) {
     request = performAuthFetch(url, options);
     inFlightGetRequests.set(requestKey, request);
-    request.then(
-      () => inFlightGetRequests.delete(requestKey),
-      () => inFlightGetRequests.delete(requestKey),
-    );
+    const clearRequest = () => {
+      if (inFlightGetRequests.get(requestKey) === request) {
+        inFlightGetRequests.delete(requestKey);
+      }
+    };
+    request.then(clearRequest, clearRequest);
   }
 
   return request.then((response) => response.clone());
