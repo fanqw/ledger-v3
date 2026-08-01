@@ -56,7 +56,9 @@ export function CreatableSelect({ value, onChange, fetchItems, createItem, place
         const results = await fetchItems(inputValue.trim());
         const match = results.find((r) => r.name === inputValue.trim());
         if (match) onChange(match.id);
-      } catch {}
+      } catch (error) {
+        console.error('Failed to recover an existing select item', error);
+      }
       setOpen(false);
     }
   };
