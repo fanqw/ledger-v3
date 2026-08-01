@@ -43,7 +43,13 @@ async function performAuthFetch(url: string, options: RequestInit): Promise<Resp
 
 function authFetch(url: string, options: RequestInit = {}): Promise<Response> {
   if (Object.keys(options).length > 0) {
-    return performAuthFetch(url, options);
+    return performAuthFetch(url, options).then((response) => {
+      const method = options.method?.toUpperCase() || 'GET';
+      if (method !== 'GET' && method !== 'HEAD') {
+        inFlightGetRequests.clear();
+      }
+      return response;
+    });
   }
 
   const requestKey = `${globalAuth?.accessToken || ''}:${url}`;
