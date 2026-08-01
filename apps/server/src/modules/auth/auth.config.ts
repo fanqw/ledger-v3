@@ -8,6 +8,8 @@ const INSECURE_PLACEHOLDER_SECRETS = new Set([
   'dev-refresh-secret-change-in-production',
   'change-me-in-production',
   'change-me-refresh-in-production',
+  'dev-secret',
+  'dev-refresh-secret',
 ]);
 
 export function getJwtSecrets(): JwtSecrets {
