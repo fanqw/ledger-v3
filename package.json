@@ -22,6 +22,7 @@
       "esbuild"
     ],
     "overrides": {
+      "@angular-devkit/core>picomatch": "4.0.5",
       "@nestjs/swagger>lodash": "4.18.1",
       "@nestjs/swagger>js-yaml": "4.3.0",
       "external-editor>tmp": "0.2.6",
