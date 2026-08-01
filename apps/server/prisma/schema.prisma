@@ -55,6 +55,8 @@ model Commodity {
   orderItems  OrderItem[]
 
   @@index([name, unitId])
+  @@index([categoryId])
+  @@index([unitId])
 }
 
 model PurchasePlace {
@@ -98,4 +100,7 @@ model OrderItem {
   deletedAt   DateTime?
   order       Order     @relation(fields: [orderId], references: [id])
   commodity   Commodity @relation(fields: [commodityId], references: [id])
+
+  @@index([orderId])
+  @@index([commodityId])
 }

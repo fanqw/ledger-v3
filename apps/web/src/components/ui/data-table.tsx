@@ -1,7 +1,7 @@
 import { ReactNode } from "react";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "./table";
 import { Button } from "./button";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Inbox } from "lucide-react";
 
 export interface Column<T> {
   key: string;
@@ -43,8 +43,14 @@ export function DataTable<T extends Record<string, any>>({
 
   if (data.length === 0) {
     return (
-      <div className="flex items-center justify-center py-12 text-[13px] text-[#94A3B8]">
-        暂无数据
+      <div className="flex flex-col items-center justify-center py-16 text-center">
+        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#F1F5F9] dark:bg-[#1E293B]">
+          <Inbox aria-hidden="true" className="h-8 w-8 text-[#94A3B8]" />
+        </div>
+        <p className="mt-4 text-[14px] font-medium text-[#475569] dark:text-[#CBD5E1]">
+          暂无数据
+        </p>
+        <p className="mt-1 text-[13px] text-[#94A3B8]">没有找到相关数据</p>
       </div>
     );
   }

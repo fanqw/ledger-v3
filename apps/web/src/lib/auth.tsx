@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from 'react';
 
 interface User {
   id: string;
@@ -128,8 +128,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return null;
   }, []);
 
+  const authValue = useMemo(
+    () => ({ user, accessToken, loading, login, logout, refresh }),
+    [user, accessToken, loading, login, logout, refresh],
+  );
+
   return (
-    <AuthContext.Provider value={{ user, accessToken, loading, login, logout, refresh }}>
+    <AuthContext.Provider value={authValue}>
       {children}
     </AuthContext.Provider>
   );

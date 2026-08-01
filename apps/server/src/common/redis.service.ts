@@ -15,15 +15,16 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
       host: process.env.REDIS_HOST || 'redis',
       port: Number(process.env.REDIS_PORT) || 6379,
       lazyConnect: true,
-      retryStrategy: (times) => {
-        if (times > 3) return null;
-        return Math.min(times * 200, 2000);
-      },
+      maxRetriesPerRequest: 1,
+      retryStrategy: (times) => Math.min(times * 200, 2000),
     });
-    try {
-      await this._client.connect();
+    const connected = await Promise.race([
+      this._client.connect().then(() => true).catch(() => false),
+      new Promise<boolean>((resolve) => setTimeout(() => resolve(false), 2000)),
+    ]);
+    if (connected) {
       this.logger.log('Redis connected');
-    } catch {
+    } else {
       this.logger.warn('Redis unavailable — operating in degraded mode');
     }
   }
@@ -45,15 +46,32 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
+  async setOrThrow(key: string, value: string, ttlSeconds?: number): Promise<void> {
+    if (ttlSeconds) await this._client.set(key, value, 'EX', ttlSeconds);
+    else await this._client.set(key, value);
+  }
+
   async get(key: string): Promise<string | null> {
     try { return await this._client.get(key); } catch { return null; }
+  }
+
+  async getOrThrow(key: string): Promise<string | null> {
+    return this._client.get(key);
   }
 
   async del(key: string): Promise<void> {
     try { await this._client.del(key); } catch {}
   }
 
+  async delOrThrow(key: string): Promise<void> {
+    await this._client.del(key);
+  }
+
   async keys(pattern: string): Promise<string[]> {
     try { return await this._client.keys(pattern); } catch { return []; }
+  }
+
+  async keysOrThrow(pattern: string): Promise<string[]> {
+    return this._client.keys(pattern);
   }
 }

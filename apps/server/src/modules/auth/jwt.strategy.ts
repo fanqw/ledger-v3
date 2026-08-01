@@ -26,8 +26,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       }
     } catch (err) {
       if (err instanceof UnauthorizedException) throw err;
-      // Redis unavailable — fail-open per design (allow validated JWT through)
-      this.logger.warn('Redis unavailable during token validation — fail-open');
+      this.logger.warn('Redis unavailable during token validation — fail-closed');
+      throw new UnauthorizedException({
+        success: false,
+        error: { code: ERROR_CODES.TOKEN_REVOKED, message: ERROR_MESSAGES[ERROR_CODES.TOKEN_REVOKED] },
+      });
     }
     return { id: payload.sub, username: payload.username, role: payload.role };
   }

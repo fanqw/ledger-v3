@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, Logger } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
@@ -8,8 +8,6 @@ import { ERROR_CODES, ERROR_MESSAGES } from '@ledger-v3/shared/constants';
 
 @Injectable()
 export class AuthService {
-  private readonly logger = new Logger(AuthService.name);
-
   constructor(
     private readonly prisma: PrismaService,
     private readonly redis: RedisService,
@@ -70,25 +68,43 @@ export class AuthService {
   }
 
   async logout(accessToken: string) {
+    let payload: { sub?: string; jti?: string; exp?: number } | undefined;
     try {
-      const payload = this.jwtService.verify(accessToken, {
+      payload = this.jwtService.verify(accessToken, {
         secret: process.env.JWT_SECRET || 'dev-secret',
         ignoreExpiration: true,
       });
-      const expiresIn = payload.exp ? payload.exp - Math.floor(Date.now() / 1000) : 900;
-      if (expiresIn > 0) {
-        await this.redis.set(`blacklist:${payload.jti}`, '1', expiresIn);
+    } catch {
+      return;
+    }
+
+    const revocationErrors: unknown[] = [];
+    const expiresIn = payload.exp ? payload.exp - Math.floor(Date.now() / 1000) : 900;
+    if (expiresIn > 0) {
+      try {
+        await this.redis.setOrThrow(`blacklist:${payload.jti}`, '1', expiresIn);
+      } catch (error) {
+        revocationErrors.push(error);
       }
-      // Clear all refresh tokens for this user
-      if (payload.sub) {
-        try {
-          const keys = await this.redis.keys(`refresh:${payload.sub}:*`);
-          for (const key of keys) {
-            await this.redis.del(key);
+    }
+
+    // Clear all refresh tokens for this user; Redis failures must not be silent here.
+    if (payload.sub) {
+      try {
+        const keys = await this.redis.keysOrThrow(`refresh:${payload.sub}:*`);
+        for (const key of keys) {
+          try {
+            await this.redis.delOrThrow(key);
+          } catch (error) {
+            revocationErrors.push(error);
           }
-        } catch {}
+        }
+      } catch (error) {
+        revocationErrors.push(error);
       }
-    } catch {}
+    }
+
+    if (revocationErrors.length > 0) throw revocationErrors[0];
   }
 
   async refresh(refreshToken: string) {
@@ -98,7 +114,7 @@ export class AuthService {
       });
 
       const key = `refresh:${payload.sub}:${payload.jti}`;
-      const exists = await this.redis.get(key);
+      const exists = await this.redis.getOrThrow(key);
       if (!exists) {
         throw new UnauthorizedException({
           success: false,
@@ -107,13 +123,17 @@ export class AuthService {
       }
 
       // Atomic rotation: delete old token + revoke all others
-      await this.redis.del(key);
-      try {
-        const oldKeys = await this.redis.keys(`refresh:${payload.sub}:*`);
-        for (const k of oldKeys) {
-          await this.redis.del(k);
+      await this.redis.delOrThrow(key);
+      const oldKeys = await this.redis.keysOrThrow(`refresh:${payload.sub}:*`);
+      const rotationErrors: unknown[] = [];
+      for (const k of oldKeys) {
+        try {
+          await this.redis.delOrThrow(k);
+        } catch (error) {
+          rotationErrors.push(error);
         }
-      } catch {}
+      }
+      if (rotationErrors.length > 0) throw rotationErrors[0];
 
       const user = await this.prisma.user.findUnique({ where: { id: payload.sub } });
       if (!user || user.deletedAt) {
@@ -170,12 +190,7 @@ export class AuthService {
   }
 
   async isBlacklisted(jti: string): Promise<boolean> {
-    try {
-      const result = await this.redis.get(`blacklist:${jti}`);
-      return !!result;
-    } catch {
-      this.logger.warn('Redis unavailable during blacklist check — fail-open (allow)');
-      return false;
-    }
+    const result = await this.redis.getOrThrow(`blacklist:${jti}`);
+    return !!result;
   }
 }
