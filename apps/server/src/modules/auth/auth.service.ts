@@ -78,18 +78,29 @@ export class AuthService {
       return;
     }
 
+    const revocationErrors: unknown[] = [];
     const expiresIn = payload.exp ? payload.exp - Math.floor(Date.now() / 1000) : 900;
     if (expiresIn > 0) {
-      await this.redis.setOrThrow(`blacklist:${payload.jti}`, '1', expiresIn);
+      try {
+        await this.redis.setOrThrow(`blacklist:${payload.jti}`, '1', expiresIn);
+      } catch (error) {
+        revocationErrors.push(error);
+      }
     }
 
     // Clear all refresh tokens for this user; Redis failures must not be silent here.
     if (payload.sub) {
-      const keys = await this.redis.keysOrThrow(`refresh:${payload.sub}:*`);
-      for (const key of keys) {
-        await this.redis.delOrThrow(key);
+      try {
+        const keys = await this.redis.keysOrThrow(`refresh:${payload.sub}:*`);
+        for (const key of keys) {
+          await this.redis.delOrThrow(key);
+        }
+      } catch (error) {
+        revocationErrors.push(error);
       }
     }
+
+    if (revocationErrors.length > 0) throw revocationErrors[0];
   }
 
   async refresh(refreshToken: string) {
