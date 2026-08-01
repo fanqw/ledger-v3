@@ -58,6 +58,16 @@ export class AuthController {
   }
 
   @Public()
+  @Get('refresh-status')
+  @HttpCode(200)
+  refreshStatus(@Req() req: Request) {
+    return {
+      success: true,
+      data: { hasRefreshToken: Boolean(req.cookies?.refreshToken) },
+    };
+  }
+
+  @Public()
   @Post('refresh')
   @HttpCode(200)
   async refresh(
