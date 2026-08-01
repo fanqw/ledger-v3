@@ -22,6 +22,7 @@
       "esbuild"
     ],
     "overrides": {
+      "external-editor>tmp": "0.2.6",
       "multer": "^2.2.0"
     }
   }
