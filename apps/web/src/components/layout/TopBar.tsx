@@ -1,4 +1,4 @@
-import { useLocation, Link } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { Sun, Moon, LogOut } from 'lucide-react';
 import { useAuth } from '../../lib/auth';
 import { useTheme } from '../../lib/theme';
