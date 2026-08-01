@@ -32,6 +32,13 @@ export class AuthController {
       maxAge: result.refreshTokenMaxAge,
       secure: process.env.NODE_ENV === 'production',
     });
+    res.cookie('refreshTokenPresent', '1', {
+      httpOnly: false,
+      sameSite: 'strict',
+      path: '/',
+      maxAge: result.refreshTokenMaxAge,
+      secure: process.env.NODE_ENV === 'production',
+    });
 
     return { success: true, data: { accessToken: result.accessToken } };
   }
@@ -46,7 +53,18 @@ export class AuthController {
     const token = req.headers.authorization?.replace('Bearer ', '');
     if (token) await this.authService.logout(token);
     res.clearCookie('refreshToken', { path: '/api/auth' });
+    res.clearCookie('refreshTokenPresent', { path: '/' });
     return { success: true, data: null };
+  }
+
+  @Public()
+  @Get('refresh-status')
+  @HttpCode(200)
+  refreshStatus(@Req() req: Request) {
+    return {
+      success: true,
+      data: { hasRefreshToken: Boolean(req.cookies?.refreshToken) },
+    };
   }
 
   @Public()
@@ -73,13 +91,20 @@ export class AuthController {
       maxAge: result.refreshTokenMaxAge,
       secure: process.env.NODE_ENV === 'production',
     });
+    res.cookie('refreshTokenPresent', '1', {
+      httpOnly: false,
+      sameSite: 'strict',
+      path: '/',
+      maxAge: result.refreshTokenMaxAge,
+      secure: process.env.NODE_ENV === 'production',
+    });
 
     return { success: true, data: { accessToken: result.accessToken } };
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('session')
-  async session(@Req() req: any) {
+  async session(@Req() req: Request & { user: { id: string } }) {
     return this.authService.session(req.user.id);
   }
 }
