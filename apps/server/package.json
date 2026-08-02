@@ -81,8 +81,8 @@
     "coverageDirectory": "../coverage",
     "testEnvironment": "node",
     "moduleNameMapper": {
-      "^@ledger-v3/shared$": "<rootDir>/../../packages/shared/dist",
-      "^@ledger-v3/shared/(.*)$": "<rootDir>/../../packages/shared/dist/$1"
+      "^@ledger-v3/shared$": "<rootDir>/../../packages/shared/src",
+      "^@ledger-v3/shared/(.*)$": "<rootDir>/../../packages/shared/src/$1"
     }
   }
 }
