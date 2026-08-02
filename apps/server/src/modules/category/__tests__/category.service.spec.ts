@@ -78,6 +78,30 @@ describe('CategoryService', () => {
     });
   });
 
+  describe('findById and update', () => {
+    it('should return an existing category', async () => {
+      mockPrisma.category.findFirst.mockResolvedValue({ id: '1', name: '蔬菜' });
+      await expect(service.findById('1')).resolves.toEqual({ id: '1', name: '蔬菜' });
+    });
+
+    it('should throw when a category is not found', async () => {
+      mockPrisma.category.findFirst.mockResolvedValue(null);
+      await expect(service.findById('missing')).rejects.toThrow(NotFoundException);
+    });
+
+    it('should trim and update category fields', async () => {
+      mockPrisma.category.findFirst.mockResolvedValueOnce({ id: '1', name: '旧名称' }).mockResolvedValueOnce(null);
+      mockPrisma.category.update.mockResolvedValue({ id: '1' });
+      await service.update('1', { name: ' 新名称 ', description: ' ' });
+      expect(mockPrisma.category.update).toHaveBeenCalledWith({ where: { id: '1' }, data: { name: '新名称', description: null } });
+    });
+
+    it('should reject a duplicate name on update', async () => {
+      mockPrisma.category.findFirst.mockResolvedValueOnce({ id: '1', name: '旧名称' }).mockResolvedValueOnce({ id: '2', name: '新名称' });
+      await expect(service.update('1', { name: '新名称' })).rejects.toThrow(ConflictException);
+    });
+  });
+
   describe('delete', () => {
     it('should delete when no linked commodities', async () => {
       mockPrisma.category.findFirst.mockResolvedValue({ id: '1', name: '蔬菜', deletedAt: null });
