@@ -22,6 +22,7 @@ describe('UnitController', () => {
   it('returns one unit', async () => {
     service.findById.mockResolvedValue({ id: 'unit-1' });
     await expect(controller.findOne('unit-1')).resolves.toEqual({ success: true, data: { id: 'unit-1' } });
+    expect(service.findById).toHaveBeenCalledWith('unit-1');
   });
 
   it('creates a unit', async () => {
