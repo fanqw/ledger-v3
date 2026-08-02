@@ -182,7 +182,16 @@ apps/server/src/modules/category/
 - 最近提交稳定采用 Conventional Commits 风格：`feat: ...`、`fix: ...`、`test: ...`、`chore: ...`，也出现 `fix(server): ...`、`fix(web): ...` 的 scope。
 - **铁律**：使用 `<type>(可选 scope): <简洁说明>`；新功能优先 `feat:`，修复 `fix:`，测试 `test:`，维护 `chore:`。一个提交聚焦一个逻辑变更，不把无关格式化或生成物混入提交。
 
-### 4.10 近期开发模式
+### 4.10 Git 分支与 Pull Request 铁律
+
+- `main` 是受保护分支。**任何人类或 AI Agent（包括 Claude Code、Codex 及自动修复 Agent）都禁止直接向 `main` push，也禁止在 `main` 上提交开发变更。**
+- 开始任何开发、修复或文档工作前，先获取最新的 `origin/main`，再从 `origin/main` 创建独立的非 `main` 分支。Claude Code 新功能分支使用 `feature/<功能名>`；Codex 默认使用 `codex/` 前缀；自动修复 Agent 继续使用 `feature/fix-{issue-number}`。
+- 只允许 push 当前工作分支。所有进入 `main` 的变更都必须通过以 `main` 为目标分支的 Pull Request，并等待仓库要求的 Review 与 CI 检查通过后再合并。
+- 禁止 force push `main`、管理员绕过、临时关闭分支保护或以任何方式规避 PR 流程。除非用户明确授权，不得自行合并 PR。
+- 如果当前位于 `main`，必须先创建并切换到工作分支再产生提交；如果已有未提交改动，先保留改动并安全切换，不得丢弃用户修改。
+- 交付时必须明确报告当前分支、提交状态、是否已 push、PR 地址或尚待创建 PR 的下一步。**本地提交不等于已经合入 `main`。**
+
+### 4.11 近期开发模式
 
 - 最近 20 条非合并提交的重点是 Refresh Token 轮换、Redis 失败传播、认证错误契约、依赖漏洞修复、Node/ESLint 工具链、移除 `any`、暴露被吞掉的异常和补充模块/健康检查测试。
 - 这说明审查偏好是：安全与错误不可静默降级、类型边界清晰、依赖风险及时修复、修复必须配测试。P4 不得回退这些策略。
@@ -225,7 +234,7 @@ apps/server/src/modules/category/
 ## 6. 当前任务起手式
 
 - **P4 任务描述**：订单管理——实现 Order + OrderItem 后端模块与前端订单列表/详情页，支持分页搜索、订单及明细 CRUD、主数据即输即建、`quantity × unitPrice` 与 `lineTotal` 联动、分类小计/订单总计、Excel 导出。权威行为规格见 `openspec/specs/sales-orders/spec.md`；开始实现前应创建对应 OpenSpec change 并确认 tasks。
-- **分支**：基于最新 `main` 创建 `feature/p4-order-management`（通用模板：`feature/p4-{功能简称}`）。
+- **分支**：先获取最新 `origin/main`，再基于 `origin/main` 创建 `feature/p4-order-management`（通用模板：`feature/p4-{功能简称}`）；禁止直接在 `main` 上提交或 push。
 - **安装依赖**：`pnpm install`。
 - **启动开发**：`pnpm --filter server dev`（交接约定写作 server 在 3000），`pnpm --filter web dev`（web 在 5173）。**实际代码 `apps/server/src/main.ts` 当前调用 `app.listen(3001)`，因此联调前必须确认应使用 3001 还是调整运行配置；不要未经用户批准修改端口。**
 - **运行测试**：`pnpm --filter server test`。
@@ -239,6 +248,7 @@ apps/server/src/modules/category/
 - Bug 报告走 Codex Bug Intake Agent；不要绕过 Intake 私自承接零散 Bug 修复。
 - 代码审查和修复由 Codex 自动修复 Agent 处理；不要主动修改 Codex Agent 配置、标签、自动化或其临时目录。
 - 每天 Codex 会运行巡检，你的代码质量会直接影响是否需要后续修复。
+- 所有 Claude Code 与 Codex 产出的变更都必须通过非 `main` 工作分支提交，并以 Pull Request 作为进入 `main` 的唯一入口；不得直接 push `main` 或绕过分支保护。
 - 不得通过降低守卫、校验、错误传播、测试、ESLint、TypeScript strict 或依赖安全策略来让功能“先跑起来”。
 - 提交前检查 `git diff`，只包含当前 P4 change 范围；不要提交 `.env`、凭据、构建产物、coverage 或 Agent 临时文件。
 
