@@ -10,7 +10,7 @@ interface SeedUser {
   role?: string;
 }
 
-async function seed() {
+export async function seed() {
   const prisma = new PrismaClient();
 
   const yamlPath = path.resolve(__dirname, 'seed-users.yaml');
@@ -41,32 +41,41 @@ async function seed() {
   console.log('Seed complete');
 }
 
+export async function createUser(username: string, password: string, role = 'admin') {
+  const prisma = new PrismaClient();
+  const hash = await bcrypt.hash(password, 10);
+  await prisma.user.upsert({
+    where: { username },
+    update: { passwordHash: hash },
+    create: { username, passwordHash: hash, role },
+  });
+  console.log(`User created/updated: ${username}`);
+  await prisma.$disconnect();
+}
+
+export async function run(argv = process.argv) {
+  if (!argv.includes('--username')) {
+    await seed();
+    return;
+  }
+
+  const usernameIdx = argv.indexOf('--username');
+  const passwordIdx = argv.indexOf('--password');
+  const roleIdx = argv.indexOf('--role');
+
+  if (usernameIdx === -1 || passwordIdx === -1) {
+    console.error('Usage: ts-node seed.ts --username xxx --password xxx [--role admin]');
+    process.exit(1);
+  }
+
+  const username = argv[usernameIdx + 1];
+  const password = argv[passwordIdx + 1];
+  const role = roleIdx !== -1 ? argv[roleIdx + 1] : 'admin';
+
+  await createUser(username, password, role);
+}
+
 // CLI mode: db:create-user --username xxx --password xxx --role admin
-if (process.argv.includes('--username')) {
-  (async () => {
-    const usernameIdx = process.argv.indexOf('--username');
-    const passwordIdx = process.argv.indexOf('--password');
-    const roleIdx = process.argv.indexOf('--role');
-
-    if (usernameIdx === -1 || passwordIdx === -1) {
-      console.error('Usage: ts-node seed.ts --username xxx --password xxx [--role admin]');
-      process.exit(1);
-    }
-
-    const prisma = new PrismaClient();
-    const username = process.argv[usernameIdx + 1];
-    const password = process.argv[passwordIdx + 1];
-    const role = roleIdx !== -1 ? process.argv[roleIdx + 1] : 'admin';
-
-    const hash = await bcrypt.hash(password, 10);
-    await prisma.user.upsert({
-      where: { username },
-      update: { passwordHash: hash },
-      create: { username, passwordHash: hash, role },
-    });
-    console.log(`User created/updated: ${username}`);
-    await prisma.$disconnect();
-  })();
-} else {
-  seed();
+if (require.main === module) {
+  void run();
 }
