@@ -1,4 +1,4 @@
-import { Injectable, ConflictException, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
+import { Injectable, ConflictException, NotFoundException, UnprocessableEntityException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma.service';
 import { ERROR_CODES, ERROR_MESSAGES } from '@ledger-v3/shared/constants';
 import { Prisma } from '@prisma/client';
@@ -90,7 +90,7 @@ export class OrderService {
     return { ...record, items };
   }
 
-  async create(data: { name: string; purchasePlaceId?: string; description?: string }) {
+  async create(data: { name: string; purchasePlaceId?: string | null; description?: string }) {
     const name = data.name.trim();
 
     if (data.purchasePlaceId) {
@@ -98,7 +98,7 @@ export class OrderService {
         where: { id: data.purchasePlaceId, deletedAt: null },
       });
       if (!pp)
-        throw new BadRequestException({
+        throw new UnprocessableEntityException({
           success: false,
           error: { code: ERROR_CODES.VALIDATION_ERROR, message: ERROR_MESSAGES[ERROR_CODES.VALIDATION_ERROR] },
         });
@@ -146,7 +146,7 @@ export class OrderService {
           where: { id: data.purchasePlaceId, deletedAt: null },
         });
         if (!pp)
-          throw new BadRequestException({
+          throw new UnprocessableEntityException({
             success: false,
             error: { code: ERROR_CODES.VALIDATION_ERROR, message: ERROR_MESSAGES[ERROR_CODES.VALIDATION_ERROR] },
           });
@@ -210,7 +210,7 @@ export class OrderService {
           error: { code: ERROR_CODES.NOT_FOUND, message: ERROR_MESSAGES[ERROR_CODES.NOT_FOUND] },
         });
 
-      return this.prisma.orderItem.create({
+      const item = await this.prisma.orderItem.create({
         data: {
           orderId,
           commodityId: data.commodityId,
@@ -221,19 +221,20 @@ export class OrderService {
         },
         include: { commodity: { include: { category: true, unit: true } } },
       });
+      return this.serializeOrderItem(item);
     }
 
     // Path B: quick-create (sequential — master data NOT rolled back on OrderItem failure)
     // 业务约束：即输即建商品时必须同时提供分类和单位（与商品基础资料页一致），
     // 否则 Prisma 必填关系缺失会导致 500，这里显式转为 422 校验错误。
     if (!data.categoryId && !data.categoryName) {
-      throw new BadRequestException({
+      throw new UnprocessableEntityException({
         success: false,
         error: { code: ERROR_CODES.VALIDATION_ERROR, message: '即输即建商品时必须选择分类' },
       });
     }
     if (!data.unitId && !data.unitName) {
-      throw new BadRequestException({
+      throw new UnprocessableEntityException({
         success: false,
         error: { code: ERROR_CODES.VALIDATION_ERROR, message: '即输即建商品时必须选择单位' },
       });
@@ -244,7 +245,7 @@ export class OrderService {
       // 直传 id：校验存在性/软删除（与名称路径一致），避免 FK 500 或挂到已删除记录
       const cat = await this.prisma.category.findFirst({ where: { id: categoryId, deletedAt: null } });
       if (!cat)
-        throw new BadRequestException({
+        throw new UnprocessableEntityException({
           success: false,
           error: { code: ERROR_CODES.VALIDATION_ERROR, message: ERROR_MESSAGES[ERROR_CODES.VALIDATION_ERROR] },
         });
@@ -261,7 +262,7 @@ export class OrderService {
     if (unitId) {
       const unit = await this.prisma.unit.findFirst({ where: { id: unitId, deletedAt: null } });
       if (!unit)
-        throw new BadRequestException({
+        throw new UnprocessableEntityException({
           success: false,
           error: { code: ERROR_CODES.VALIDATION_ERROR, message: ERROR_MESSAGES[ERROR_CODES.VALIDATION_ERROR] },
         });
@@ -284,7 +285,7 @@ export class OrderService {
       });
     }
 
-    return this.prisma.orderItem.create({
+    const item = await this.prisma.orderItem.create({
       data: {
         orderId,
         commodityId: commodity.id,
@@ -295,6 +296,7 @@ export class OrderService {
       },
       include: { commodity: { include: { category: true, unit: true } } },
     });
+    return this.serializeOrderItem(item);
   }
 
   async updateItem(
@@ -332,11 +334,12 @@ export class OrderService {
       updateData.lineTotal = this.roundToDecimal(qty * price, 2);
     }
 
-    return this.prisma.orderItem.update({
+    const updated = await this.prisma.orderItem.update({
       where: { id: itemId },
       data: updateData,
       include: { commodity: { include: { category: true, unit: true } } },
     });
+    return this.serializeOrderItem(updated);
   }
 
   async deleteItem(orderId: string, itemId: string) {
@@ -367,5 +370,15 @@ export class OrderService {
   private roundToDecimal(value: number, places: number): number {
     const factor = Math.pow(10, places);
     return Math.round(value * factor) / factor;
+  }
+
+  // m1: 统一 Decimal → number 序列化，保证 create/update 与 findById 返回结构一致
+  private serializeOrderItem(item: any) {
+    return {
+      ...item,
+      quantity: Number(item.quantity),
+      unitPrice: Number(item.unitPrice),
+      lineTotal: Number(item.lineTotal),
+    };
   }
 }

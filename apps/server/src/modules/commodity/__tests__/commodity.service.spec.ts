@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
+import { UnprocessableEntityException, ConflictException, NotFoundException } from '@nestjs/common';
 import { CommodityService } from '../commodity.service';
 
 describe('CommodityService', () => {
@@ -31,7 +31,7 @@ describe('CommodityService', () => {
   it('rejects create when a foreign key is missing', async () => {
     prisma.category.findFirst.mockResolvedValue(null);
     prisma.unit.findFirst.mockResolvedValue({ id: 'unit-1' });
-    await expect(service.create({ name: 'Rice', categoryId: 'missing', unitId: 'unit-1' })).rejects.toThrow(BadRequestException);
+    await expect(service.create({ name: 'Rice', categoryId: 'missing', unitId: 'unit-1' })).rejects.toThrow(UnprocessableEntityException);
   });
 
   it('creates a unique commodity with valid relations', async () => {

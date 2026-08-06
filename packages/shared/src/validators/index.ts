@@ -70,14 +70,25 @@ export const orderItemCreateSchema = z
       return hasCommodityId || hasCommodityName;
     },
     { message: '必须提供 commodityId 或 commodityName（即输即建）', path: ['commodityId'] },
+  )
+  // m3: 引用已有商品与即输即建互斥，避免静默忽略一方
+  .refine(
+    (data) => !(data.commodityId && data.commodityName),
+    { message: 'commodityId 与 commodityName 不能同时提供', path: ['commodityId'] },
   );
 
-export const orderItemUpdateSchema = z.object({
-  quantity: z.number().positive('数量必须大于0').optional(),
-  unitPrice: z.number().nonnegative('单价不能为负').optional(),
-  lineTotal: z.number().nonnegative('金额不能为负').optional(),
-  description: z.string().trim().max(500, '描述长度不能超过500').optional(),
-});
+export const orderItemUpdateSchema = z
+  .object({
+    quantity: z.number().positive('数量必须大于0').optional(),
+    unitPrice: z.number().nonnegative('单价不能为负').optional(),
+    lineTotal: z.number().nonnegative('金额不能为负').optional(),
+    description: z.string().trim().max(500, '描述长度不能超过500').optional(),
+  })
+  // m2: 至少提供一个字段，避免空 body 触发无意义更新
+  .refine(
+    (data) => Object.keys(data).length > 0,
+    { message: '至少提供一个要更新的字段', path: ['quantity'] },
+  );
 
 // 向后兼容别名
 export const orderSchema = z.object({
