@@ -1,4 +1,4 @@
-import { Injectable, ConflictException, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, ConflictException, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma.service';
 import { ERROR_CODES, ERROR_MESSAGES } from '@ledger-v3/shared/constants';
 import { Prisma } from '@prisma/client';
@@ -46,7 +46,7 @@ export class CommodityService {
       this.prisma.category.findFirst({ where: { id: data.categoryId, deletedAt: null } }),
       this.prisma.unit.findFirst({ where: { id: data.unitId, deletedAt: null } }),
     ]);
-    if (!category || !unit) throw new BadRequestException({ success: false, error: { code: ERROR_CODES.VALIDATION_ERROR, message: ERROR_MESSAGES[ERROR_CODES.VALIDATION_ERROR] } });
+    if (!category || !unit) throw new UnprocessableEntityException({ success: false, error: { code: ERROR_CODES.VALIDATION_ERROR, message: ERROR_MESSAGES[ERROR_CODES.VALIDATION_ERROR] } });
 
     // Check uniqueness
     const existing = await this.prisma.commodity.findFirst({ where: { name, unitId: data.unitId, deletedAt: null } });

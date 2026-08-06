@@ -1,5 +1,6 @@
-import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
+import { UnprocessableEntityException, ConflictException, NotFoundException } from '@nestjs/common';
 import { OrderService } from '../order.service';
+import { orderItemUpdateSchema, orderItemCreateSchema } from '@ledger-v3/shared/validators';
 
 describe('OrderService', () => {
   const prisma = {
@@ -82,12 +83,12 @@ describe('OrderService', () => {
     ).rejects.toThrow(ConflictException);
   });
 
-  it('创建时进货地不存在抛出 BadRequestException', async () => {
+  it('创建时进货地不存在抛出 UnprocessableEntityException', async () => {
     prisma.order.findFirst.mockResolvedValueOnce(null);
     prisma.purchasePlace.findFirst.mockResolvedValue(null);
     await expect(
       service.create({ name: 'Ok', purchasePlaceId: 'missing-pp', description: undefined }),
-    ).rejects.toThrow(BadRequestException);
+    ).rejects.toThrow(UnprocessableEntityException);
   });
 
   it('创建成功并 trim 名称', async () => {
@@ -134,13 +135,13 @@ describe('OrderService', () => {
     expect(prisma.purchasePlace.findFirst).not.toHaveBeenCalled();
   });
 
-  it('更新时进货地不存在抛出 BadRequestException', async () => {
+  it('更新时进货地不存在抛出 UnprocessableEntityException', async () => {
     prisma.order.findFirst.mockResolvedValueOnce({ id: 'order-1', items: [] });
     prisma.order.findFirst.mockResolvedValueOnce(null);
     prisma.purchasePlace.findFirst.mockResolvedValue(null);
     await expect(
       service.update('order-1', { name: 'New', purchasePlaceId: 'missing-pp' }),
-    ).rejects.toThrow(BadRequestException);
+    ).rejects.toThrow(UnprocessableEntityException);
   });
 
   it('更新时不传进货地则不修改（undefined）', async () => {
@@ -253,7 +254,7 @@ describe('OrderService', () => {
     expect(prisma.orderItem.create).toHaveBeenCalled();
   });
 
-  it('即输即建直传不存在的分类 id 时抛出 BadRequestException', async () => {
+  it('即输即建直传不存在的分类 id 时抛出 UnprocessableEntityException', async () => {
     prisma.order.findFirst.mockResolvedValue({ id: 'order-1' });
     prisma.category.findFirst.mockResolvedValue(null); // 分类不存在/已软删除
     prisma.unit.findFirst.mockResolvedValue({ id: 'unit-existing' });
@@ -267,12 +268,12 @@ describe('OrderService', () => {
         unitPrice: 5,
         lineTotal: 5,
       }),
-    ).rejects.toThrow(BadRequestException);
+    ).rejects.toThrow(UnprocessableEntityException);
     expect(prisma.commodity.create).not.toHaveBeenCalled();
     expect(prisma.orderItem.create).not.toHaveBeenCalled();
   });
 
-  it('即输即建直传不存在的单位 id 时抛出 BadRequestException', async () => {
+  it('即输即建直传不存在的单位 id 时抛出 UnprocessableEntityException', async () => {
     prisma.order.findFirst.mockResolvedValue({ id: 'order-1' });
     prisma.category.findFirst.mockResolvedValue({ id: 'cat-existing' });
     prisma.unit.findFirst.mockResolvedValue(null); // 单位不存在/已软删除
@@ -286,7 +287,7 @@ describe('OrderService', () => {
         unitPrice: 5,
         lineTotal: 5,
       }),
-    ).rejects.toThrow(BadRequestException);
+    ).rejects.toThrow(UnprocessableEntityException);
     expect(prisma.commodity.create).not.toHaveBeenCalled();
     expect(prisma.orderItem.create).not.toHaveBeenCalled();
   });
@@ -323,7 +324,7 @@ describe('OrderService', () => {
         unitPrice: 5,
         lineTotal: 5,
       }),
-    ).rejects.toThrow(BadRequestException);
+    ).rejects.toThrow(UnprocessableEntityException);
 
     // 不应触发任何创建
     expect(prisma.category.findFirst).not.toHaveBeenCalled();
@@ -343,7 +344,7 @@ describe('OrderService', () => {
         unitPrice: 5,
         lineTotal: 5,
       }),
-    ).rejects.toThrow(BadRequestException);
+    ).rejects.toThrow(UnprocessableEntityException);
   });
 
   it('即输即建缺少分类（有单位）时返回校验错误', async () => {
@@ -357,7 +358,7 @@ describe('OrderService', () => {
         unitPrice: 5,
         lineTotal: 5,
       }),
-    ).rejects.toThrow(BadRequestException);
+    ).rejects.toThrow(UnprocessableEntityException);
   });
 
   it('即输即建 OrderItem 创建失败时保留已创建的基础数据', async () => {
@@ -434,5 +435,106 @@ describe('OrderService', () => {
       where: { id: 'item-1' },
       data: { deletedAt: expect.any(Date) },
     });
+  });
+
+  // ==================== m1: Decimal 序列化 ====================
+
+  it('addItem 返回时 Decimal 字段序列化为 number', async () => {
+    prisma.order.findFirst.mockResolvedValue({ id: 'order-1' });
+    prisma.commodity.findFirst.mockResolvedValue({ id: 'commodity-1', deletedAt: null });
+    // Prisma 返回 Decimal（模拟对象）
+    prisma.orderItem.create.mockResolvedValue({
+      id: 'item-1',
+      quantity: { toNumber: () => 2, valueOf: () => 2 },
+      unitPrice: { toNumber: () => 5.5, valueOf: () => 5.5 },
+      lineTotal: { toNumber: () => 11, valueOf: () => 11 },
+    });
+
+    const result = await service.addItem('order-1', {
+      commodityId: 'commodity-1',
+      quantity: 2,
+      unitPrice: 5.5,
+      lineTotal: 11,
+    });
+    expect(typeof result.quantity).toBe('number');
+    expect(typeof result.unitPrice).toBe('number');
+    expect(typeof result.lineTotal).toBe('number');
+    expect(result.quantity).toBe(2);
+    expect(result.lineTotal).toBe(11);
+  });
+
+  it('addItem 即输即建路径返回时 Decimal 序列化为 number', async () => {
+    prisma.order.findFirst.mockResolvedValue({ id: 'order-1' });
+    prisma.category.findFirst.mockResolvedValue({ id: 'cat-1' });
+    prisma.unit.findFirst.mockResolvedValue({ id: 'unit-1' });
+    prisma.commodity.findFirst.mockResolvedValue(null);
+    prisma.commodity.create.mockResolvedValue({ id: 'commodity-new' });
+    prisma.orderItem.create.mockResolvedValue({
+      id: 'item-2',
+      quantity: { toNumber: () => 3, valueOf: () => 3 },
+      unitPrice: { toNumber: () => 8, valueOf: () => 8 },
+      lineTotal: { toNumber: () => 24, valueOf: () => 24 },
+    });
+
+    const result = await service.addItem('order-1', {
+      commodityName: '新品',
+      categoryId: 'cat-1',
+      unitId: 'unit-1',
+      quantity: 3,
+      unitPrice: 8,
+      lineTotal: 24,
+    });
+    expect(typeof result.quantity).toBe('number');
+    expect(typeof result.lineTotal).toBe('number');
+  });
+
+  it('updateItem 返回时 Decimal 字段序列化为 number', async () => {
+    prisma.order.findFirst.mockResolvedValue({ id: 'order-1' });
+    prisma.orderItem.findFirst.mockResolvedValue({
+      id: 'item-1',
+      quantity: { toNumber: () => 2, valueOf: () => 2 },
+      unitPrice: { toNumber: () => 10, valueOf: () => 10 },
+      lineTotal: { toNumber: () => 20, valueOf: () => 20 },
+    });
+    prisma.orderItem.update.mockResolvedValue({
+      id: 'item-1',
+      quantity: { toNumber: () => 5, valueOf: () => 5 },
+      unitPrice: { toNumber: () => 10, valueOf: () => 10 },
+      lineTotal: { toNumber: () => 50, valueOf: () => 50 },
+    });
+
+    const result = await service.updateItem('order-1', 'item-1', { quantity: 5 });
+    expect(typeof result.quantity).toBe('number');
+    expect(typeof result.lineTotal).toBe('number');
+    expect(result.quantity).toBe(5);
+  });
+
+  // ==================== m2/m3: 共享 schema refine ====================
+
+  it('orderItemUpdateSchema 拒绝空 body', () => {
+    const result = orderItemUpdateSchema.safeParse({});
+    expect(result.success).toBe(false);
+    const ok = orderItemUpdateSchema.safeParse({ quantity: 2 });
+    expect(ok.success).toBe(true);
+  });
+
+  it('orderItemCreateSchema 拒绝 commodityId 与 commodityName 同时提供', () => {
+    const result = orderItemCreateSchema.safeParse({
+      commodityId: 'c1',
+      commodityName: '商品',
+      quantity: 1,
+      unitPrice: 5,
+      lineTotal: 5,
+    });
+    expect(result.success).toBe(false);
+    const ok = orderItemCreateSchema.safeParse({
+      commodityName: '商品',
+      categoryName: '分类',
+      unitName: '单位',
+      quantity: 1,
+      unitPrice: 5,
+      lineTotal: 5,
+    });
+    expect(ok.success).toBe(true);
   });
 });
