@@ -43,7 +43,8 @@ export const purchasePlaceSchema = z.object({
 
 export const orderCreateSchema = z.object({
   name: z.string().trim().min(1, '订单名称不能为空').max(100, '名称长度不能超过100'),
-  purchasePlaceId: idSchema.optional(),
+  // null 表示「清空进货地」（update 时），与「不修改」的 undefined 区分
+  purchasePlaceId: z.union([idSchema, z.null()]).optional(),
   description: z.string().trim().max(500, '描述长度不能超过500').optional(),
 });
 

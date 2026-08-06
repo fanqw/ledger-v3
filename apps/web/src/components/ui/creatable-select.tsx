@@ -30,9 +30,11 @@ export function CreatableSelect({ value, onChange, fetchItems, createItem, place
   const nameMapRef = useRef<Map<string, string>>(new Map());
   // 手动新建项持久存储——不从 items prev 中提取，避免被 search 过滤后丢失
   const manualItemsRef = useRef<Item[]>([]);
-  // 保存最新 value，供 search 完成后同步 selectedName
+  // 保存最新 value，供 search 完成后同步 selectedName（在 effect 中同步，避免 render 期写 ref）
   const valueRef = useRef(value);
-  valueRef.current = value;
+  useEffect(() => {
+    valueRef.current = value;
+  }, [value]);
 
   const syncNameMap = (list: Item[]) => {
     for (const item of list) {

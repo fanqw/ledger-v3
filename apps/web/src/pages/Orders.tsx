@@ -92,10 +92,11 @@ export default function OrdersPage() {
     try {
       const url = editing ? `/api/orders/${editing.id}` : '/api/orders';
       const method = editing ? 'PATCH' : 'POST';
-      const body: Record<string, string | undefined> = {
+      const body: Record<string, string | null | undefined> = {
         name: form.name.trim(),
         description: form.description.trim() || undefined,
-        purchasePlaceId: form.purchasePlaceId || undefined,
+        // null 表示清空进货地；undefined 表示不修改
+        purchasePlaceId: form.purchasePlaceId || null,
       };
       const res = await authFetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
       const json = await res.json();

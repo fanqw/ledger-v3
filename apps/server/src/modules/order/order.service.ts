@@ -119,7 +119,7 @@ export class OrderService {
     });
   }
 
-  async update(id: string, data: { name?: string; description?: string; purchasePlaceId?: string }) {
+  async update(id: string, data: { name?: string; description?: string; purchasePlaceId?: string | null }) {
     await this.findById(id);
     const updateData: Prisma.OrderUpdateInput = {};
 
@@ -137,9 +137,21 @@ export class OrderService {
     }
     if (data.description !== undefined) updateData.description = data.description.trim() || null;
     if (data.purchasePlaceId !== undefined) {
-      updateData.purchasePlace = data.purchasePlaceId
-        ? { connect: { id: data.purchasePlaceId } }
-        : { disconnect: true };
+      if (data.purchasePlaceId === null) {
+        // 显式清空进货地
+        updateData.purchasePlace = { disconnect: true };
+      } else {
+        // connect 前校验存在性/软删除（与 create() 一致）
+        const pp = await this.prisma.purchasePlace.findFirst({
+          where: { id: data.purchasePlaceId, deletedAt: null },
+        });
+        if (!pp)
+          throw new BadRequestException({
+            success: false,
+            error: { code: ERROR_CODES.VALIDATION_ERROR, message: ERROR_MESSAGES[ERROR_CODES.VALIDATION_ERROR] },
+          });
+        updateData.purchasePlace = { connect: { id: data.purchasePlaceId } };
+      }
     }
 
     return this.prisma.order.update({
@@ -228,7 +240,15 @@ export class OrderService {
     }
 
     let categoryId: string | undefined = data.categoryId;
-    if (!categoryId && data.categoryName) {
+    if (categoryId) {
+      // 直传 id：校验存在性/软删除（与名称路径一致），避免 FK 500 或挂到已删除记录
+      const cat = await this.prisma.category.findFirst({ where: { id: categoryId, deletedAt: null } });
+      if (!cat)
+        throw new BadRequestException({
+          success: false,
+          error: { code: ERROR_CODES.VALIDATION_ERROR, message: ERROR_MESSAGES[ERROR_CODES.VALIDATION_ERROR] },
+        });
+    } else if (data.categoryName) {
       const catName = data.categoryName.trim();
       let cat = await this.prisma.category.findFirst({ where: { name: catName, deletedAt: null } });
       if (!cat) {
@@ -238,7 +258,14 @@ export class OrderService {
     }
 
     let unitId: string | undefined = data.unitId;
-    if (!unitId && data.unitName) {
+    if (unitId) {
+      const unit = await this.prisma.unit.findFirst({ where: { id: unitId, deletedAt: null } });
+      if (!unit)
+        throw new BadRequestException({
+          success: false,
+          error: { code: ERROR_CODES.VALIDATION_ERROR, message: ERROR_MESSAGES[ERROR_CODES.VALIDATION_ERROR] },
+        });
+    } else if (data.unitName) {
       const unitName = data.unitName.trim();
       let unit = await this.prisma.unit.findFirst({ where: { name: unitName, deletedAt: null } });
       if (!unit) {

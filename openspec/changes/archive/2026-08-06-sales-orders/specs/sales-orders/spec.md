@@ -161,6 +161,23 @@
 
 系统 SHALL 使用 Zod 定义请求参数的校验 Schema，Schema 定义在 `packages/shared/src/validators/` 中，前后端共享引用。
 
+#### Scenario: 共享 Schema 前后端一致
+
+- WHEN 前端提交创建订单请求
+- THEN 前端 SHALL 使用与后端相同的 Zod Schema 对必填字段、格式、trim 后空值做客户端校验
+- THEN 后端 SHALL 使用相同 Schema 再次校验，拒绝不合法请求
+
+#### Scenario: Schema 变更时自动同步
+
+- WHEN `packages/shared` 中的 Zod Schema 发生变更
+- THEN 前端和后端 SHALL 同时获得最新的校验规则（通过 monorepo workspace 引用）
+
 ### Requirement: 操作反馈
 
 所有增删改操作 SHALL 提供 loading 状态、成功提示和失败提示。删除操作 SHALL 二次确认。
+
+#### Scenario: 删除操作二次确认
+
+- WHEN 管理员点击任意删除按钮
+- THEN 系统 SHALL 弹出确认对话框
+- THEN 确认后执行删除，完成后显示成功提示

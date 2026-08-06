@@ -64,8 +64,20 @@
 #### Scenario: 为订单添加明细（即输即建主数据）
 
 - WHEN 管理员创建明细时不提供 commodityId，而是提供分类/单位标识（id 或名称）与商品名称
-- THEN 系统 SHALL 在单一原子事务内解析或创建主数据（分类/单位/商品），再写入明细
-- THEN 失败时 SHALL 整体回滚，不留孤儿主数据
+- THEN 系统 SHALL 解析或创建主数据（分类/单位/商品），再写入明细
+- THEN 基础数据创建失败时 SHALL 终止整个明细创建流程，不创建 OrderItem
+
+#### Scenario: OrderItem 创建失败时保留基础数据
+
+- WHEN category、unit、commodity 已成功创建，但后续 OrderItem 创建失败
+- THEN 系统 SHALL 不回滚已创建的基础数据（它们是合法的新业务记录）
+- THEN 系统 SHALL 返回 OrderItem 创建失败的错误信息
+
+#### Scenario: 即输即建时分类/单位必填
+
+- WHEN 即输即建新商品（不提供 commodityId）
+- THEN 系统 SHALL 要求同时提供分类和单位（id 或名称）
+- THEN 缺失分类或单位时 SHALL 返回校验错误，拒绝创建
 
 #### Scenario: 名称 trim 后为空时拒绝
 

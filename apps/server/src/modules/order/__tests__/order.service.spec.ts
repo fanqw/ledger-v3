@@ -109,12 +109,48 @@ describe('OrderService', () => {
 
   it('更新成功包含 relation connect', async () => {
     prisma.order.findFirst.mockResolvedValueOnce({ id: 'order-1', items: [] });
-    prisma.order.findFirst.mockResolvedValueOnce(null);
+    prisma.order.findFirst.mockResolvedValueOnce(null); // 名称唯一性检查
+    prisma.purchasePlace.findFirst.mockResolvedValue({ id: 'pp-2', deletedAt: null }); // connect 前存在性校验
     prisma.order.update.mockResolvedValue({ id: 'order-1' });
     await service.update('order-1', { name: 'New', purchasePlaceId: 'pp-2' });
     expect(prisma.order.update).toHaveBeenCalledWith({
       where: { id: 'order-1' },
       data: { name: 'New', purchasePlace: { connect: { id: 'pp-2' } } },
+      include: { purchasePlace: true },
+    });
+  });
+
+  it('更新时显式清空进货地（purchasePlaceId=null → disconnect）', async () => {
+    prisma.order.findFirst.mockResolvedValueOnce({ id: 'order-1', items: [] });
+    prisma.order.findFirst.mockResolvedValueOnce(null);
+    prisma.order.update.mockResolvedValue({ id: 'order-1' });
+    await service.update('order-1', { name: 'New', purchasePlaceId: null });
+    expect(prisma.order.update).toHaveBeenCalledWith({
+      where: { id: 'order-1' },
+      data: { name: 'New', purchasePlace: { disconnect: true } },
+      include: { purchasePlace: true },
+    });
+    // disconnect 分支不应触发存在性校验
+    expect(prisma.purchasePlace.findFirst).not.toHaveBeenCalled();
+  });
+
+  it('更新时进货地不存在抛出 BadRequestException', async () => {
+    prisma.order.findFirst.mockResolvedValueOnce({ id: 'order-1', items: [] });
+    prisma.order.findFirst.mockResolvedValueOnce(null);
+    prisma.purchasePlace.findFirst.mockResolvedValue(null);
+    await expect(
+      service.update('order-1', { name: 'New', purchasePlaceId: 'missing-pp' }),
+    ).rejects.toThrow(BadRequestException);
+  });
+
+  it('更新时不传进货地则不修改（undefined）', async () => {
+    prisma.order.findFirst.mockResolvedValueOnce({ id: 'order-1', items: [] });
+    prisma.order.findFirst.mockResolvedValueOnce(null);
+    prisma.order.update.mockResolvedValue({ id: 'order-1' });
+    await service.update('order-1', { name: 'New' });
+    expect(prisma.order.update).toHaveBeenCalledWith({
+      where: { id: 'order-1' },
+      data: { name: 'New' },
       include: { purchasePlace: true },
     });
   });
@@ -215,6 +251,44 @@ describe('OrderService', () => {
     expect(prisma.unit.create).not.toHaveBeenCalled();
     expect(prisma.commodity.create).not.toHaveBeenCalled();
     expect(prisma.orderItem.create).toHaveBeenCalled();
+  });
+
+  it('即输即建直传不存在的分类 id 时抛出 BadRequestException', async () => {
+    prisma.order.findFirst.mockResolvedValue({ id: 'order-1' });
+    prisma.category.findFirst.mockResolvedValue(null); // 分类不存在/已软删除
+    prisma.unit.findFirst.mockResolvedValue({ id: 'unit-existing' });
+
+    await expect(
+      service.addItem('order-1', {
+        commodityName: '新品',
+        categoryId: 'missing-cat',
+        unitId: 'unit-existing',
+        quantity: 1,
+        unitPrice: 5,
+        lineTotal: 5,
+      }),
+    ).rejects.toThrow(BadRequestException);
+    expect(prisma.commodity.create).not.toHaveBeenCalled();
+    expect(prisma.orderItem.create).not.toHaveBeenCalled();
+  });
+
+  it('即输即建直传不存在的单位 id 时抛出 BadRequestException', async () => {
+    prisma.order.findFirst.mockResolvedValue({ id: 'order-1' });
+    prisma.category.findFirst.mockResolvedValue({ id: 'cat-existing' });
+    prisma.unit.findFirst.mockResolvedValue(null); // 单位不存在/已软删除
+
+    await expect(
+      service.addItem('order-1', {
+        commodityName: '新品',
+        categoryId: 'cat-existing',
+        unitId: 'missing-unit',
+        quantity: 1,
+        unitPrice: 5,
+        lineTotal: 5,
+      }),
+    ).rejects.toThrow(BadRequestException);
+    expect(prisma.commodity.create).not.toHaveBeenCalled();
+    expect(prisma.orderItem.create).not.toHaveBeenCalled();
   });
 
   it('即输即建 category 创建失败时终止后续操作', async () => {

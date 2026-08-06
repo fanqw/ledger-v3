@@ -275,7 +275,16 @@ export default function OrderDetailPage() {
       if (json.success) {
         toast.success(editingItem ? '更新成功' : '添加成功');
         if (lineTotalManuallySet) {
+          // 本次保存金额为手动修改 → 标红
           setManualLineTotalItems(prev => new Set(prev).add(json.data.id));
+        } else {
+          // 本次保存金额为自动计算（修改数量/单价后联动）→ 清除标红
+          setManualLineTotalItems(prev => {
+            if (!prev.has(json.data.id)) return prev;
+            const next = new Set(prev);
+            next.delete(json.data.id);
+            return next;
+          });
         }
         setItemDialogOpen(false); fetchOrder(); }
       else { toast.error(json.error?.message || '操作失败'); }
@@ -287,7 +296,7 @@ export default function OrderDetailPage() {
     try {
       const res = await authFetch(`/api/orders/${id}/items/${deleteItemTarget.id}`, { method: 'DELETE' });
       const json = await res.json();
-      if (json.success) { toast.success('删除成功'); fetchOrder(); } else { toast.error(json.error?.message || '删除失败'); }
+      if (json.success) { toast.success('删除成功'); setManualLineTotalItems(prev => { if (!prev.has(deleteItemTarget.id)) return prev; const next = new Set(prev); next.delete(deleteItemTarget.id); return next; }); fetchOrder(); } else { toast.error(json.error?.message || '删除失败'); }
     } catch { toast.error('删除失败'); } finally { setDeleteItemTarget(null); }
   };
 
@@ -306,7 +315,7 @@ export default function OrderDetailPage() {
     if (!orderForm.name.trim()) { toast.error('订单名称不能为空'); return; }
     setOrderSaving(true);
     try {
-      const res = await authFetch(`/api/orders/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: orderForm.name.trim(), description: orderForm.description.trim() || undefined, purchasePlaceId: orderForm.purchasePlaceId || undefined }) });
+      const res = await authFetch(`/api/orders/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: orderForm.name.trim(), description: orderForm.description.trim() || undefined, purchasePlaceId: orderForm.purchasePlaceId || null }) });
       const json = await res.json();
       if (json.success) { toast.success('更新成功'); setOrderDialogOpen(false); fetchOrder(); } else { toast.error(json.error?.message || '操作失败'); }
     } catch { toast.error('操作失败'); } finally { setOrderSaving(false); }
