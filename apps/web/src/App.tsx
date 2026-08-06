@@ -11,6 +11,8 @@ const CategoriesPage = lazy(() => import('./pages/Categories'));
 const UnitsPage = lazy(() => import('./pages/Units'));
 const CommoditiesPage = lazy(() => import('./pages/Commodities'));
 const PurchasePlacesPage = lazy(() => import('./pages/PurchasePlaces'));
+const OrdersPage = lazy(() => import('./pages/Orders'));
+const OrderDetailPage = lazy(() => import('./pages/OrderDetail'));
 
 function AuthInit({ children }: { children: React.ReactNode }) {
   const auth = useAuth();
@@ -65,7 +67,8 @@ export default function App() {
               }
             >
               <Route path="dashboard" element={<div><h1 className="text-[18px] font-bold text-[#0F172A] dark:text-white">仪表台</h1><p className="mt-2 text-[#64748B] dark:text-[#94A3B8]">即将上线...</p></div>} />
-              <Route path="orders" element={<div><h1 className="text-[18px] font-bold text-[#0F172A] dark:text-white">订单管理</h1><p className="mt-2 text-[#64748B] dark:text-[#94A3B8]">即将上线...</p></div>} />
+              <Route path="orders" element={<OrdersPage />} />
+              <Route path="orders/:id" element={<OrderDetailPage />} />
               <Route path="categories" element={<CategoriesPage />} />
               <Route path="units" element={<UnitsPage />} />
               <Route path="commodities" element={<CommoditiesPage />} />
