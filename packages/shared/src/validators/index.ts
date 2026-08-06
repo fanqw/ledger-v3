@@ -41,6 +41,44 @@ export const purchasePlaceSchema = z.object({
   description: z.string().trim().max(500, '描述长度不能超过500').optional(),
 });
 
+export const orderCreateSchema = z.object({
+  name: z.string().trim().min(1, '订单名称不能为空').max(100, '名称长度不能超过100'),
+  purchasePlaceId: idSchema.optional(),
+  description: z.string().trim().max(500, '描述长度不能超过500').optional(),
+});
+
+export const orderUpdateSchema = orderCreateSchema.partial();
+
+export const orderItemCreateSchema = z
+  .object({
+    commodityId: idSchema.optional(),
+    commodityName: z.string().trim().min(1, '商品名称不能为空').max(100, '商品名称长度不能超过100').optional(),
+    categoryId: idSchema.optional(),
+    categoryName: z.string().trim().min(1, '分类名称不能为空').max(100, '分类名称长度不能超过100').optional(),
+    unitId: idSchema.optional(),
+    unitName: z.string().trim().min(1, '单位名称不能为空').max(100, '单位名称长度不能超过100').optional(),
+    quantity: z.number().positive('数量必须大于0'),
+    unitPrice: z.number().nonnegative('单价不能为负'),
+    lineTotal: z.number().nonnegative('金额不能为负'),
+    description: z.string().trim().max(500, '描述长度不能超过500').optional(),
+  })
+  .refine(
+    (data) => {
+      const hasCommodityId = !!data.commodityId;
+      const hasCommodityName = !!data.commodityName;
+      return hasCommodityId || hasCommodityName;
+    },
+    { message: '必须提供 commodityId 或 commodityName（即输即建）', path: ['commodityId'] },
+  );
+
+export const orderItemUpdateSchema = z.object({
+  quantity: z.number().positive('数量必须大于0').optional(),
+  unitPrice: z.number().nonnegative('单价不能为负').optional(),
+  lineTotal: z.number().nonnegative('金额不能为负').optional(),
+  description: z.string().trim().max(500, '描述长度不能超过500').optional(),
+});
+
+// 向后兼容别名
 export const orderSchema = z.object({
   name: z.string().trim().min(1, '订单名称不能为空'),
   purchasePlaceId: z.string().optional(),
@@ -67,5 +105,10 @@ export type CategoryInput = z.infer<typeof categorySchema>;
 export type UnitInput = z.infer<typeof unitSchema>;
 export type CommodityInput = z.infer<typeof commoditySchema>;
 export type PurchasePlaceInput = z.infer<typeof purchasePlaceSchema>;
+export type OrderCreateInput = z.infer<typeof orderCreateSchema>;
+export type OrderUpdateInput = z.infer<typeof orderUpdateSchema>;
+export type OrderItemCreateInput = z.infer<typeof orderItemCreateSchema>;
+export type OrderItemUpdateInput = z.infer<typeof orderItemUpdateSchema>;
+// 向后兼容别名
 export type OrderInput = z.infer<typeof orderSchema>;
 export type OrderItemInput = z.infer<typeof orderItemSchema>;

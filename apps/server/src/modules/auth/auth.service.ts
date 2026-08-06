@@ -87,7 +87,7 @@ export class AuthService {
   async logout(accessToken: string) {
     let payload: { sub?: string; jti?: string; exp?: number } | undefined;
     try {
-      const payload = this.jwtService.verify(accessToken, {
+      payload = this.jwtService.verify(accessToken, {
         secret: this.jwtAccessSecret,
         ignoreExpiration: true,
       });

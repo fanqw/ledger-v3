@@ -6,11 +6,12 @@ import { CategoryModule } from './modules/category/category.module';
 import { UnitModule } from './modules/unit/unit.module';
 import { CommodityModule } from './modules/commodity/commodity.module';
 import { PurchasePlaceModule } from './modules/purchase-place/purchase-place.module';
+import { OrderModule } from './modules/order/order.module';
 import { CommonModule } from './common/common.module';
 import { JwtAuthGuard } from './modules/auth/jwt-auth.guard';
 
 @Module({
-  imports: [CommonModule, AuthModule, CategoryModule, UnitModule, CommodityModule, PurchasePlaceModule],
+  imports: [CommonModule, AuthModule, CategoryModule, UnitModule, CommodityModule, PurchasePlaceModule, OrderModule],
   controllers: [AppController],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },

@@ -7,6 +7,13 @@ dist/
 .DS_Store
 output/
 *.tsbuildinfo
+.claude
+
+# Jest 测试产物
+test-results/
+
+# 误创建/误放目录
+apps/server/apps/
 
 # Codex agent temporary files
 .codex-temp/
