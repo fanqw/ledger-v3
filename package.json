@@ -27,7 +27,8 @@
       "@nestjs/swagger>lodash": "4.18.1",
       "@nestjs/swagger>js-yaml": "4.3.0",
       "external-editor>tmp": "0.2.6",
-      "multer": "^2.2.0"
+      "multer": "^2.2.0",
+      "nanoid": "3.3.17"
     }
   },
   "devDependencies": {
