@@ -35,6 +35,6 @@ test('the default server test command runs the security regression test', async 
   )
 
   assert.match(packageJson.scripts.test, /(?:pnpm run )?test:security/)
-  assert.match(packageJson.scripts['test:security'], /js-yaml-security\.test\.mjs|\*-security\.test\.mjs/)
-  assert.match(packageJson.scripts['test:security'], /fast-uri-security\.test\.mjs|\*-security\.test\.mjs/)
+  assert.match(packageJson.scripts['test:security'], /js-yaml-security\.test\.mjs/)
+  assert.match(packageJson.scripts['test:security'], /fast-uri-security\.test\.mjs/)
 })
