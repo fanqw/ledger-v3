@@ -28,3 +28,11 @@ test('the lockfile contains no js-yaml version vulnerable to GHSA-5p4m-2wfm-xmqj
   assert.ok(versions.length > 0, 'expected js-yaml to be present in pnpm-lock.yaml')
   assert.deepEqual(vulnerable, [], 'found vulnerable js-yaml versions')
 })
+
+test('the default server test command runs the security regression test', async () => {
+  const packageJson = JSON.parse(
+    await readFile(new URL('../package.json', import.meta.url), 'utf8'),
+  )
+
+  assert.match(packageJson.scripts.test, /(?:pnpm run )?test:security/)
+})

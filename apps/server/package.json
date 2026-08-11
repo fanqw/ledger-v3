@@ -7,7 +7,7 @@
     "build": "nest build",
     "start": "node dist/main",
     "lint": "cross-env ESLINT_USE_FLAT_CONFIG=true eslint src/",
-    "test": "jest --passWithNoTests",
+    "test": "pnpm run test:security && jest --passWithNoTests",
     "test:security": "node --test scripts/js-yaml-security.test.mjs",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
