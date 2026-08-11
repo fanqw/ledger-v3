@@ -81,7 +81,10 @@ export function CreatableSelect({ value, onChange, fetchItems, createItem, place
     finally { setLoading(false); }
   }, [fetchItems]);
 
-  useEffect(() => { search(""); }, [search]);
+  useEffect(() => {
+    const task = setTimeout(() => { void search(""); }, 0);
+    return () => clearTimeout(task);
+  }, [search]);
 
   const handleOpenChange = (nextOpen: boolean) => {
     setOpen(nextOpen);
