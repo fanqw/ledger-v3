@@ -44,7 +44,10 @@ export default function CategoriesPage() {
   }, []);
 
   // Initial fetch (skip debounce on first render)
-  useEffect(() => { fetchData(1, ""); }, [fetchData]);
+  useEffect(() => {
+    const task = setTimeout(() => { void fetchData(1, ""); }, 0);
+    return () => clearTimeout(task);
+  }, [fetchData]);
 
   // Debounced search (skip on mount via ref)
   useEffect(() => {
