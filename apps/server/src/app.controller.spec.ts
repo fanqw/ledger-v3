@@ -4,10 +4,10 @@ import { RedisService } from './common/redis.service';
 
 describe('AppController', () => {
   const queryRaw = jest.fn();
-  const ping = jest.fn();
+  const pingOrThrow = jest.fn();
   const controller = new AppController(
     { $queryRaw: queryRaw } as unknown as PrismaService,
-    { ping } as unknown as RedisService,
+    { pingOrThrow } as unknown as RedisService,
   );
 
   beforeEach(() => {
@@ -21,7 +21,7 @@ describe('AppController', () => {
 
   it('reports both dependencies as connected when their checks succeed', async () => {
     queryRaw.mockResolvedValueOnce([{ '?column?': 1 }]);
-    ping.mockResolvedValueOnce('PONG');
+    pingOrThrow.mockResolvedValueOnce(undefined);
 
     await expect(controller.health()).resolves.toEqual({
       success: true,
@@ -31,7 +31,7 @@ describe('AppController', () => {
 
   it('reports both dependencies as disconnected when their checks fail', async () => {
     queryRaw.mockRejectedValueOnce(new Error('database unavailable'));
-    ping.mockRejectedValueOnce(new Error('redis unavailable'));
+    pingOrThrow.mockRejectedValueOnce(new Error('redis unavailable'));
 
     await expect(controller.health()).resolves.toEqual({
       success: true,
@@ -41,7 +41,7 @@ describe('AppController', () => {
 
   it('reports database and Redis status independently', async () => {
     queryRaw.mockResolvedValueOnce([{ '?column?': 1 }]);
-    ping.mockRejectedValueOnce(new Error('redis unavailable'));
+    pingOrThrow.mockRejectedValueOnce(new Error('redis unavailable'));
 
     await expect(controller.health()).resolves.toEqual({
       success: true,
@@ -51,7 +51,7 @@ describe('AppController', () => {
 
   it('keeps Redis connected when only the database check fails', async () => {
     queryRaw.mockRejectedValueOnce(new Error('database unavailable'));
-    ping.mockResolvedValueOnce('PONG');
+    pingOrThrow.mockResolvedValueOnce(undefined);
 
     await expect(controller.health()).resolves.toEqual({
       success: true,
