@@ -8,6 +8,7 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "lint": "cross-env ESLINT_USE_FLAT_CONFIG=true eslint src/",
+    "test:security": "node --test scripts/nanoid-security.test.mjs",
     "test": "node --test scripts/effect-performance.test.mjs",
     "verify:e2e": "node e2e/scripts/order-detail.spec.mjs"
   },
