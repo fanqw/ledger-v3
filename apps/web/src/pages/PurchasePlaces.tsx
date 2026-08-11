@@ -39,7 +39,10 @@ export default function PurchasePlacesPage() {
     finally { setLoading(false); }
   }, []);
 
-  useEffect(() => { fetchData(1, ""); }, [fetchData]);
+  useEffect(() => {
+    const task = setTimeout(() => { void fetchData(1, ""); }, 0);
+    return () => clearTimeout(task);
+  }, [fetchData]);
 
   useEffect(() => {
     if (!mountedRef.current) { mountedRef.current = true; return; }
