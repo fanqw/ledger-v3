@@ -5,20 +5,33 @@ import test from 'node:test'
 const MINIMUM_SAFE_VERSION = [7, 14, 0]
 
 function isOlderThan(version, minimum) {
-  const parts = version.split('.').map(Number)
+  const [coreVersion, prerelease] = version.split('-', 2)
+  const parts = coreVersion.split('.').map(Number)
   for (let index = 0; index < minimum.length; index += 1) {
     if (parts[index] !== minimum[index]) return parts[index] < minimum[index]
   }
-  return false
+  return prerelease !== undefined
 }
+
+function extractLockedVersions(lockfile) {
+  return [...lockfile.matchAll(/^  react-router(?:-dom)?@([^\s:(]+)(?:\([^\n]*\))?:$/gm)].map(
+    (match) => match[1],
+  )
+}
+
+test('prerelease React Router versions are parsed and compared against the stable boundary', () => {
+  const versions = extractLockedVersions(`  react-router@7.14.0-pre.0:\n  react-router-dom@7.14.0:\n`)
+
+  assert.deepEqual(versions, ['7.14.0-pre.0', '7.14.0'])
+  assert.equal(isOlderThan(versions[0], MINIMUM_SAFE_VERSION), true)
+  assert.equal(isOlderThan(versions[1], MINIMUM_SAFE_VERSION), false)
+})
 
 test('all React Router packages are safe from the single-fetch reflected-input DoS', async () => {
   const packageJson = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'))
   const lockfile = await readFile(new URL('../../../pnpm-lock.yaml', import.meta.url), 'utf8')
   const declaredVersion = packageJson.dependencies['react-router-dom'].replace(/^[^\d]*/, '')
-  const lockedVersions = [...lockfile.matchAll(/^  react-router(?:-dom)?@(\d+\.\d+\.\d+):$/gm)].map(
-    (match) => match[1],
-  )
+  const lockedVersions = extractLockedVersions(lockfile)
 
   assert.equal(isOlderThan(declaredVersion, MINIMUM_SAFE_VERSION), false)
   assert.ok(lockedVersions.length > 0, 'expected React Router packages in pnpm-lock.yaml')
