@@ -1,11 +1,16 @@
 const passportCanActivate = jest.fn();
-
-jest.mock('@nestjs/passport', () => ({
-  AuthGuard: () => class {
+let passportStrategy: string | undefined;
+const authGuardFactory = (strategy: string) => {
+  passportStrategy = strategy;
+  return class {
     canActivate(context: unknown) {
       return passportCanActivate(context);
     }
-  },
+  };
+};
+
+jest.mock('@nestjs/passport', () => ({
+  AuthGuard: authGuardFactory,
 }));
 
 import { ExecutionContext } from '@nestjs/common';
@@ -24,8 +29,17 @@ describe('JwtAuthGuard', () => {
 
   beforeEach(() => jest.clearAllMocks());
 
-  it('creates the public-route metadata decorator', () => {
-    expect(Public()).toEqual(expect.any(Function));
+  it('configures Passport with the JWT strategy', () => {
+    expect(passportStrategy).toBe('jwt');
+  });
+
+  it('marks decorated handlers as public', () => {
+    class PublicController {
+      @Public()
+      handler() {}
+    }
+
+    expect(Reflect.getMetadata(IS_PUBLIC_KEY, PublicController.prototype.handler)).toBe(true);
   });
 
   it('allows public routes without invoking Passport', () => {
