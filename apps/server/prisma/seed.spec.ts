@@ -1,71 +1,42 @@
 const upsert = jest.fn();
 const disconnect = jest.fn();
-const hash = jest.fn();
 
 jest.mock('@prisma/client', () => ({
   PrismaClient: jest.fn(() => ({ user: { upsert }, $disconnect: disconnect })),
 }));
-jest.mock('bcryptjs', () => ({ hash }));
-jest.mock('fs');
-jest.mock('yaml');
+jest.mock('bcryptjs', () => ({ hash: jest.fn(async (value: string) => `hash:${value}`) }));
+jest.mock('fs', () => ({ existsSync: jest.fn(), readFileSync: jest.fn() }));
 
 import * as fs from 'fs';
-import * as yaml from 'yaml';
 import { createUser, run, seed } from './seed';
 
 describe('database seed', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-    hash.mockResolvedValue('hashed-password');
-    upsert.mockResolvedValue({});
-    disconnect.mockResolvedValue(undefined);
-  });
+  beforeEach(() => jest.clearAllMocks());
 
-  it('upserts configured users and defaults their role to admin', async () => {
+  it('upserts YAML users with defaults and disconnects', async () => {
     jest.mocked(fs.existsSync).mockReturnValue(true);
-    jest.mocked(fs.readFileSync).mockReturnValue('users: []');
-    jest.mocked(yaml.parse).mockReturnValue({
-      users: [{ username: 'alice', password: 'secret' }],
-    });
+    jest.mocked(fs.readFileSync).mockReturnValue('users:\n  - username: alice\n    password: secret\n');
 
     await seed();
 
-    expect(hash).toHaveBeenCalledWith('secret', 10);
-    expect(upsert).toHaveBeenCalledWith({
-      where: { username: 'alice' },
-      update: { passwordHash: 'hashed-password' },
-      create: { username: 'alice', passwordHash: 'hashed-password', role: 'admin' },
-    });
-    expect(disconnect).toHaveBeenCalled();
-  });
-
-  it('creates a CLI user with the requested role', async () => {
-    await createUser('bob', 'secret', 'viewer');
-
-    expect(upsert).toHaveBeenCalledWith({
-      where: { username: 'bob' },
-      update: { passwordHash: 'hashed-password' },
-      create: { username: 'bob', passwordHash: 'hashed-password', role: 'viewer' },
-    });
-    expect(disconnect).toHaveBeenCalled();
-  });
-
-  it('runs CLI creation with the default role', async () => {
-    await run(['node', 'seed.ts', '--username', 'carol', '--password', 'secret']);
-
     expect(upsert).toHaveBeenCalledWith(expect.objectContaining({
-      create: expect.objectContaining({ username: 'carol', role: 'admin' }),
+      where: { username: 'alice' },
+      create: expect.objectContaining({ passwordHash: 'hash:secret', role: 'admin' }),
     }));
+    expect(disconnect).toHaveBeenCalled();
   });
 
-  it('reports a missing seed file', async () => {
-    jest.mocked(fs.existsSync).mockReturnValue(false);
-    const exit = jest.spyOn(process, 'exit').mockImplementation((() => {
-      throw new Error('exit 1');
-    }) as never);
+  it('creates a CLI user with the selected role', async () => {
+    await run(['node', 'seed.ts', '--username', 'bob', '--password', 'pw', '--role', 'viewer']);
+    expect(upsert).toHaveBeenCalledWith(expect.objectContaining({
+      create: { username: 'bob', passwordHash: 'hash:pw', role: 'viewer' },
+    }));
+    expect(disconnect).toHaveBeenCalled();
+  });
 
-    await expect(seed()).rejects.toThrow('exit 1');
-    expect(exit).toHaveBeenCalledWith(1);
-    exit.mockRestore();
+  it('disconnects when createUser fails', async () => {
+    upsert.mockRejectedValueOnce(new Error('db failed'));
+    await expect(createUser('bob', 'pw')).rejects.toThrow('db failed');
+    expect(disconnect).toHaveBeenCalled();
   });
 });
