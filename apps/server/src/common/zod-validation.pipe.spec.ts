@@ -27,6 +27,7 @@ describe('ZodValidationPipe', () => {
   });
 
   it('uses the shared fallback message when no validation issue is present', () => {
+    expect.assertions(1);
     const schema = {
       safeParse: jest.fn().mockReturnValue({ success: false, error: { issues: [] } }),
     } as unknown as ZodSchema;
