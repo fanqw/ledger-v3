@@ -37,5 +37,6 @@ test('list pages use one cancellable effect for initial load and debounced searc
     assert.doesNotMatch(source, /mountedRef/, `${target} must not use a StrictMode-fragile mount guard`)
     assert.match(source, /const delay = keyword\.trim\(\) \? 300 : 0/)
     assert.match(source, /setTimeout\(\(\) => \{ void fetchData\(1, keyword\); \}, delay\)/)
+    assert.match(source, /return \(\) => clearTimeout\(task\)/, `${target} must cancel the scheduled request`)
   }
 })
