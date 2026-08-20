@@ -60,12 +60,10 @@ describe('database seed', () => {
 
   it('reports a missing seed file', async () => {
     jest.mocked(fs.existsSync).mockReturnValue(false);
-    const exit = jest.spyOn(process, 'exit').mockImplementation((() => {
-      throw new Error('exit 1');
-    }) as never);
+    const exit = jest.spyOn(process, 'exit').mockImplementation((() => undefined) as never);
 
-    await expect(seed()).rejects.toThrow('exit 1');
-    expect(exit).toHaveBeenCalledWith(1);
+    await expect(seed()).rejects.toThrow('seed-users.yaml not found');
+    expect(exit).not.toHaveBeenCalled();
     expect(disconnect).toHaveBeenCalled();
     exit.mockRestore();
   });

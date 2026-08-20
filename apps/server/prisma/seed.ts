@@ -15,8 +15,7 @@ export async function seed() {
   try {
     const yamlPath = path.resolve(__dirname, 'seed-users.yaml');
     if (!fs.existsSync(yamlPath)) {
-      console.error('seed-users.yaml not found at', yamlPath);
-      process.exit(1);
+      throw new Error(`seed-users.yaml not found at ${yamlPath}`);
     }
 
     const raw = fs.readFileSync(yamlPath, 'utf-8');
