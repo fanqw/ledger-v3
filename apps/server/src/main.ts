@@ -9,7 +9,7 @@ import { AppModule } from './app.module';
 import { createCorsOptions } from './common/cors.config';
 import { getJwtSecrets } from './modules/auth/auth.config';
 
-async function bootstrap() {
+export async function bootstrap() {
   getJwtSecrets();
   const app = await NestFactory.create(AppModule);
   app.setGlobalPrefix('api');
@@ -27,4 +27,10 @@ async function bootstrap() {
   app.enableCors(createCorsOptions());
   await app.listen(3001);
 }
-bootstrap();
+export async function start() {
+  if (process.env.NODE_ENV !== 'test') {
+    await bootstrap();
+  }
+}
+
+void start();
