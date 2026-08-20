@@ -12,45 +12,50 @@ interface SeedUser {
 
 export async function seed() {
   const prisma = new PrismaClient();
+  try {
+    const yamlPath = path.resolve(__dirname, 'seed-users.yaml');
+    if (!fs.existsSync(yamlPath)) {
+      console.error('seed-users.yaml not found at', yamlPath);
+      process.exit(1);
+    }
 
-  const yamlPath = path.resolve(__dirname, 'seed-users.yaml');
-  if (!fs.existsSync(yamlPath)) {
-    console.error('seed-users.yaml not found at', yamlPath);
-    process.exit(1);
+    const raw = fs.readFileSync(yamlPath, 'utf-8');
+    const config = yaml.parse(raw) as { users: SeedUser[] };
+    const users = config.users ?? [];
+
+    for (const u of users) {
+      const hash = await bcrypt.hash(u.password, 10);
+      await prisma.user.upsert({
+        where: { username: u.username },
+        update: { passwordHash: hash },
+        create: {
+          username: u.username,
+          passwordHash: hash,
+          role: u.role || 'admin',
+        },
+      });
+      console.log(`User upserted: ${u.username}`);
+    }
+
+    console.log('Seed complete');
+  } finally {
+    await prisma.$disconnect();
   }
-
-  const raw = fs.readFileSync(yamlPath, 'utf-8');
-  const config = yaml.parse(raw) as { users: SeedUser[] };
-  const users = config.users ?? [];
-
-  for (const u of users) {
-    const hash = await bcrypt.hash(u.password, 10);
-    await prisma.user.upsert({
-      where: { username: u.username },
-      update: { passwordHash: hash },
-      create: {
-        username: u.username,
-        passwordHash: hash,
-        role: u.role || 'admin',
-      },
-    });
-    console.log(`User upserted: ${u.username}`);
-  }
-
-  await prisma.$disconnect();
-  console.log('Seed complete');
 }
 
 export async function createUser(username: string, password: string, role = 'admin') {
   const prisma = new PrismaClient();
-  const hash = await bcrypt.hash(password, 10);
-  await prisma.user.upsert({
-    where: { username },
-    update: { passwordHash: hash },
-    create: { username, passwordHash: hash, role },
-  });
-  console.log(`User created/updated: ${username}`);
-  await prisma.$disconnect();
+  try {
+    const hash = await bcrypt.hash(password, 10);
+    await prisma.user.upsert({
+      where: { username },
+      update: { passwordHash: hash },
+      create: { username, passwordHash: hash, role },
+    });
+    console.log(`User created/updated: ${username}`);
+  } finally {
+    await prisma.$disconnect();
+  }
 }
 
 export async function run(argv = process.argv) {
