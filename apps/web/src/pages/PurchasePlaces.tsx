@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../components/ui/dialog";
@@ -25,7 +25,6 @@ export default function PurchasePlacesPage() {
   const [form, setForm] = useState({ place: "", marketName: "", description: "" });
   const [deleteTarget, setDeleteTarget] = useState<PurchasePlace | null>(null);
   const [saving, setSaving] = useState(false);
-  const mountedRef = useRef(false);
 
   const fetchData = useCallback(async (page: number, kw: string) => {
     setLoading(true);
@@ -40,14 +39,9 @@ export default function PurchasePlacesPage() {
   }, []);
 
   useEffect(() => {
-    const task = setTimeout(() => { void fetchData(1, ""); }, 0);
+    const delay = keyword.trim() ? 300 : 0;
+    const task = setTimeout(() => { void fetchData(1, keyword); }, delay);
     return () => clearTimeout(task);
-  }, [fetchData]);
-
-  useEffect(() => {
-    if (!mountedRef.current) { mountedRef.current = true; return; }
-    const t = setTimeout(() => { setPagination((p) => ({ ...p, page: 1 })); fetchData(1, keyword); }, 300);
-    return () => clearTimeout(t);
   }, [keyword, fetchData]);
 
   const openCreate = () => { setEditing(null); setForm({ place: "", marketName: "", description: "" }); setDialogOpen(true); };

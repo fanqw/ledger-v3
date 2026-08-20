@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -34,7 +34,6 @@ export default function OrdersPage() {
   const [deleteTarget, setDeleteTarget] = useState<Order | null>(null);
   const [saving, setSaving] = useState(false);
   const [purchasePlaces, setPurchasePlaces] = useState<PurchasePlace[]>([]);
-  const mountedRef = useRef(false);
 
   const fetchData = useCallback(async (page: number, kw: string) => {
     setLoading(true);
@@ -49,12 +48,10 @@ export default function OrdersPage() {
     finally { setLoading(false); }
   }, []);
 
-  useEffect(() => { fetchData(1, ''); }, [fetchData]);
-
   useEffect(() => {
-    if (!mountedRef.current) { mountedRef.current = true; return; }
-    const t = setTimeout(() => { setPagination((p) => ({ ...p, page: 1 })); fetchData(1, keyword); }, 300);
-    return () => clearTimeout(t);
+    const delay = keyword.trim() ? 300 : 0;
+    const task = setTimeout(() => { void fetchData(1, keyword); }, delay);
+    return () => clearTimeout(task);
   }, [keyword, fetchData]);
 
   const loadPurchasePlaces = async () => {
