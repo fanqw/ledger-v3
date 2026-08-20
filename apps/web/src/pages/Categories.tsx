@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../components/ui/dialog";
@@ -26,7 +26,6 @@ export default function CategoriesPage() {
   const [form, setForm] = useState({ name: "", description: "" });
   const [deleteTarget, setDeleteTarget] = useState<Category | null>(null);
   const [saving, setSaving] = useState(false);
-  const mountedRef = useRef(false);
 
   const fetchData = useCallback(async (page: number, kw: string) => {
     setLoading(true);
@@ -43,17 +42,11 @@ export default function CategoriesPage() {
     finally { setLoading(false); }
   }, []);
 
-  // Initial fetch (skip debounce on first render)
+  // One cancellable task is StrictMode-safe and also handles debounced search.
   useEffect(() => {
-    const task = setTimeout(() => { void fetchData(1, ""); }, 0);
+    const delay = keyword.trim() ? 300 : 0;
+    const task = setTimeout(() => { void fetchData(1, keyword); }, delay);
     return () => clearTimeout(task);
-  }, [fetchData]);
-
-  // Debounced search (skip on mount via ref)
-  useEffect(() => {
-    if (!mountedRef.current) { mountedRef.current = true; return; }
-    const t = setTimeout(() => { setPagination((p) => ({ ...p, page: 1 })); fetchData(1, keyword); }, 300);
-    return () => clearTimeout(t);
   }, [keyword, fetchData]);
 
   const openCreate = () => { setEditing(null); setForm({ name: "", description: "" }); setDialogOpen(true); };
