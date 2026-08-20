@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 
-const MINIMUM_SAFE_VERSION = [3, 3, 17]
+const MINIMUM_SAFE_VERSION = [3, 3, 18]
 
 function isOlderThan(version, minimum) {
   const parts = version.split('.').map(Number)
