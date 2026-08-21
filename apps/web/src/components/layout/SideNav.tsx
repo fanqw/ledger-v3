@@ -9,6 +9,7 @@ import {
   Ruler,
   ShoppingCart,
   MapPin,
+  BarChart3,
 } from "lucide-react";
 import {
   Tooltip,
@@ -19,6 +20,10 @@ import {
 import { Separator } from "../ui/separator";
 
 const NAV_SECTIONS = [
+  {
+    label: "分析",
+    items: [{ to: "/analytics", label: "数据分析", icon: BarChart3 }],
+  },
   {
     label: "订单",
     items: [{ to: "/orders", label: "订单管理", icon: FileText }],

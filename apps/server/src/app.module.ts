@@ -7,11 +7,12 @@ import { UnitModule } from './modules/unit/unit.module';
 import { CommodityModule } from './modules/commodity/commodity.module';
 import { PurchasePlaceModule } from './modules/purchase-place/purchase-place.module';
 import { OrderModule } from './modules/order/order.module';
+import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { CommonModule } from './common/common.module';
 import { JwtAuthGuard } from './modules/auth/jwt-auth.guard';
 
 @Module({
-  imports: [CommonModule, AuthModule, CategoryModule, UnitModule, CommodityModule, PurchasePlaceModule, OrderModule],
+  imports: [CommonModule, AuthModule, CategoryModule, UnitModule, CommodityModule, PurchasePlaceModule, OrderModule, AnalyticsModule],
   controllers: [AppController],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },

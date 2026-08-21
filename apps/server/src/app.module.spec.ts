@@ -9,6 +9,7 @@ import { CategoryModule } from './modules/category/category.module';
 import { CommodityModule } from './modules/commodity/commodity.module';
 import { PurchasePlaceModule } from './modules/purchase-place/purchase-place.module';
 import { OrderModule } from './modules/order/order.module';
+import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { UnitModule } from './modules/unit/unit.module';
 
 describe('AppModule', () => {
@@ -21,6 +22,7 @@ describe('AppModule', () => {
       CommodityModule,
       PurchasePlaceModule,
       OrderModule,
+      AnalyticsModule,
     ]);
     expect(Reflect.getMetadata(MODULE_METADATA.CONTROLLERS, AppModule)).toEqual([
       AppController,
