@@ -71,11 +71,14 @@ function EmptyChart({ height = 260 }: { height?: number }) {
 function DailyTrendChart({ data, loading }: { data: AnalyticsDailyTrendItem[]; loading: boolean }) {
   const option: EChartsOption | null = data.length === 0 ? null : (() => {
     const dates = data.map((d) => d.date);
+    // 堆叠块内部显示金额标签
+    const blockLabel = { show: true, position: 'inside' as const, fontSize: 10, color: '#fff' };
     const slotSeries = Array.from({ length: 8 }, (_, i) => ({
       name: `${i + 1}`,
       type: 'bar' as const,
       stack: 'total',
       emphasis: { focus: 'series' as const },
+      label: blockLabel,
       data: data.map((d) => d.slotAmounts[i] ?? 0),
     }));
     const otherSeries = {
@@ -83,6 +86,7 @@ function DailyTrendChart({ data, loading }: { data: AnalyticsDailyTrendItem[]; l
       type: 'bar' as const,
       stack: 'total',
       emphasis: { focus: 'series' as const },
+      label: blockLabel,
       data: data.map((d) => d.otherAmount),
     };
     return {
@@ -104,7 +108,6 @@ function DailyTrendChart({ data, loading }: { data: AnalyticsDailyTrendItem[]; l
           return lines.join('<br/>');
         },
       },
-      legend: { top: 0, textStyle: { fontSize: 11 } },
       grid: { left: 50, right: 16, top: 32, bottom: 60 },
       xAxis: { type: 'category', data: dates, axisLabel: { fontSize: 10 } },
       yAxis: { type: 'value', axisLabel: { formatter: (v: number) => `${v}` } },
@@ -363,9 +366,12 @@ export default function AnalyticsPage() {
 
       {/* 图表网格 */}
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-        <ChartCard title="每日采购趋势" loading={loading}>
-          <DailyTrendChart data={data?.dailyTrend ?? []} loading={loading} />
-        </ChartCard>
+        {/* 每日趋势占整行 */}
+        <div className="lg:col-span-2">
+          <ChartCard title="每日采购趋势" loading={loading}>
+            <DailyTrendChart data={data?.dailyTrend ?? []} loading={loading} />
+          </ChartCard>
+        </div>
         <ChartCard title="热购商品排行 Top10" loading={loading}>
           <TopCommoditiesCard data={data?.topCommodities ?? { byAmount: [], byQuantity: [] }} loading={loading} />
         </ChartCard>
