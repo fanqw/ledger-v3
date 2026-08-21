@@ -60,12 +60,41 @@ describe('database seed', () => {
 
   it('reports a missing seed file', async () => {
     jest.mocked(fs.existsSync).mockReturnValue(false);
+    const exit = jest.spyOn(process, 'exit').mockImplementation((() => undefined) as never);
+
+    await expect(seed()).rejects.toThrow('seed-users.yaml not found');
+    expect(exit).not.toHaveBeenCalled();
+    expect(disconnect).toHaveBeenCalled();
+    exit.mockRestore();
+  });
+
+  it('disconnects when hashing a configured user fails', async () => {
+    jest.mocked(fs.existsSync).mockReturnValue(true);
+    jest.mocked(fs.readFileSync).mockReturnValue('users: []');
+    jest.mocked(yaml.parse).mockReturnValue({
+      users: [{ username: 'alice', password: 'secret' }],
+    });
+    hash.mockRejectedValueOnce(new Error('bcrypt failed'));
+
+    await expect(seed()).rejects.toThrow('bcrypt failed');
+    expect(disconnect).toHaveBeenCalledTimes(1);
+  });
+
+  it('disconnects when creating a CLI user fails', async () => {
+    upsert.mockRejectedValueOnce(new Error('database failed'));
+
+    await expect(createUser('bob', 'secret')).rejects.toThrow('database failed');
+    expect(disconnect).toHaveBeenCalledTimes(1);
+  });
+
+  it('reports a missing CLI password without creating a user', async () => {
     const exit = jest.spyOn(process, 'exit').mockImplementation((() => {
       throw new Error('exit 1');
     }) as never);
 
-    await expect(seed()).rejects.toThrow('exit 1');
+    await expect(run(['node', 'seed.ts', '--username', 'carol'])).rejects.toThrow('exit 1');
     expect(exit).toHaveBeenCalledWith(1);
+    expect(upsert).not.toHaveBeenCalled();
     exit.mockRestore();
   });
 });
