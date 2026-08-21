@@ -24,6 +24,7 @@ function makeItem(overrides: any) {
       id: 'commodity-1',
       name: '商品A',
       category: { id: 'cat-1', name: '分类1' },
+      unit: { id: 'unit-1', name: '斤' },
     },
   };
   return { ...base, ...overrides };
@@ -181,24 +182,24 @@ describe('AnalyticsService', () => {
         makeOrder({
           id: 'o1', createdAt: '2026-07-01T08:00:00Z',
           items: [
-            makeItem({ commodityId: 'c1', commodity: { id: 'c1', name: '商品A', category: { id: 'cat1', name: 'C1' } }, quantity: { toNumber: () => 1 }, lineTotal: { toNumber: () => 10 } }),
-            makeItem({ commodityId: 'c2', commodity: { id: 'c2', name: '商品B', category: { id: 'cat2', name: 'C2' } }, quantity: { toNumber: () => 2 }, lineTotal: { toNumber: () => 20 } }),
+            makeItem({ commodityId: 'c1', commodity: { id: 'c1', name: '商品A', category: { id: 'cat1', name: 'C1' }, unit: { id: 'u1', name: '斤' } }, quantity: { toNumber: () => 1 }, lineTotal: { toNumber: () => 10 } }),
+            makeItem({ commodityId: 'c2', commodity: { id: 'c2', name: '商品B', category: { id: 'cat2', name: 'C2' }, unit: { id: 'u2', name: '箱' } }, quantity: { toNumber: () => 2 }, lineTotal: { toNumber: () => 20 } }),
           ],
         }),
         makeOrder({
           id: 'o2', createdAt: '2026-07-02T08:00:00Z',
           items: [
-            makeItem({ commodityId: 'c1', commodity: { id: 'c1', name: '商品A', category: { id: 'cat1', name: 'C1' } }, quantity: { toNumber: () => 3 }, lineTotal: { toNumber: () => 30 } }),
+            makeItem({ commodityId: 'c1', commodity: { id: 'c1', name: '商品A', category: { id: 'cat1', name: 'C1' }, unit: { id: 'u1', name: '斤' } }, quantity: { toNumber: () => 3 }, lineTotal: { toNumber: () => 30 } }),
           ],
         }),
       ];
       prisma.order.findMany.mockResolvedValue(orders);
       const result = await service.getWorkbench('2026-07-01', '2026-07-31');
       // c1: 金额 40, 数量 4; c2: 金额 20, 数量 2
-      expect(result.topCommodities.byAmount[0]).toMatchObject({ commodityId: 'c1', name: '商品A', amount: 40, quantity: 4 });
-      expect(result.topCommodities.byAmount[1]).toMatchObject({ commodityId: 'c2', name: '商品B', amount: 20, quantity: 2 });
-      expect(result.topCommodities.byQuantity[0]).toMatchObject({ commodityId: 'c1', quantity: 4 });
-      expect(result.topCommodities.byQuantity[1]).toMatchObject({ commodityId: 'c2', quantity: 2 });
+      expect(result.topCommodities.byAmount[0]).toMatchObject({ commodityId: 'c1', name: '商品A', unit: '斤', amount: 40, quantity: 4 });
+      expect(result.topCommodities.byAmount[1]).toMatchObject({ commodityId: 'c2', name: '商品B', unit: '箱', amount: 20, quantity: 2 });
+      expect(result.topCommodities.byQuantity[0]).toMatchObject({ commodityId: 'c1', unit: '斤', quantity: 4 });
+      expect(result.topCommodities.byQuantity[1]).toMatchObject({ commodityId: 'c2', unit: '箱', quantity: 2 });
     });
 
     it('相同金额按名称升序', async () => {
@@ -206,8 +207,8 @@ describe('AnalyticsService', () => {
         makeOrder({
           id: 'o1', createdAt: '2026-07-01T08:00:00Z',
           items: [
-            makeItem({ commodityId: 'c1', commodity: { id: 'c1', name: 'B品', category: { id: 'cat1', name: 'C1' } }, quantity: { toNumber: () => 1 }, lineTotal: { toNumber: () => 10 } }),
-            makeItem({ commodityId: 'c2', commodity: { id: 'c2', name: 'A品', category: { id: 'cat2', name: 'C2' } }, quantity: { toNumber: () => 1 }, lineTotal: { toNumber: () => 10 } }),
+            makeItem({ commodityId: 'c1', commodity: { id: 'c1', name: 'B品', category: { id: 'cat1', name: 'C1' }, unit: { id: 'u1', name: '斤' } }, quantity: { toNumber: () => 1 }, lineTotal: { toNumber: () => 10 } }),
+            makeItem({ commodityId: 'c2', commodity: { id: 'c2', name: 'A品', category: { id: 'cat2', name: 'C2' }, unit: { id: 'u2', name: '箱' } }, quantity: { toNumber: () => 1 }, lineTotal: { toNumber: () => 10 } }),
           ],
         }),
       ];
@@ -224,8 +225,8 @@ describe('AnalyticsService', () => {
         makeOrder({
           id: 'o1', createdAt: '2026-07-01T08:00:00Z',
           items: [
-            makeItem({ commodityId: 'c1', commodity: { id: 'c1', name: 'A', category: { id: 'cat1', name: '分类1' } }, lineTotal: { toNumber: () => 30 } }),
-            makeItem({ commodityId: 'c2', commodity: { id: 'c2', name: 'B', category: { id: 'cat2', name: '分类2' } }, lineTotal: { toNumber: () => 10 } }),
+            makeItem({ commodityId: 'c1', commodity: { id: 'c1', name: 'A', category: { id: 'cat1', name: '分类1' }, unit: { id: 'u1', name: '斤' } }, lineTotal: { toNumber: () => 30 } }),
+            makeItem({ commodityId: 'c2', commodity: { id: 'c2', name: 'B', category: { id: 'cat2', name: '分类2' }, unit: { id: 'u2', name: '箱' } }, lineTotal: { toNumber: () => 10 } }),
           ],
         }),
       ];
@@ -306,8 +307,8 @@ describe('AnalyticsService', () => {
         makeOrder({
           id: 'o1', createdAt: '2026-07-01T08:00:00Z',
           items: [
-            makeItem({ commodityId: 'c1', commodity: { id: 'c1', name: 'A', category: { id: 'cat1', name: 'C' } }, quantity: { toNumber: () => 0.1 }, lineTotal: { toNumber: () => 1 } }),
-            makeItem({ commodityId: 'c2', commodity: { id: 'c2', name: 'B', category: { id: 'cat2', name: 'C' } }, quantity: { toNumber: () => 0.2 }, lineTotal: { toNumber: () => 1 } }),
+            makeItem({ commodityId: 'c1', commodity: { id: 'c1', name: 'A', category: { id: 'cat1', name: 'C' }, unit: { id: 'u1', name: '斤' } }, quantity: { toNumber: () => 0.1 }, lineTotal: { toNumber: () => 1 } }),
+            makeItem({ commodityId: 'c2', commodity: { id: 'c2', name: 'B', category: { id: 'cat2', name: 'C' }, unit: { id: 'u2', name: '箱' } }, quantity: { toNumber: () => 0.2 }, lineTotal: { toNumber: () => 1 } }),
           ],
         }),
       ];

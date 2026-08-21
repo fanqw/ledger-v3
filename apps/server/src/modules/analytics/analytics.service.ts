@@ -21,6 +21,7 @@ interface ItemRow {
     id: string;
     name: string;
     category: { id: string; name: string } | null;
+    unit: { id: string; name: string } | null;
   };
 }
 
@@ -62,7 +63,7 @@ export class AnalyticsService {
       include: {
         items: {
           where: { deletedAt: null },
-          include: { commodity: { include: { category: true } } },
+          include: { commodity: { include: { category: true, unit: true } } },
         },
         purchasePlace: true,
       },
@@ -197,11 +198,11 @@ export class AnalyticsService {
   }
 
   private computeTopCommodities(orders: OrderRow[]): AnalyticsTopCommodities {
-    const map = new Map<string, { commodityId: string; name: string; amountFen: number; quantityMilli: number }>();
+    const map = new Map<string, { commodityId: string; name: string; unit: string; amountFen: number; quantityMilli: number }>();
     for (const o of orders) {
       for (const it of o.items) {
         const cid = it.commodityId;
-        const entry = map.get(cid) ?? { commodityId: cid, name: it.commodity?.name || '未知', amountFen: 0, quantityMilli: 0 };
+        const entry = map.get(cid) ?? { commodityId: cid, name: it.commodity?.name || '未知', unit: it.commodity?.unit?.name || '', amountFen: 0, quantityMilli: 0 };
         entry.amountFen += this.toFen(this.decimalToNumber(it.lineTotal));
         entry.quantityMilli += this.toMilli(this.decimalToNumber(it.quantity));
         map.set(cid, entry);
@@ -211,6 +212,7 @@ export class AnalyticsService {
     const entries = [...map.values()].map((e) => ({
       commodityId: e.commodityId,
       name: e.name,
+      unit: e.unit,
       amount: this.fenToYuan(e.amountFen),
       quantity: this.milliToNumber(e.quantityMilli),
     }));

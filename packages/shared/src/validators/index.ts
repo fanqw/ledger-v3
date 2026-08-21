@@ -186,6 +186,7 @@ export interface AnalyticsDailyTrendItem {
 export interface AnalyticsTopCommodity {
   commodityId: string;
   name: string;
+  unit: string;
   amount: number;
   quantity: number;
 }

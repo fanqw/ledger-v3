@@ -77,6 +77,7 @@ function DailyTrendChart({ data, loading }: { data: AnalyticsDailyTrendItem[]; l
       name: `${i + 1}`,
       type: 'bar' as const,
       stack: 'total',
+      barMaxWidth: 56,
       emphasis: { focus: 'series' as const },
       label: blockLabel,
       data: data.map((d) => d.slotAmounts[i] ?? 0),
@@ -85,6 +86,7 @@ function DailyTrendChart({ data, loading }: { data: AnalyticsDailyTrendItem[]; l
       name: '其他',
       type: 'bar' as const,
       stack: 'total',
+      barMaxWidth: 56,
       emphasis: { focus: 'series' as const },
       label: blockLabel,
       data: data.map((d) => d.otherAmount),
@@ -151,15 +153,26 @@ function TopCommoditiesCard({ data, loading }: { data: AnalyticsTopCommodities; 
         {list.map((c, i) => {
           const val = tab === 'amount' ? c.amount : c.quantity;
           const pct = (val / max) * 100;
+          // 前三名样式：奖牌色 + 加粗
+          const medalCls = i === 0
+            ? 'bg-yellow-400 text-yellow-900'
+            : i === 1
+              ? 'bg-slate-300 text-slate-800'
+              : i === 2
+                ? 'bg-amber-700 text-amber-50'
+                : 'bg-[#E2E8F0] text-[#64748B]';
+          const valueText = tab === 'amount'
+            ? `¥${fmtAmount(c.amount)}`
+            : `${c.quantity}${c.unit || ''}`;
           return (
             <div key={c.commodityId} className="flex items-center gap-2">
-              <span className="w-5 text-[12px] text-[#64748B]">{i + 1}</span>
-              <span className="w-32 truncate text-[12px] text-[#0F172A] dark:text-white">{c.name}</span>
+              <span className={`flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-bold ${medalCls}`}>{i + 1}</span>
+              <span className={`w-32 truncate text-[12px] ${i < 3 ? 'font-semibold' : ''} text-[#0F172A] dark:text-white`}>{c.name}</span>
               <div className="h-3 flex-1 rounded bg-[#E2E8F0] dark:bg-[#334155]">
-                <div className="h-3 rounded bg-blue-500" style={{ width: `${pct}%` }} />
+                <div className={`h-3 rounded ${i === 0 ? 'bg-yellow-500' : i === 1 ? 'bg-slate-400' : i === 2 ? 'bg-amber-600' : 'bg-blue-500'}`} style={{ width: `${pct}%` }} />
               </div>
-              <span className="w-16 text-right text-[12px] font-medium text-[#0F172A] dark:text-white">
-                {tab === 'amount' ? fmtAmount(c.amount) : c.quantity}
+              <span className={`w-20 text-right text-[12px] ${i < 3 ? 'font-bold' : 'font-medium'} text-[#0F172A] dark:text-white`}>
+                {valueText}
               </span>
             </div>
           );
