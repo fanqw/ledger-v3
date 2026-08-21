@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { DayPicker } from 'react-day-picker';
+import 'react-day-picker/style.css';
+import type { DateRange } from 'react-day-picker';
 import { authFetch } from '../lib/api';
 import { toast } from '../lib/toast';
 import { Button } from '../components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
 import useECharts, { type EChartsOption } from '../lib/use-echarts';
 import type {
   AnalyticsWorkbenchResponse,
@@ -270,6 +274,8 @@ export default function AnalyticsPage() {
   const [range, setRange] = useState<string>('近1个月');
   const [customStart, setCustomStart] = useState('');
   const [customEnd, setCustomEnd] = useState('');
+  const [customDialogOpen, setCustomDialogOpen] = useState(false);
+  const [tempRange, setTempRange] = useState<DateRange | undefined>(undefined);
   const [data, setData] = useState<AnalyticsWorkbenchResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -329,7 +335,17 @@ export default function AnalyticsPage() {
           {RANGE_OPTIONS.map((r) => (
             <button
               key={r.label}
-              onClick={() => setRange(r.label)}
+              onClick={() => {
+                if (r.months === null) {
+                  // 自定义：打开日期范围弹框
+                  setTempRange(customStart && customEnd
+                    ? { from: new Date(`${customStart}T00:00:00`), to: new Date(`${customEnd}T00:00:00`) }
+                    : undefined);
+                  setCustomDialogOpen(true);
+                } else {
+                  setRange(r.label);
+                }
+              }}
               className={`rounded-full px-3 py-1 text-[12px] transition-colors ${
                 range === r.label
                   ? 'bg-blue-600 text-white'
@@ -342,17 +358,45 @@ export default function AnalyticsPage() {
         </div>
       </div>
 
-      {/* 自定义日期 */}
-      {range === '自定义' && (
-        <div className="flex items-center gap-2 text-[13px]">
-          <input type="date" value={customStart} onChange={(e) => setCustomStart(e.target.value)}
-            className="rounded-md border border-[#E2E8F0] px-2 py-1 dark:border-[#334155] dark:bg-[#1E293B] dark:text-white" />
-          <span className="text-[#64748B]">至</span>
-          <input type="date" value={customEnd} onChange={(e) => setCustomEnd(e.target.value)}
-            className="rounded-md border border-[#E2E8F0] px-2 py-1 dark:border-[#334155] dark:bg-[#1E293B] dark:text-white" />
-          <Button size="default" className="h-8 px-3 text-[12px]" onClick={() => setReloadKey((k) => k + 1)} disabled={!customStart || !customEnd}>确认</Button>
-        </div>
-      )}
+      {/* 自定义日期范围弹框 */}
+      <Dialog open={customDialogOpen} onOpenChange={setCustomDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>选择日期范围</DialogTitle></DialogHeader>
+          <div className="flex justify-center">
+            <DayPicker
+              mode="range"
+              selected={tempRange}
+              onSelect={(range) => setTempRange(range)}
+              numberOfMonths={2}
+              disabled={{ after: new Date() }}
+              className="mx-auto"
+            />
+          </div>
+          <div className="flex items-center justify-between text-[13px]">
+            <span className="text-[#64748B]">
+              {tempRange?.from
+                ? `${formatDate(tempRange.from)} ~ ${tempRange.to ? formatDate(tempRange.to) : '...'}`
+                : '请选择起止日期'}
+            </span>
+            <div className="flex gap-2">
+              <Button variant="outline" size="default" className="h-8 px-3 text-[12px]" onClick={() => setCustomDialogOpen(false)}>取消</Button>
+              <Button
+                size="default"
+                className="h-8 px-3 text-[12px]"
+                disabled={!tempRange?.from || !tempRange?.to}
+                onClick={() => {
+                  if (!tempRange?.from || !tempRange?.to) return;
+                  setCustomStart(formatDate(tempRange.from));
+                  setCustomEnd(formatDate(tempRange.to));
+                  setRange('自定义');
+                  setCustomDialogOpen(false);
+                  setReloadKey((k) => k + 1);
+                }}
+              >确认</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* 错误态 */}
       {error && (
