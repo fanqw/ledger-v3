@@ -5,7 +5,8 @@ import type { DateRange } from 'react-day-picker';
 import { authFetch } from '../lib/api';
 import { toast } from '../lib/toast';
 import { Button } from '../components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
+import { Popover, PopoverContent, PopoverTrigger } from '../components/ui/popover';
+import { CalendarDays } from 'lucide-react';
 import useECharts, { type EChartsOption } from '../lib/use-echarts';
 import type {
   AnalyticsWorkbenchResponse,
@@ -20,7 +21,7 @@ import type {
 
 interface RangeOption {
   label: string;
-  months: number | null; // null = 自定义
+  months: number;
 }
 
 const RANGE_OPTIONS: RangeOption[] = [
@@ -28,7 +29,6 @@ const RANGE_OPTIONS: RangeOption[] = [
   { label: '近3个月', months: 3 },
   { label: '近6个月', months: 6 },
   { label: '近12个月', months: 12 },
-  { label: '自定义', months: null },
 ];
 
 function formatDate(d: Date): string {
@@ -274,7 +274,7 @@ export default function AnalyticsPage() {
   const [range, setRange] = useState<string>('近1个月');
   const [customStart, setCustomStart] = useState('');
   const [customEnd, setCustomEnd] = useState('');
-  const [customDialogOpen, setCustomDialogOpen] = useState(false);
+  const [rangePickerOpen, setRangePickerOpen] = useState(false);
   const [tempRange, setTempRange] = useState<DateRange | undefined>(undefined);
   const [data, setData] = useState<AnalyticsWorkbenchResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -287,12 +287,14 @@ export default function AnalyticsPage() {
     let start: string;
     let end: string;
     const opt = RANGE_OPTIONS.find((r) => r.label === range);
-    if (opt && opt.months !== null) {
-      ({ start, end } = calcRange(opt.months));
-    } else {
-      if (!customStart || !customEnd) return; // 自定义未确认不发请求
+    if (range === '自定义') {
+      if (!customStart || !customEnd) return; // 自定义未选不发请求
       start = customStart;
       end = customEnd;
+    } else if (opt) {
+      ({ start, end } = calcRange(opt.months));
+    } else {
+      return;
     }
 
     // 取消过期请求
@@ -335,17 +337,7 @@ export default function AnalyticsPage() {
           {RANGE_OPTIONS.map((r) => (
             <button
               key={r.label}
-              onClick={() => {
-                if (r.months === null) {
-                  // 自定义：打开日期范围弹框
-                  setTempRange(customStart && customEnd
-                    ? { from: new Date(`${customStart}T00:00:00`), to: new Date(`${customEnd}T00:00:00`) }
-                    : undefined);
-                  setCustomDialogOpen(true);
-                } else {
-                  setRange(r.label);
-                }
-              }}
+              onClick={() => setRange(r.label)}
               className={`rounded-full px-3 py-1 text-[12px] transition-colors ${
                 range === r.label
                   ? 'bg-blue-600 text-white'
@@ -355,48 +347,54 @@ export default function AnalyticsPage() {
               {r.label}
             </button>
           ))}
+          {/* antd 风格 RangePicker：单个输入框，点击展开双月日历 */}
+          <Popover open={rangePickerOpen} onOpenChange={setRangePickerOpen}>
+            <PopoverTrigger asChild>
+              <button
+                type="button"
+                onClick={() => {
+                  setTempRange(customStart && customEnd
+                    ? { from: new Date(`${customStart}T00:00:00`), to: new Date(`${customEnd}T00:00:00`) }
+                    : undefined);
+                  setRangePickerOpen(true);
+                }}
+                className={`flex h-7 items-center gap-1.5 rounded-md border px-2.5 text-[12px] transition-colors ${
+                  range === '自定义'
+                    ? 'border-blue-600 bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300'
+                    : 'border-[#E2E8F0] bg-white text-[#64748B] hover:border-[#CBD5E1] dark:border-[#334155] dark:bg-[#1E293B] dark:text-[#94A3B8]'
+                }`}
+              >
+                <CalendarDays className="h-3.5 w-3.5" />
+                {customStart && customEnd ? (
+                  <span className="font-medium">{formatDate(new Date(customStart))} ~ {formatDate(new Date(customEnd))}</span>
+                ) : (
+                  <span>自定义</span>
+                )}
+              </button>
+            </PopoverTrigger>
+            <PopoverContent align="start" className="w-auto p-2">
+              <DayPicker
+                mode="range"
+                selected={tempRange}
+                onSelect={(range) => {
+                  setTempRange(range);
+                  // 仅在完整区间（from ≠ to）时应用并关闭；单日点击（from===to）不关闭，等待用户选结束日
+                  if (range?.from && range?.to && formatDate(range.from) !== formatDate(range.to)) {
+                    setCustomStart(formatDate(range.from));
+                    setCustomEnd(formatDate(range.to));
+                    setRange('自定义');
+                    setRangePickerOpen(false);
+                    setReloadKey((k) => k + 1);
+                  }
+                }}
+                numberOfMonths={2}
+                disabled={{ after: new Date() }}
+                className="mx-auto"
+              />
+            </PopoverContent>
+          </Popover>
         </div>
       </div>
-
-      {/* 自定义日期范围弹框 */}
-      <Dialog open={customDialogOpen} onOpenChange={setCustomDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader><DialogTitle>选择日期范围</DialogTitle></DialogHeader>
-          <div className="flex justify-center">
-            <DayPicker
-              mode="range"
-              selected={tempRange}
-              onSelect={(range) => setTempRange(range)}
-              numberOfMonths={2}
-              disabled={{ after: new Date() }}
-              className="mx-auto"
-            />
-          </div>
-          <div className="flex items-center justify-between text-[13px]">
-            <span className="text-[#64748B]">
-              {tempRange?.from
-                ? `${formatDate(tempRange.from)} ~ ${tempRange.to ? formatDate(tempRange.to) : '...'}`
-                : '请选择起止日期'}
-            </span>
-            <div className="flex gap-2">
-              <Button variant="outline" size="default" className="h-8 px-3 text-[12px]" onClick={() => setCustomDialogOpen(false)}>取消</Button>
-              <Button
-                size="default"
-                className="h-8 px-3 text-[12px]"
-                disabled={!tempRange?.from || !tempRange?.to}
-                onClick={() => {
-                  if (!tempRange?.from || !tempRange?.to) return;
-                  setCustomStart(formatDate(tempRange.from));
-                  setCustomEnd(formatDate(tempRange.to));
-                  setRange('自定义');
-                  setCustomDialogOpen(false);
-                  setReloadKey((k) => k + 1);
-                }}
-              >确认</Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
 
       {/* 错误态 */}
       {error && (
