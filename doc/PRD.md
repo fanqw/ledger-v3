@@ -115,12 +115,12 @@ V3 对所有模型、字段、API 路径进行统一规范化。以下为 V2 →
 │       └── 4.5.7 导出 Excel（含合并单元格、格式、金额标红）
 │
 ├── 5. 数据分析工作台（重构版）
-│   ├── 5.1 KPI 卡片：订单总数、采购总额、商品种类、本月新增、环比变化率
-│   ├── 5.2 月度采购趋势（近 12 月订单金额 & 数量双轴图）
-│   ├── 5.3 分类金额占比（环形图）
-│   ├── 5.4 进货地采购排行 Top 10（横向柱状图）
-│   ├── 5.5 热购商品排行 Top 10（横向柱状图）
-│   ├── 5.6 商品价格波动分析（选定商品近 12 月单价走势 + 均线）
+│   ├── 5.1 时间范围筛选（近1/3/6/12月 Chip + 自定义 RangePicker）
+│   ├── 5.2 KPI 卡片：采购总金额、订单总数、商品种类、平均订单金额
+│   ├── 5.3 每日采购趋势（堆叠柱状图 + zoom，每块=当日一笔订单）
+│   ├── 5.4 热购商品排行 Top 10（金额/数量双 Tab，前三名样式 + 单位）
+│   ├── 5.5 分类金额占比（环形图）
+│   ├── 5.6 进货地金额占比（环形图）
 │   └── 5.7 订单规模分布（按金额区间统计订单数，直方图）
 │
 └── 6. 通用能力
@@ -145,11 +145,11 @@ V3 对所有模型、字段、API 路径进行统一规范化。以下为 V2 →
 | quantity/unitPrice/lineTotal 联动 | 前端计算 | ✅ | ✅ |
 | 分类小计 + 订单总计 | ✅ | ✅ | ✅ |
 | 导出 Excel | ❌ | ✅ | ✅ |
-| **工作台数据看板** | ❌ | ✅（旧版 5 图） | ✅ **重构版 7 模块** |
-| 月度趋势双轴图 | ❌ | ❌ | ✅ **新增** |
-| 环比变化率 | ❌ | ❌ | ✅ **新增** |
-| 价格波动分析 | ❌ | ❌ | ✅ **新增** |
-| 订单规模分布 | ❌ | ❌ | ✅ **新增** |
+| **工作台数据看板** | ❌ | ✅（旧版 5 图） | ✅ **重构版（KPI×4 + 时间筛选 + 5 图表）** |
+| 每日采购趋势堆叠图 | ❌ | ❌ | ✅ **新增**（固定 9 series + zoom） |
+| 分类/进货地金额占比 | ❌ | ✅（环形图） | ✅ **环形图** |
+| 热购商品排行 | ❌ | ✅ | ✅ **Top10 双 Tab + 前三名样式 + 单位** |
+| 订单规模分布 | ❌ | ❌ | ✅ **新增**（5 桶直方图） |
 | API 文档 (Swagger) | ✅ | ❌ | ✅ NestJS Swagger |
 | 单元测试 | ❌ | ✅ | ✅ |
 | E2E 测试 | ❌ | ✅ | ✅ |
@@ -470,8 +470,8 @@ model OrderItem {
 | 订单明细 | POST | `/api/orders/:orderId/items` | 新增明细（即输即建） |
 | 订单明细 | PATCH | `/api/orders/:orderId/items/:itemId` | 编辑明细 |
 | 订单明细 | DELETE | `/api/orders/:orderId/items/:itemId` | 删除明细 |
-| 分析 | GET | `/api/analytics/workbench` | 工作台数据 |
-| 分析 | GET | `/api/analytics/commodity` | 单品分析 |
+| 分析 | GET | `/api/analytics/workbench?start&end` | 工作台数据（时间筛选 + KPI + 5 图表） |
+| 分析 | GET | `/api/analytics/commodity` | 单品分析（**暂未实现**，待后续 Proposal 补充） |
 | 系统 | GET | `/api/health` | 健康检查（DB + Redis 连通性） |
 
 ### 6.3 鉴权方案
@@ -561,7 +561,7 @@ pnpm --filter server db:create-user --username xxx --password xxx --role admin
 | 采购总金额（元） | 时间范围内所有 OrderItem.lineTotal 之和 |
 | 订单总数 | 时间范围内创建的非删除订单数 |
 | 商品种类 | 时间范围内出现过的不同 Commodity 数 |
-| 本月订单数 | 本月创建的订单数 |
+| 平均订单金额 | 采购总金额 ÷ 订单总数（订单总数为 0 时显示 0） |
 
 ### 8.3 图表矩阵
 
@@ -570,7 +570,7 @@ pnpm --filter server db:create-user --username xxx --password xxx --role admin
 | 1 | 每日采购趋势 | 堆叠柱状图（每块=当日一笔订单金额） | X 轴为日期，Y 轴为金额，支持 Zoom 拖拽；hover 显示日期+各订单金额+当日总额 |
 | 2 | 分类金额占比 | 环形图 (Donut) | 各 Category 采购金额占比，中心显示总金额；hover 显示分类名、占比、金额、商品数、订单数 |
 | 3 | 进货地金额占比 | 环形图 (Donut) | 各 PurchasePlace 采购金额占比；hover 显示进货地名、占比、金额、订单数 |
-| 4 | 热购商品排行 | Tab 切换列表（数量排行 / 金额排行） | Top 10 商品，默认显示金额排行 |
+| 4 | 热购商品排行 | Tab 切换列表（数量排行 / 金额排行） | Top 10 商品，默认金额排行；前三名奖牌样式，金额带 ¥、数量带单位 |
 | 5 | 订单规模分布 | 直方图 (Histogram) | 按订单总金额分桶（0-1k, 1k-5k, 5k-10k, 10k-50k, 50k+），Y 轴为订单数量 |
 
 ### 8.4 交互特性
@@ -652,7 +652,7 @@ store/
 | **Phase 2：基础设施** | Prisma Schema + Migration + Seed（含批量用户）、Redis、JWT 鉴权、响应拦截器、异常过滤器、Zod 校验、Swagger | 认证可用 |
 | **Phase 3：基础资料** | Category / Unit / Commodity / PurchasePlace 四模块 + 前端 CRUD 页面 + RTK Query 集成 | 基础资料完整 |
 | **Phase 4：订单** | Order + OrderItem 模块、订单列表/详情页、即输即建、lineTotal 联动、Excel 导出 | 订单完整 |
-| **Phase 5：工作台** | Analytics 模块（KPI + 6 图 + 筛选 + 单品分析）、前端 ECharts 集成 | 数据看板可用 |
+| **Phase 5：工作台** | Analytics 模块（KPI×4 + 时间筛选 + 每日趋势/热购排行/分类占比/进货地占比/规模分布 5 图表）、前端 ECharts 集成 | 数据看板可用 |
 | **Phase 6：测试与文档** | 后端 Service 单元测试、前端组件测试、E2E 冒烟、架构/API/部署/开发文档 | 可交付 |
 
 ### 11.1 从 V2 可复用的纯逻辑
@@ -661,8 +661,8 @@ store/
 |------|------|----------|
 | 合并单元格计算 | `line-aggregates.ts` | 直搬至 `packages/shared` |
 | Excel 导出生成为 | `export-order-excel.ts` | 前端保持，或移至后端 |
-| 分析计算引擎 | `analytics/workbench.ts` | 迁移至 NestJS AnalyticsService |
-| 单品分析 | `analytics/commodity.ts` | 同上 |
+| 分析计算引擎 | `analytics/workbench.ts` | 迁移至 NestJS AnalyticsService（P5 已落地） |
+| 单品分析 | `analytics/commodity.ts` | **暂不迁移**（P5 不含单品分析，待后续 Proposal） |
 | 删除守卫 | `delete-guards.ts` | 迁移至 NestJS Service |
 | 错误码 | `delete-block-codes.ts` | 迁移至 `packages/shared/constants` |
 | 即输即建逻辑 | `master-data/resolve-for-order-line.ts` | 迁移至 NestJS OrderService |
