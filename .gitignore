@@ -11,6 +11,7 @@ output/
 
 # Jest 测试产物
 test-results/
+coverage/
 
 # 误创建/误放目录
 apps/server/apps/
