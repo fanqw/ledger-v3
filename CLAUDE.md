@@ -29,7 +29,7 @@
 - **ledger-v3**：台帐系统 V3 全栈重构——面向个人/小规模用户的订单对账管理工具。
 - **架构**：pnpm monorepo，后端 NestJS REST API（端口 3001），前端 Vite + React SPA（端口 5173），`packages/shared` 共享 Zod Schema。
 - **范式**：SDD（Spec-Driven Development），`openspec/specs/` 为权威行为规格。
-- **当前阶段**：P4——订单管理。P0–P3（骨架、认证、布局、基础资料 CRUD）已落地。
+- **当前状态**：**P0–P7 全部完成**。骨架、认证、布局、基础资料 CRUD、订单管理、数据分析工作台、V1 数据迁移、自动化验收均已落地并归档。
 - **规模**：2–3 用户，日均 <10 订单，历史数据千级。
 
 ## 2. 常用命令
@@ -46,10 +46,15 @@ pnpm --filter shared build
 pnpm --filter server dev     # 后端（端口 3001）
 pnpm --filter server test    # 后端测试
 pnpm --filter server test -- --testPathPattern="order"  # 运行单个测试文件
+pnpm --filter server test -- --coverage   # 后端测试 + 覆盖率
 pnpm --filter server db:generate
 pnpm --filter server db:migrate
+pnpm --filter server db:migrate-from-v1    # V1 MongoDB → V3 数据迁移（需 V1_MONGO_URL）
 pnpm --filter web dev        # 前端（端口 5173）
 pnpm --filter web build
+pnpm --filter web smoke:e2e  # 前端 E2E 冒烟（核心链路）
+pnpm --filter web verify:e2e # 订单详情 E2E 验证
+docker compose up -d         # 一键启动全部服务（4 容器）
 ```
 
 ## 3. 项目结构速览
@@ -61,12 +66,20 @@ ledger-v3/
 │   ├── category/            # 分类 CRUD（P3 参考模板）
 │   ├── unit/                # 单位 CRUD
 │   ├── commodity/           # 商品 CRUD（关联 Category+Unit，P4 最佳参考）
-│   └── purchase-place/      # 进货地 CRUD
+│   ├── purchase-place/      # 进货地 CRUD
+│   ├── order/               # 订单 + 明细 CRUD（引用商品/即输即建、lineTotal 联动）
+│   └── analytics/           # 数据分析工作台聚合（内存聚合 + KPI/趋势/排行/占比/分布）
+├── apps/server/prisma/
+│   ├── migrate-from-v1.ts   # V1 MongoDB → V3 PostgreSQL 数据迁移
+│   └── migrate-from-v1.spec.ts
 ├── apps/web/src/
 │   ├── components/layout/   # AppShell, SideNav, TopBar
 │   ├── components/ui/       # Button, Dialog, DataTable, Select 等
-│   ├── lib/                 # API 客户端(authFetch), AuthContext, Toast
+│   ├── lib/                 # API 客户端(authFetch), AuthContext, Toast, use-echarts
 │   └── pages/               # 路由页面（懒加载）
+│       ├── Orders.tsx       # 订单列表
+│       ├── OrderDetail.tsx  # 订单详情（明细表格/即输即建/Excel 导出）
+│       └── Analytics.tsx    # 数据分析工作台（ECharts 图表）
 ├── packages/shared/src/
 │   ├── validators/index.ts  # 所有 Zod Schema（前后端共用）
 │   └── constants/index.ts   # ERROR_CODES, ERROR_MESSAGES
@@ -127,9 +140,12 @@ apps/server/src/modules/commodity/
 
 巡检 Agent 只创建 Issue 不修改代码。Claude Code 的职责：新功能开发（P4+），遵循 SDD/TDD。
 
-## 6. P4 订单管理
+## 6. 已交付功能（P0-P7 全部完成）
 
-- **权威规格**：`openspec/specs/sales-orders/spec.md`
-- **最佳参考模块**：`apps/server/src/modules/commodity`
-- **当前状态**：Order + OrderItem 模型已在 Prisma Schema 中定义，共享 Zod Schema（orderSchema, orderItemSchema）已存在。后端 `order/` 模块和前端订单页面尚未创建。
-- **⚠️ 开始实现前必须先创建 OpenSpec change 文档并获得用户 review 批准。**
+- **P0-P3 基础**：项目骨架、认证与会话（JWT 双令牌）、布局壳与基础组件、基础资料 CRUD（分类/单位/商品/进货地）
+- **P4 订单管理**：订单 + 明细 CRUD（引用商品/即输即建）、lineTotal 联动标红、分类分组小计、Excel 导出。权威规格 `openspec/specs/sales-orders/spec.md`
+- **P5 数据分析工作台**：`/analytics` 页面（KPI×4、每日趋势堆叠图、热购 Top10、分类/进货地占比环形图、订单规模分布），ECharts + 时间筛选（Chip + RangePicker）。权威规格 `openspec/specs/analytics-workbench/spec.md`
+- **P6 数据迁移**：`apps/server/prisma/migrate-from-v1.ts`（V1 MongoDB → V3 PostgreSQL）。命令 `V1_MONGO_URL=... pnpm --filter server db:migrate-from-v1`
+- **P7 自动化验收**：Docker Compose 一键启动（4 容器）、测试覆盖率 ≥60%（当前 98%）、E2E 冒烟、README/部署/API 文档
+- **测试基线**：后端 236/236、E2E 冒烟 9/9
+- **⚠️ 新功能开发仍须先创建 OpenSpec change 文档并获得用户 review 批准。**
