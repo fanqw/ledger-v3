@@ -78,7 +78,7 @@ export async function runMigration(
 
   // 导出 6 集合（只读）
   const collections = await Promise.all(
-    ['users', 'categories', 'units', 'commodities', 'orders', 'ordercommodities'].map((name) =>
+    ['users', 'category', 'unit', 'commodity', 'order', 'order_commodity'].map((name) =>
       db.collection(name).find().toArray(),
     ),
   );
@@ -111,7 +111,7 @@ export async function runMigration(
         const data = {
           id: v1Id,
           username: String(v1.username || v1.user_name || `user-${v1Id}`),
-          passwordHash: String(v1.passwordHash || v1.password_hash || ''),
+          passwordHash: String(v1.password || v1.passwordHash || v1.password_hash || ''),
           role: String(v1.role || 'admin'),
           deletedAt: toDeletedAt(v1),
           createdAt: toDate(v1.create_at || v1.createdAt) || new Date(),
@@ -188,11 +188,11 @@ export async function runMigration(
     for (const doc of commodities) {
       const v1 = doc as V1Record;
       const v1Id = toHexId(v1._id);
-      const categoryId = idMap.get(String(v1.categoryId));
-      const unitId = idMap.get(String(v1.unitId));
+      const categoryId = idMap.get(String(v1.category_id || v1.categoryId));
+      const unitId = idMap.get(String(v1.unit_id || v1.unitId));
       if (!categoryId || !unitId) {
         stats.skipped++;
-        skips.push(`commodity ${v1Id}: 分类/单位外键缺失（categoryId=${v1.categoryId}, unitId=${v1.unitId}）`);
+        skips.push(`commodity ${v1Id}: 分类/单位外键缺失（category_id=${v1.category_id}, unit_id=${v1.unit_id}）`);
         continue;
       }
       try {
@@ -255,11 +255,11 @@ export async function runMigration(
     for (const doc of ordercommodities) {
       const v1 = doc as V1Record;
       const v1Id = toHexId(v1._id);
-      const orderId = idMap.get(String(v1.orderId));
-      const commodityId = idMap.get(String(v1.commodityId));
+      const orderId = idMap.get(String(v1.order_id || v1.orderId));
+      const commodityId = idMap.get(String(v1.commodity_id || v1.commodityId));
       if (!orderId || !commodityId) {
         stats.skipped++;
-        skips.push(`ordercommodities ${v1Id}: 外键缺失（orderId=${v1.orderId}, commodityId=${v1.commodityId}）`);
+        skips.push(`order_commodity ${v1Id}: 外键缺失（order_id=${v1.order_id}, commodity_id=${v1.commodity_id}）`);
         continue;
       }
       try {
@@ -316,10 +316,17 @@ export async function runMigration(
  * 命令行入口：读取环境变量、建立连接、执行迁移、处理退出码。
  */
 async function main() {
-  const mongoUrl = process.env.V1_MONGO_URL;
+  // 显式加载 .env（ts-node 直跑时确保读到 V1_MONGO_URL）
+  try { require('dotenv').config(); } catch { /* dotenv 不可用时忽略 */ }
+
+  let mongoUrl = process.env.V1_MONGO_URL;
   if (!mongoUrl) {
     console.error('缺少 V1_MONGO_URL 环境变量（V1 MongoDB 连接串）');
     process.exit(1);
+  }
+  // V1 认证库可能未在 URL 指定（authSource），默认走 admin，避免 Authentication failed
+  if (!mongoUrl.includes('authSource') && !mongoUrl.includes('authMechanism')) {
+    mongoUrl += (mongoUrl.includes('?') ? '&' : '?') + 'authSource=admin';
   }
 
   const prisma = new PrismaClient();
