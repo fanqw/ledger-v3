@@ -121,7 +121,7 @@ describe('runMigration', () => {
   it('按字段映射导入用户（desc→description、role 默认 admin）', async () => {
     const client = makeClient({
       users: [{ _id: { toString: () => 'u1' }, username: 'alice', passwordHash: 'h1', desc: '备注', create_at: '2024-01-01' }],
-      categories: [], units: [], commodities: [], orders: [], ordercommodities: [],
+      category: [], unit: [], commodity: [], order: [], ordercommodity: [],
     });
     
     const result = await runMigration(prisma as never, client as never);
@@ -135,9 +135,9 @@ describe('runMigration', () => {
 
   it('外键缺失时跳过 commodity 并记录 skip', async () => {
     const client = makeClient({
-      users: [], categories: [], units: [],
-      commodities: [{ _id: { toString: () => 'c1' }, name: 'x', categoryId: 'nonexistent', unitId: 'u1' }],
-      orders: [], ordercommodities: [],
+      users: [], category: [], unit: [],
+      commodity: [{ _id: { toString: () => 'c1' }, name: 'x', category_id: 'nonexistent', unit_id: 'u1' }],
+      order: [], ordercommodity: [],
     });
     
     const result = await runMigration(prisma as never, client as never);
@@ -149,7 +149,7 @@ describe('runMigration', () => {
   it('验证失败时返回 failures（不抛异常）', async () => {
     const client = makeClient({
       users: [{ _id: { toString: () => 'u1' }, username: 'alice', passwordHash: 'h1' }],
-      categories: [], units: [], commodities: [], orders: [], ordercommodities: [],
+      category: [], unit: [], commodity: [], order: [], ordercommodity: [],
     });
     // 记录数不匹配：V3 count 返回 0，V1 有 1 个非删除用户
     count.mockResolvedValue(0);
@@ -165,7 +165,7 @@ describe('runMigration', () => {
         { _id: { toString: () => 'u1' }, username: 'a', passwordHash: 'h', deleted: false },
         { _id: { toString: () => 'u2' }, username: 'b', passwordHash: 'h', deleted: true, update_at: '2024-01-01' },
       ],
-      categories: [], units: [], commodities: [], orders: [], ordercommodities: [],
+      category: [], unit: [], commodity: [], order: [], ordercommodity: [],
     });
     count.mockResolvedValue(1); // V3 应有 1 个非删除用户
     
