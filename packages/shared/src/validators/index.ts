@@ -90,6 +90,40 @@ export const orderItemUpdateSchema = z
     { message: '至少提供一个要更新的字段', path: ['quantity'] },
   );
 
+// ==================== Analytics ====================
+
+// 工作台查询参数：start/end 为 YYYY-MM-DD，必须成对出现
+const dateStrSchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, '日期格式应为 YYYY-MM-DD')
+  .refine((v) => !Number.isNaN(Date.parse(`${v}T00:00:00Z`)), '日期不合法');
+
+export const analyticsQuerySchema = z
+  .object({
+    start: dateStrSchema.optional(),
+    end: dateStrSchema.optional(),
+  })
+  .refine(
+    (d) => {
+      // 成对出现
+      if (!!d.start !== !!d.end) return false;
+      return true;
+    },
+    { message: 'start 与 end 必须同时提供', path: ['start'] },
+  )
+  .refine(
+    (d) => {
+      if (!d.start || !d.end) return true;
+      // start <= end
+      if (d.start > d.end) return false;
+      // 最大跨度 366 天
+      const s = Date.parse(`${d.start}T00:00:00Z`);
+      const e = Date.parse(`${d.end}T00:00:00Z`);
+      return (e - s) / 86400000 <= 366;
+    },
+    { message: '日期范围非法：start 不能晚于 end，且跨度不超过 366 天', path: ['start'] },
+  );
+
 // 向后兼容别名
 export const orderSchema = z.object({
   name: z.string().trim().min(1, '订单名称不能为空'),
@@ -124,3 +158,72 @@ export type OrderItemUpdateInput = z.infer<typeof orderItemUpdateSchema>;
 // 向后兼容别名
 export type OrderInput = z.infer<typeof orderSchema>;
 export type OrderItemInput = z.infer<typeof orderItemSchema>;
+
+// ==================== Analytics DTO ====================
+
+export interface AnalyticsKpis {
+  totalAmount: number;
+  orderCount: number;
+  commodityCount: number;
+  avgOrderAmount: number;
+}
+
+export interface AnalyticsTrendOrder {
+  id: string;
+  name: string;
+  amount: number;
+}
+
+export interface AnalyticsDailyTrendItem {
+  date: string; // YYYY-MM-DD
+  total: number;
+  slotAmounts: number[]; // 8 个元素
+  otherAmount: number;
+  otherCount: number;
+  orders: AnalyticsTrendOrder[]; // ≤ 8 笔
+}
+
+export interface AnalyticsTopCommodity {
+  commodityId: string;
+  name: string;
+  unit: string;
+  amount: number;
+  quantity: number;
+}
+
+export interface AnalyticsTopCommodities {
+  byAmount: AnalyticsTopCommodity[];
+  byQuantity: AnalyticsTopCommodity[];
+}
+
+export interface AnalyticsCategoryShare {
+  categoryId: string;
+  name: string;
+  amount: number;
+  percentage: number;
+  commodityCount: number;
+  orderCount: number;
+}
+
+export interface AnalyticsPurchasePlaceShare {
+  purchasePlaceId: string | null; // null 表示"未指定"
+  name: string;
+  amount: number;
+  percentage: number;
+  orderCount: number;
+}
+
+export interface AnalyticsOrderSizeBucket {
+  bucket: '0-1k' | '1k-5k' | '5k-10k' | '10k-50k' | '50k+';
+  count: number;
+}
+
+export interface AnalyticsWorkbenchResponse {
+  kpis: AnalyticsKpis;
+  dailyTrend: AnalyticsDailyTrendItem[];
+  topCommodities: AnalyticsTopCommodities;
+  categoryShare: AnalyticsCategoryShare[];
+  purchasePlaceShare: AnalyticsPurchasePlaceShare[];
+  orderSizeDistribution: AnalyticsOrderSizeBucket[];
+}
+
