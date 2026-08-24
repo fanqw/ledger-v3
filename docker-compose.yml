@@ -1,13 +1,13 @@
 services:
-  nginx:
+  # 前端：web Dockerfile 多阶段构建（node build → nginx serve），含 /api 代理
+  frontend:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
     depends_on:
     - server
-    image: nginx:1.27-alpine
     ports:
     - 80:80
-    volumes:
-    - ./nginx.conf:/etc/nginx/nginx.conf:ro
-    - ./apps/web/dist:/usr/share/nginx/html:ro
   postgres:
     environment:
       POSTGRES_DB: ledger_v3
