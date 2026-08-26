@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Body, Req, UseGuards, Res, HttpCode } from '@nestjs/common';
+import { Controller, Post, Get, Body, Req, UseGuards, Res, HttpCode, HttpStatus } from '@nestjs/common';
 import { Response, Request } from 'express';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard, Public } from './jwt-auth.guard';
@@ -17,7 +17,7 @@ export class AuthController {
   ) {
     const parsed = loginSchema.safeParse(body);
     if (!parsed.success) {
-      res.status(422);
+      res.status(HttpStatus.UNPROCESSABLE_ENTITY);
       return {
         success: false,
         error: { code: 'VALIDATION_ERROR', message: parsed.error.issues[0]?.message || '参数不合法' },
@@ -76,7 +76,7 @@ export class AuthController {
   ) {
     const refreshToken = req.cookies?.refreshToken;
     if (!refreshToken) {
-      res.status(401);
+      res.status(HttpStatus.UNAUTHORIZED);
       return {
         success: false,
         error: { code: 'TOKEN_EXPIRED', message: '登录已过期，请重新登录' },
