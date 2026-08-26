@@ -264,14 +264,20 @@ export async function runMigration(
       }
       try {
         const mapped = mapFields(v1);
+        // V1 无 lineTotal 字段，用 count × price 计算（舍入 2 位，与 V3 前端一致）
+        const quantity = Number(v1.count ?? 0);
+        const unitPrice = Number(v1.price ?? 0);
+        const lineTotal = v1.lineTotal !== undefined
+          ? Number(v1.lineTotal)
+          : Math.round(quantity * unitPrice * 100) / 100;
         const data: Prisma.OrderItemCreateInput = {
           id: v1Id,
           order: { connect: { id: orderId } },
           commodity: { connect: { id: commodityId } },
           // Decimal 直接传值，避免 Number() 中转精度损失
-          quantity: new Prisma.Decimal(String(v1.count ?? 0)),
-          unitPrice: new Prisma.Decimal(String(v1.price ?? 0)),
-          lineTotal: new Prisma.Decimal(String(v1.lineTotal ?? 0)),
+          quantity: new Prisma.Decimal(String(quantity)),
+          unitPrice: new Prisma.Decimal(String(unitPrice)),
+          lineTotal: new Prisma.Decimal(String(lineTotal)),
           description: mapped.description ? String(mapped.description) : undefined,
           deletedAt: toDeletedAt(v1),
           createdAt: toDate(mapped.createdAt || v1.create_at) || new Date(),
@@ -386,14 +392,21 @@ async function verify(
   }
   console.log(`记录数: ${failures.length === 0 ? '✅' : '❌'}`);
 
-  // 2. 金额汇总（V3 只计未删除，与 V1 口径一致）
+  // 2. 金额汇总（V3 只计未删除，与 V1 口径一致；V1 无 lineTotal，用 count × price）
   const v3Sum = await prisma.orderItem.aggregate({
     _sum: { lineTotal: true },
     where: { deletedAt: null },
   });
   const v1Sum = v1.ordercommodities
     .filter((o) => !(o as V1Record).deleted)
-    .reduce((s, o) => s + Number((o as V1Record).lineTotal || 0), 0);
+    .reduce((s, o) => {
+      const q = Number((o as V1Record).count || 0);
+      const p = Number((o as V1Record).price || 0);
+      const lt = (o as V1Record).lineTotal !== undefined
+        ? Number((o as V1Record).lineTotal)
+        : Math.round(q * p * 100) / 100;
+      return s + lt;
+    }, 0);
   const v3Num = Number(v3Sum._sum.lineTotal || 0);
   if (Math.abs(v3Num - v1Sum) > 0.01) {
     failures.push(`SUM(lineTotal): V3=${v3Num}, V1=${v1Sum}`);
@@ -414,7 +427,7 @@ async function verify(
   // 4. 密码哈希一致性（如实验证：V1 hash 与 V3 落库值比对）
   const firstUser = v1.users.find((u) => !(u as V1Record).deleted) as V1Record | undefined;
   if (firstUser) {
-    const v1Hash = String(firstUser.passwordHash || firstUser.password_hash || '');
+    const v1Hash = String(firstUser.password || firstUser.passwordHash || firstUser.password_hash || '');
     const v3User = await prisma.user.findFirst({
       where: { username: String(firstUser.username || firstUser.user_name) },
     });
