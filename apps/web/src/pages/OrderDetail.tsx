@@ -32,7 +32,7 @@ interface ItemGroup { categoryId: string; categoryName: string; items: OrderItem
 
 // ==================== Helpers ====================
 
-function fmt(v: number): string { return Number.isFinite(v) ? String(Number(v.toFixed(2))) : '0'; }
+function fmt(v: number): string { return Number.isFinite(v) ? String(Number(v.toFixed(4))) : '0'; }
 function fmtDate(s: string): string { return new Date(s).toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }); }
 function round2(v: number): number { return Math.round(v * 100) / 100; }
 

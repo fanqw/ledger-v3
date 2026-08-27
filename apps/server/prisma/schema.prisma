@@ -92,7 +92,7 @@ model OrderItem {
   orderId     String
   commodityId String
   quantity    Decimal   @db.Decimal(12, 3)
-  unitPrice   Decimal   @db.Decimal(12, 2)
+  unitPrice   Decimal   @db.Decimal(12, 4)
   lineTotal   Decimal   @db.Decimal(12, 2)
   description String?
   createdAt   DateTime  @default(now())
