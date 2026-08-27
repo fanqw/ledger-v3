@@ -12,6 +12,16 @@
   --accent: #3b82f6;
 }
 
+/* 暗黑主题 */
+[data-theme='dark'] {
+  --workspace-bg: #000000;
+  --surface: #141414;
+  --line: #2a2a2a;
+  --text: #e5e7eb;
+  --muted: #9ca3af;
+  --accent: #3b82f6;
+}
+
 * { box-sizing: border-box; }
 
 html, body, #root { min-height: 100%; }
@@ -44,6 +54,11 @@ body {
 .ant-table-wrapper .ant-table-thead > tr > th { background: #f8fafc; font-weight: 600; color: #475569; border-bottom: 1px solid var(--line); }
 .ant-table-wrapper .ant-table-tbody > tr > td { border-bottom: 1px solid #f1f5f9; }
 .ant-table-wrapper .ant-table-tbody > tr:hover > td { background: #f8fafc; }
+
+/* 暗黑主题 Table 覆盖 */
+[data-theme='dark'] .ant-table-wrapper .ant-table-thead > tr > th { background: #1f1f1f; color: #9ca3af; border-bottom: 1px solid var(--line); }
+[data-theme='dark'] .ant-table-wrapper .ant-table-tbody > tr > td { border-bottom: 1px solid #1f1f1f; }
+[data-theme='dark'] .ant-table-wrapper .ant-table-tbody > tr:hover > td { background: #1a1a1a; }
 .topbar-location { display: flex; align-items: center; gap: 6px; min-width: 0; }
 .mobile-nav-drawer .ant-drawer-body { padding: 8px; }
 
