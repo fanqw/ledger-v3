@@ -32,7 +32,7 @@ interface ItemGroup { categoryId: string; categoryName: string; items: OrderItem
 
 // ==================== Helpers ====================
 
-function fmt(v: number): string { return Number.isFinite(v) ? v.toFixed(2) : '0.00'; }
+function fmt(v: number): string { return Number.isFinite(v) ? String(Number(v.toFixed(2))) : '0'; }
 function fmtDate(s: string): string { return new Date(s).toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }); }
 function round2(v: number): number { return Math.round(v * 100) / 100; }
 
@@ -360,7 +360,7 @@ export default function OrderDetailPage() {
         <div className="flex flex-col items-center justify-center rounded-md border border-[#E2E8F0] py-12 dark:border-[#334155]"><p className="text-[14px] text-[#94A3B8]">暂无明细</p></div>
       ) : (
         <div className="rounded-md border border-[#E2E8F0] dark:border-[#334155]">
-          <Table>
+          <Table className="[&_th]:border-r [&_th]:border-slate-200 [&_td]:border-r [&_td]:border-slate-200 dark:[&_th]:border-slate-700 dark:[&_td]:border-slate-700 [&_th:last-child]:border-r-0 [&_td:last-child]:border-r-0">
             <TableHeader><TableRow><TableHead>分类</TableHead><TableHead>名称</TableHead><TableHead>数量</TableHead><TableHead>单位</TableHead><TableHead>单价</TableHead><TableHead>金额</TableHead><TableHead>备注</TableHead><TableHead>分类金额</TableHead><TableHead>总金额</TableHead><TableHead>操作</TableHead></TableRow></TableHeader>
             <TableBody>
               {groups.map((g, gi) => g.items.map((item, ii) => {
