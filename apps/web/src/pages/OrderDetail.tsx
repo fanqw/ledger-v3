@@ -120,6 +120,7 @@ export default function OrderDetailPage() {
   });
   const [lineTotalManuallySet, setLineTotalManuallySet] = useState(false);
   const [itemSaving, setItemSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [manualLineTotalItems, setManualLineTotalItems] = useState<Set<string>>(new Set());
 
   const [commodities, setCommodities] = useState<Commodity[]>([]);
@@ -218,6 +219,7 @@ export default function OrderDetailPage() {
   };
 
   const handleSaveItem = async () => {
+    if (itemSaving) return;
     const qty = Number(itemForm.quantity); const price = Number(itemForm.unitPrice); const lt = Number(itemForm.lineTotal);
     if (!qty || qty <= 0) { toast.error('数量必须大于0'); return; }
     if (isNaN(price) || price < 0) { toast.error('单价不能为负'); return; }
@@ -263,6 +265,8 @@ export default function OrderDetailPage() {
   };
 
   const handleDeleteItem = async (target: OrderItem) => {
+    if (deleting) return;
+    setDeleting(true);
     try {
       const res = await authFetch(`/api/orders/${id}/items/${target.id}`, { method: 'DELETE' });
       const json = await res.json();
@@ -272,6 +276,7 @@ export default function OrderDetailPage() {
         fetchOrder();
       } else { toast.error(json.error?.message || '删除失败'); }
     } catch { toast.error('删除失败'); }
+    finally { setDeleting(false); }
   };
 
   const confirmDeleteItem = (item: OrderItem) => {
@@ -297,6 +302,7 @@ export default function OrderDetailPage() {
   };
 
   const handleSaveOrder = async () => {
+    if (orderSaving) return;
     let values: { name: string; description?: string; purchasePlaceId?: string };
     try {
       values = await orderForm.validateFields();

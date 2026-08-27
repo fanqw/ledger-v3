@@ -22,6 +22,7 @@ export default function PurchasePlacesPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<PurchasePlace | null>(null);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const fetchData = useCallback(async (page: number, kw: string) => {
     setLoading(true);
@@ -49,6 +50,7 @@ export default function PurchasePlacesPage() {
   };
 
   const handleSave = async () => {
+    if (saving) return;
     let values: { place: string; marketName: string; description?: string };
     try {
       values = await form.validateFields();
@@ -75,6 +77,8 @@ export default function PurchasePlacesPage() {
   };
 
   const handleDelete = async (id: string) => {
+    if (deleting) return;
+    setDeleting(true);
     try {
       const res = await authFetch(`/api/purchase-places/${id}`, { method: 'DELETE' });
       const json = await res.json();
@@ -85,6 +89,7 @@ export default function PurchasePlacesPage() {
         toast.error(json.error?.message || '删除失败');
       }
     } catch { toast.error('删除失败'); }
+    finally { setDeleting(false); }
   };
 
   const confirmDelete = (row: PurchasePlace) => {

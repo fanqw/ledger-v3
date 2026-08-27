@@ -23,6 +23,7 @@ export default function CategoriesPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Category | null>(null);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const fetchData = useCallback(async (page: number, kw: string) => {
     setLoading(true);
@@ -49,6 +50,7 @@ export default function CategoriesPage() {
   const openEdit = (row: Category) => { setEditing(row); form.setFieldsValue({ name: row.name, description: row.description || '' }); setDialogOpen(true); };
 
   const handleSave = async () => {
+    if (saving) return;
     let values: { name: string; description?: string };
     try {
       values = await form.validateFields();
@@ -75,6 +77,8 @@ export default function CategoriesPage() {
   };
 
   const handleDelete = async (id: string) => {
+    if (deleting) return;
+    setDeleting(true);
     try {
       const res = await authFetch(`/api/categories/${id}`, { method: 'DELETE' });
       const json = await res.json();
@@ -85,6 +89,7 @@ export default function CategoriesPage() {
         toast.error(json.error?.message || '删除失败');
       }
     } catch { toast.error('删除失败'); }
+    finally { setDeleting(false); }
   };
 
   const confirmDelete = (row: Category) => {

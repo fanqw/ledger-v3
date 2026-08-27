@@ -14,6 +14,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
 
   async function onFinish(values: LoginForm) {
+    if (loading) return;
     setLoading(true);
     try {
       await login(values.username, values.password);

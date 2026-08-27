@@ -28,6 +28,7 @@ export default function CommoditiesPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Commodity | null>(null);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [units, setUnits] = useState<Unit[]>([]);
 
@@ -71,6 +72,7 @@ export default function CommoditiesPage() {
   };
 
   const handleSave = async () => {
+    if (saving) return;
     let values: { name: string; categoryId: string; unitId: string; description?: string };
     try {
       values = await form.validateFields();
@@ -102,6 +104,8 @@ export default function CommoditiesPage() {
   };
 
   const handleDelete = async (id: string) => {
+    if (deleting) return;
+    setDeleting(true);
     try {
       const res = await authFetch(`/api/commodities/${id}`, { method: 'DELETE' });
       const json = await res.json();
@@ -112,6 +116,7 @@ export default function CommoditiesPage() {
         toast.error(json.error?.message || '删除失败');
       }
     } catch { toast.error('删除失败'); }
+    finally { setDeleting(false); }
   };
 
   const confirmDelete = (row: Commodity) => {
