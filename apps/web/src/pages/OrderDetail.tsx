@@ -1,15 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Button } from '../components/ui/button';
-import { Input } from '../components/ui/input';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from '../components/ui/alert-dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { CreatableSelect } from '../components/ui/creatable-select';
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../components/ui/table';
+import { Table, Button, Input, InputNumber, Modal, Form, Select, AutoComplete, Space, App as AntdApp, Typography, Spin } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
+import { ArrowLeftOutlined, PlusOutlined, EditOutlined, DeleteOutlined, DownloadOutlined } from '@ant-design/icons';
 import { toast } from '../lib/toast';
 import { authFetch } from '../lib/api';
-import { ArrowLeft, Plus, Pencil, Trash2, Download } from 'lucide-react';
 import ExcelJS from 'exceljs';
 
 // ==================== Types ====================
@@ -47,6 +42,24 @@ function groupItems(items: OrderItem[]): ItemGroup[] {
     g.subtotal += item.lineTotal;
   }
   return Array.from(map.values());
+}
+
+// antd Table 合并单元格：计算每行的 rowSpan（分类列/分类金额列按分组，总金额列跨全部行）
+function buildRowSpans(items: OrderItem[]) {
+  const catCount = new Map<string, number>();
+  for (const it of items) {
+    const cid = it.commodity?.category?.id || '__none__';
+    catCount.set(cid, (catCount.get(cid) || 0) + 1);
+  }
+  return items.map((it, idx) => {
+    const cid = it.commodity?.category?.id || '__none__';
+    const prevCid = idx > 0 ? items[idx - 1].commodity?.category?.id || '__none__' : null;
+    const isCatFirst = prevCid !== cid;
+    return {
+      categoryRowSpan: isCatFirst ? catCount.get(cid)! : 0,
+      totalRowSpan: idx === 0 ? items.length : 0,
+    };
+  });
 }
 
 function border(c: { top?: string; bottom?: string; left?: string; right?: string }) {
@@ -94,6 +107,7 @@ async function exportToExcel(order: Order) {
 
 export default function OrderDetailPage() {
   const { id } = useParams<{ id: string }>(); const navigate = useNavigate();
+  const { modal } = AntdApp.useApp();
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -106,18 +120,15 @@ export default function OrderDetailPage() {
   });
   const [lineTotalManuallySet, setLineTotalManuallySet] = useState(false);
   const [itemSaving, setItemSaving] = useState(false);
-  // 记住哪些明细的 lineTotal 曾被手动修改过（客户端标记，用于表格标红）
   const [manualLineTotalItems, setManualLineTotalItems] = useState<Set<string>>(new Set());
 
-  // preloaded refs — loaded once when dialog opens
   const [commodities, setCommodities] = useState<Commodity[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [units, setUnits] = useState<Unit[]>([]);
 
-  // delete item / order edit
   const [deleteItemTarget, setDeleteItemTarget] = useState<OrderItem | null>(null);
   const [orderDialogOpen, setOrderDialogOpen] = useState(false);
-  const [orderForm, setOrderForm] = useState({ name: '', description: '', purchasePlaceId: '' });
+  const [orderForm] = Form.useForm<{ name: string; description?: string; purchasePlaceId?: string }>();
   const [orderSaving, setOrderSaving] = useState(false);
   const [purchasePlaces, setPurchasePlaces] = useState<PurchasePlace[]>([]);
 
@@ -131,7 +142,6 @@ export default function OrderDetailPage() {
 
   useEffect(() => { fetchOrder(); }, [fetchOrder]);
 
-  // 页面级预加载下拉数据，确保 onChange 始终能查到
   useEffect(() => {
     const load = async () => {
       try {
@@ -181,46 +191,11 @@ export default function OrderDetailPage() {
         const computed = round2(qty * Number(f.unitPrice));
         const isManual = Math.abs(lt - computed) > 0.005;
         setLineTotalManuallySet(isManual);
-        // 反向修改单价 = lineTotal / quantity
         if (isManual) return { ...f, lineTotal: v, unitPrice: String(round2(lt / qty)) };
       }
       return { ...f, lineTotal: v };
     });
   };
-
-  // Stable fetch callbacks for CreatableSelect
-  const fetchCommodities = useCallback(async (keyword: string) => {
-    const res = await authFetch(`/api/commodities?page=1&pageSize=100&keyword=${encodeURIComponent(keyword)}`);
-    const json = await res.json();
-    return json.success ? json.data.items.map((c: Commodity) => ({ id: c.id, name: c.name })) : [];
-  }, []);
-
-  const fetchCategories = useCallback(async (keyword: string) => {
-    const res = await authFetch(`/api/categories?page=1&pageSize=100&keyword=${encodeURIComponent(keyword)}`);
-    const json = await res.json();
-    return json.success ? json.data.items.map((c: Category) => ({ id: c.id, name: c.name })) : [];
-  }, []);
-
-  const fetchUnits = useCallback(async (keyword: string) => {
-    const res = await authFetch(`/api/units?page=1&pageSize=100&keyword=${encodeURIComponent(keyword)}`);
-    const json = await res.json();
-    return json.success ? json.data.items.map((u: Unit) => ({ id: u.id, name: u.name })) : [];
-  }, []);
-
-  const createCommodity = useCallback(async (name: string) => {
-    setItemForm(f => ({ ...f, commodityName: name, commodityId: '' }));
-    return { id: '', name };
-  }, []);
-
-  const createCategory = useCallback(async (name: string) => {
-    setItemForm(f => ({ ...f, categoryName: name, categoryId: '' }));
-    return { id: '', name };
-  }, []);
-
-  const createUnit = useCallback(async (name: string) => {
-    setItemForm(f => ({ ...f, unitName: name, unitId: '' }));
-    return { id: '', name };
-  }, []);
 
   const openAddItem = () => {
     setEditingItem(null);
@@ -248,9 +223,7 @@ export default function OrderDetailPage() {
     if (isNaN(price) || price < 0) { toast.error('单价不能为负'); return; }
     if (isNaN(lt) || lt < 0) { toast.error('金额不能为负'); return; }
     if (!editingItem && !itemForm.commodityId && !itemForm.commodityName.trim()) { toast.error('请选择或输入商品'); return; }
-    // 即输即建时确认 commodityName 非空
     if (!editingItem && (!itemForm.commodityId || itemForm.commodityId.startsWith('__')) && !itemForm.commodityName.trim()) { toast.error('请输入商品名称'); return; }
-    // 即输即建时必须选择分类和单位（与商品基础资料页一致）
     if (!editingItem && (!itemForm.commodityId || itemForm.commodityId.startsWith('__'))) {
       const hasCat = !!(itemForm.categoryId && !itemForm.categoryId.startsWith('__')) || !!itemForm.categoryName.trim();
       const hasUnit = !!(itemForm.unitId && !itemForm.unitId.startsWith('__')) || !!itemForm.unitName.trim();
@@ -275,10 +248,8 @@ export default function OrderDetailPage() {
       if (json.success) {
         toast.success(editingItem ? '更新成功' : '添加成功');
         if (lineTotalManuallySet) {
-          // 本次保存金额为手动修改 → 标红
           setManualLineTotalItems(prev => new Set(prev).add(json.data.id));
         } else {
-          // 本次保存金额为自动计算（修改数量/单价后联动）→ 清除标红
           setManualLineTotalItems(prev => {
             if (!prev.has(json.data.id)) return prev;
             const next = new Set(prev);
@@ -286,23 +257,37 @@ export default function OrderDetailPage() {
             return next;
           });
         }
-        setItemDialogOpen(false); fetchOrder(); }
-      else { toast.error(json.error?.message || '操作失败'); }
+        setItemDialogOpen(false); fetchOrder();
+      } else { toast.error(json.error?.message || '操作失败'); }
     } catch { toast.error('操作失败'); } finally { setItemSaving(false); }
   };
 
-  const handleDeleteItem = async () => {
-    if (!deleteItemTarget) return;
+  const handleDeleteItem = async (target: OrderItem) => {
     try {
-      const res = await authFetch(`/api/orders/${id}/items/${deleteItemTarget.id}`, { method: 'DELETE' });
+      const res = await authFetch(`/api/orders/${id}/items/${target.id}`, { method: 'DELETE' });
       const json = await res.json();
-      if (json.success) { toast.success('删除成功'); setManualLineTotalItems(prev => { if (!prev.has(deleteItemTarget.id)) return prev; const next = new Set(prev); next.delete(deleteItemTarget.id); return next; }); fetchOrder(); } else { toast.error(json.error?.message || '删除失败'); }
-    } catch { toast.error('删除失败'); } finally { setDeleteItemTarget(null); }
+      if (json.success) {
+        toast.success('删除成功');
+        setManualLineTotalItems(prev => { if (!prev.has(target.id)) return prev; const next = new Set(prev); next.delete(target.id); return next; });
+        fetchOrder();
+      } else { toast.error(json.error?.message || '删除失败'); }
+    } catch { toast.error('删除失败'); }
+  };
+
+  const confirmDeleteItem = (item: OrderItem) => {
+    modal.confirm({
+      title: `确定删除明细 "${item.commodity?.name}"？`,
+      content: '此操作不可恢复。',
+      okText: '删除',
+      okButtonProps: { danger: true },
+      cancelText: '取消',
+      onOk: () => handleDeleteItem(item),
+    });
   };
 
   const openOrderEdit = () => {
     if (!order) return;
-    setOrderForm({ name: order.name, description: order.description || '', purchasePlaceId: order.purchasePlaceId || '' });
+    orderForm.setFieldsValue({ name: order.name, description: order.description || '', purchasePlaceId: order.purchasePlaceId || undefined });
     setPurchasePlaces([]);
     authFetch('/api/purchase-places?page=1&pageSize=100')
       .then(r => r.json())
@@ -312,10 +297,13 @@ export default function OrderDetailPage() {
   };
 
   const handleSaveOrder = async () => {
-    if (!orderForm.name.trim()) { toast.error('订单名称不能为空'); return; }
+    let values: { name: string; description?: string; purchasePlaceId?: string };
+    try {
+      values = await orderForm.validateFields();
+    } catch { return; }
     setOrderSaving(true);
     try {
-      const res = await authFetch(`/api/orders/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: orderForm.name.trim(), description: orderForm.description.trim() || undefined, purchasePlaceId: orderForm.purchasePlaceId || null }) });
+      const res = await authFetch(`/api/orders/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: values.name.trim(), description: values.description?.trim() || undefined, purchasePlaceId: values.purchasePlaceId || null }) });
       const json = await res.json();
       if (json.success) { toast.success('更新成功'); setOrderDialogOpen(false); fetchOrder(); } else { toast.error(json.error?.message || '操作失败'); }
     } catch { toast.error('操作失败'); } finally { setOrderSaving(false); }
@@ -323,153 +311,239 @@ export default function OrderDetailPage() {
 
   // ============ Render ============
 
-  if (loading) return <div className="flex items-center justify-center py-16"><div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" /></div>;
-  if (!order) return <div className="flex flex-col items-center justify-center py-16"><p className="text-[#64748B]">订单不存在</p><Button variant="outline" className="mt-4" onClick={() => navigate('/orders')}>返回列表</Button></div>;
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', padding: 64 }}>
+        <Spin size="large" />
+      </div>
+    );
+  }
+  if (!order) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, padding: 64 }}>
+        <Typography.Text type="secondary">订单不存在</Typography.Text>
+        <Button onClick={() => navigate('/orders')}>返回列表</Button>
+      </div>
+    );
+  }
 
-  // 合并后端 isModified 和客户端手动修改标记
   const displayItems = order.items.map(item => ({
     ...item,
     isModified: item.isModified || manualLineTotalItems.has(item.id),
   }));
   const groups = groupItems(displayItems);
   const grandTotal = groups.reduce((s, g) => s + g.subtotal, 0);
-  const totalRows = displayItems.length;
+  const spans = buildRowSpans(displayItems);
+
+  // AutoComplete options
+  const commodityOptions = commodities
+    .filter(c => !c.name.includes('__'))
+    .map(c => ({ value: c.name, id: c.id, categoryId: c.category?.id, unitId: c.unit?.id }));
+  const categoryOptions = categories.map(c => ({ value: c.name, id: c.id }));
+  const unitOptions = units.map(u => ({ value: u.name, id: u.id }));
+
+  const columns: ColumnsType<OrderItem> = [
+    {
+      title: '分类',
+      onCell: (_, index) => ({ rowSpan: spans[index!].categoryRowSpan }),
+      render: (_v, record, index) => spans[index!].categoryRowSpan ? (record.commodity?.category?.name || '未分类') : null,
+    },
+    { title: '名称', render: (_, record) => record.commodity?.name || '-' },
+    { title: '数量', render: (_, record) => record.quantity },
+    { title: '单位', render: (_, record) => record.commodity?.unit?.name || '-' },
+    { title: '单价', render: (_, record) => fmt(record.unitPrice) },
+    {
+      title: '金额',
+      render: (_, record) => (
+        <span style={record.isModified ? { color: '#f5222d', fontWeight: 500 } : undefined}>{fmt(record.lineTotal)}</span>
+      ),
+    },
+    { title: '备注', dataIndex: 'description', render: (v) => v || '-' },
+    {
+      title: '分类金额',
+      onCell: (_, index) => ({ rowSpan: spans[index!].categoryRowSpan }),
+      render: (_v, record, index) => {
+        if (!spans[index!].categoryRowSpan) return null;
+        const g = groups.find(g => g.categoryId === (record.commodity?.category?.id || '__none__'));
+        return <span style={{ fontWeight: 500 }}>{fmt(g?.subtotal || 0)}</span>;
+      },
+    },
+    {
+      title: '总金额',
+      onCell: (_, index) => ({ rowSpan: spans[index!].totalRowSpan }),
+      render: (_v, _r, index) => spans[index!].totalRowSpan ? <span style={{ fontWeight: 700, fontSize: 15 }}>{fmt(grandTotal)}</span> : null,
+    },
+    {
+      title: '操作',
+      width: 100,
+      render: (_, record) => (
+        <Space size={4}>
+          <Button type="link" size="small" icon={<EditOutlined />} onClick={() => openEditItem(record)} />
+          <Button type="link" size="small" danger icon={<DeleteOutlined />} onClick={() => confirmDeleteItem(record)} />
+        </Space>
+      ),
+    },
+  ];
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="default" className="h-8 w-8 p-0" onClick={() => navigate('/orders')}><ArrowLeft className="h-4 w-4" /></Button>
-          <h1 className="text-[18px] font-bold text-[#0F172A] dark:text-white">{order.name}</h1>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      {/* 头部 */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/orders')} />
+          <Typography.Title level={4} style={{ margin: 0 }}>{order.name}</Typography.Title>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="default" onClick={openOrderEdit}><Pencil className="mr-1 h-4 w-4" /> 编辑</Button>
-          <Button variant="outline" size="default" onClick={() => exportToExcel(order)}><Download className="mr-1 h-4 w-4" /> 导出 Excel</Button>
-        </div>
+        <Space>
+          <Button icon={<EditOutlined />} onClick={openOrderEdit}>编辑</Button>
+          <Button icon={<DownloadOutlined />} onClick={() => exportToExcel(order)}>导出 Excel</Button>
+        </Space>
       </div>
-      <div className="flex gap-6 text-[13px] text-[#64748B] dark:text-[#94A3B8]">
+
+      {/* 订单信息 */}
+      <div style={{ display: 'flex', gap: 24, fontSize: 13, color: '#666' }}>
         {order.purchasePlace && <span>进货地: {order.purchasePlace.place} - {order.purchasePlace.marketName}</span>}
         <span>创建时间: {fmtDate(order.createdAt)}</span>
         {order.description && <span>备注: {order.description}</span>}
       </div>
-      <div className="flex items-center justify-between">
-        <h2 className="text-[15px] font-semibold text-[#0F172A] dark:text-white">明细列表</h2>
-        <Button onClick={openAddItem} className="bg-[#3B82F6] hover:bg-[#3B82F6]/90"><Plus className="mr-1 h-4 w-4" /> 添加明细</Button>
+
+      {/* 明细列表 */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Typography.Title level={5} style={{ margin: 0 }}>明细列表</Typography.Title>
+        <Button type="primary" icon={<PlusOutlined />} onClick={openAddItem}>添加明细</Button>
       </div>
-      {order.items.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-md border border-[#E2E8F0] py-12 dark:border-[#334155]"><p className="text-[14px] text-[#94A3B8]">暂无明细</p></div>
-      ) : (
-        <div className="rounded-md border border-[#E2E8F0] dark:border-[#334155]">
-          <Table className="[&_th]:border-r [&_th]:border-slate-200 [&_td]:border-r [&_td]:border-slate-200 dark:[&_th]:border-slate-700 dark:[&_td]:border-slate-700 [&_th:last-child]:border-r-0 [&_td:last-child]:border-r-0">
-            <TableHeader><TableRow><TableHead>分类</TableHead><TableHead>名称</TableHead><TableHead>数量</TableHead><TableHead>单位</TableHead><TableHead>单价</TableHead><TableHead>金额</TableHead><TableHead>备注</TableHead><TableHead>分类金额</TableHead><TableHead>总金额</TableHead><TableHead>操作</TableHead></TableRow></TableHeader>
-            <TableBody>
-              {groups.map((g, gi) => g.items.map((item, ii) => {
-                const isFirst = ii === 0; const isGlobalFirst = gi === 0 && ii === 0;
-                return (
-                  <TableRow key={item.id}>
-                    {isFirst ? <TableCell rowSpan={g.items.length} className="align-top font-medium">{g.categoryName}</TableCell> : null}
-                    <TableCell>{item.commodity?.name || '-'}</TableCell><TableCell>{item.quantity}</TableCell>
-                    <TableCell>{item.commodity?.unit?.name || '-'}</TableCell><TableCell>{fmt(item.unitPrice)}</TableCell>
-                    <TableCell className={item.isModified ? 'font-medium text-red-600' : ''}>{fmt(item.lineTotal)}</TableCell>
-                    <TableCell className="max-w-[120px] truncate">{item.description || '-'}</TableCell>
-                    {isFirst ? <TableCell rowSpan={g.items.length} className="align-top font-medium">{fmt(g.subtotal)}</TableCell> : null}
-                    {isGlobalFirst ? <TableCell rowSpan={totalRows} className="align-top font-bold text-[15px]">{fmt(grandTotal)}</TableCell> : null}
-                    <TableCell><div className="flex items-center gap-1"><Button variant="ghost" size="default" className="h-8 w-8 p-0" onClick={() => openEditItem(item)}><Pencil className="h-4 w-4" /></Button><Button variant="ghost" size="default" className="h-8 w-8 p-0 text-red-500" onClick={() => setDeleteItemTarget(item)}><Trash2 className="h-4 w-4" /></Button></div></TableCell>
-                  </TableRow>
-                );
-              }))}
-            </TableBody>
-          </Table>
+
+      {displayItems.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: 48, border: '1px solid #f0f0f0', borderRadius: 8 }}>
+          <Typography.Text type="secondary">暂无明细</Typography.Text>
         </div>
+      ) : (
+        <Table<OrderItem>
+          rowKey="id"
+          columns={columns}
+          dataSource={displayItems}
+          pagination={false}
+          size="middle"
+          bordered
+        />
       )}
 
-      {/* Item Dialog */}
-      <Dialog open={itemDialogOpen} onOpenChange={setItemDialogOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader><DialogTitle>{editingItem ? '编辑明细' : '添加明细'}</DialogTitle></DialogHeader>
-          <div className="space-y-4">
-            {/* 商品 — 仅 CreatableSelect，无额外 Input */}
-            {!editingItem && (
-              <div>
-                <label className="text-sm font-medium">商品 *</label>
-                <CreatableSelect
-                  value={itemForm.commodityId || null}
-                  onChange={(newId) => {
-                    const match = commodities.find(c => c.id === newId);
-                    setItemForm(f => ({
-                      ...f, commodityId: newId, commodityName: match ? '' : f.commodityName,
-                      categoryId: match?.category?.id || (newId.startsWith('__') ? f.categoryId : ''),
-                      unitId: match?.unit?.id || (newId.startsWith('__') ? f.unitId : ''),
-                    }));
-                  }}
-                  fetchItems={fetchCommodities}
-                  createItem={createCommodity}
-                  placeholder="搜索选择商品..."
-                />
-              </div>
-            )}
-
-            {/* 分类 — 仅 CreatableSelect */}
+      {/* 明细弹窗 */}
+      <Modal
+        title={editingItem ? '编辑明细' : '添加明细'}
+        open={itemDialogOpen}
+        onOk={handleSaveItem}
+        onCancel={() => setItemDialogOpen(false)}
+        confirmLoading={itemSaving}
+        okText="保存"
+        cancelText="取消"
+        width={520}
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {!editingItem && (
             <div>
-              <label className="text-sm font-medium">分类</label>
-              <CreatableSelect
-                value={itemForm.categoryId || null}
-                onChange={(newId) => setItemForm(f => ({ ...f, categoryId: newId, categoryName: newId.startsWith('__') ? f.categoryName : '' }))}
-                fetchItems={fetchCategories}
-                createItem={createCategory}
+              <label style={{ fontSize: 13, fontWeight: 500 }}>商品 *</label>
+              <AutoComplete
+                style={{ width: '100%' }}
+                options={commodityOptions}
+                value={itemForm.commodityName || (itemForm.commodityId ? commodityOptions.find(c => c.id === itemForm.commodityId)?.value : '')}
+                onChange={(v) => setItemForm(f => ({ ...f, commodityName: v, commodityId: '' }))}
+                onSelect={(_, opt) => setItemForm(f => ({
+                  ...f, commodityName: '', commodityId: opt.id,
+                  categoryId: opt.categoryId || f.categoryId, unitId: opt.unitId || f.unitId,
+                }))}
+                placeholder="搜索选择商品..."
+                allowClear
+              />
+            </div>
+          )}
+          {!editingItem && (
+            <div>
+              <label style={{ fontSize: 13, fontWeight: 500 }}>分类</label>
+              <AutoComplete
+                style={{ width: '100%' }}
+                options={categoryOptions}
+                value={itemForm.categoryName || (itemForm.categoryId ? categoryOptions.find(c => c.id === itemForm.categoryId)?.value : '')}
+                onChange={(v) => setItemForm(f => ({ ...f, categoryName: v, categoryId: '' }))}
+                onSelect={(_, opt) => setItemForm(f => ({ ...f, categoryName: '', categoryId: opt.id }))}
                 placeholder="搜索选择分类..."
+                allowClear
               />
             </div>
-
-            {/* 单位 — 仅 CreatableSelect */}
+          )}
+          {!editingItem && (
             <div>
-              <label className="text-sm font-medium">单位</label>
-              <CreatableSelect
-                value={itemForm.unitId || null}
-                onChange={(newId) => setItemForm(f => ({ ...f, unitId: newId, unitName: newId.startsWith('__') ? f.unitName : '' }))}
-                fetchItems={fetchUnits}
-                createItem={createUnit}
+              <label style={{ fontSize: 13, fontWeight: 500 }}>单位</label>
+              <AutoComplete
+                style={{ width: '100%' }}
+                options={unitOptions}
+                value={itemForm.unitName || (itemForm.unitId ? unitOptions.find(u => u.id === itemForm.unitId)?.value : '')}
+                onChange={(v) => setItemForm(f => ({ ...f, unitName: v, unitId: '' }))}
+                onSelect={(_, opt) => setItemForm(f => ({ ...f, unitName: '', unitId: opt.id }))}
                 placeholder="搜索选择单位..."
+                allowClear
               />
             </div>
+          )}
 
-            <div className="grid grid-cols-2 gap-3">
-              <div><label className="text-sm font-medium">数量 *</label><Input type="number" min="0" step="0.001" value={itemForm.quantity} onChange={(e) => handleQtyChange(e.target.value)} placeholder="0" /></div>
-              <div><label className="text-sm font-medium">单价 *</label><Input type="number" min="0" step="0.01" value={itemForm.unitPrice} onChange={(e) => handlePriceChange(e.target.value)} placeholder="0.00" /></div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            <div>
+              <label style={{ fontSize: 13, fontWeight: 500 }}>数量 *</label>
+              <InputNumber
+                style={{ width: '100%' }}
+                min={0} step={0.001} value={itemForm.quantity ? Number(itemForm.quantity) : undefined}
+                onChange={(v) => handleQtyChange(String(v ?? ''))} placeholder="0"
+              />
             </div>
             <div>
-              <label className="text-sm font-medium">金额 *</label>
-              <Input type="number" min="0" step="0.01" value={itemForm.lineTotal} onChange={(e) => handleLineTotalChange(e.target.value)} className={lineTotalManuallySet ? 'text-red-600 border-red-400' : ''} placeholder="自动计算" />
+              <label style={{ fontSize: 13, fontWeight: 500 }}>单价 *</label>
+              <InputNumber
+                style={{ width: '100%' }}
+                min={0} step={0.01} value={itemForm.unitPrice ? Number(itemForm.unitPrice) : undefined}
+                onChange={(v) => handlePriceChange(String(v ?? ''))} placeholder="0.00"
+              />
             </div>
-            <div><label className="text-sm font-medium">备注</label><Input value={itemForm.description} onChange={(e) => setItemForm(f => ({ ...f, description: e.target.value }))} placeholder="输入备注（可选）" /></div>
-            <div className="flex justify-end gap-2"><Button variant="outline" onClick={() => setItemDialogOpen(false)}>取消</Button><Button onClick={handleSaveItem} disabled={itemSaving}>{itemSaving ? '保存中...' : '保存'}</Button></div>
           </div>
-        </DialogContent>
-      </Dialog>
-
-      <AlertDialog open={!!deleteItemTarget} onOpenChange={() => setDeleteItemTarget(null)}>
-        <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>确定删除明细 "{deleteItemTarget?.commodity?.name}"？</AlertDialogTitle><AlertDialogDescription>此操作不可恢复。</AlertDialogDescription></AlertDialogHeader>
-          <div className="flex justify-end gap-2"><AlertDialogCancel>取消</AlertDialogCancel><AlertDialogAction onClick={handleDeleteItem} className="bg-red-600 hover:bg-red-700">删除</AlertDialogAction></div>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      <Dialog open={orderDialogOpen} onOpenChange={setOrderDialogOpen}>
-        <DialogContent><DialogHeader><DialogTitle>编辑订单</DialogTitle></DialogHeader>
-          <div className="space-y-4">
-            <div><label className="text-sm font-medium">名称 *</label><Input value={orderForm.name} onChange={(e) => setOrderForm(f => ({ ...f, name: e.target.value }))} /></div>
-            <div><label className="text-sm font-medium">进货地</label>
-              <Select value={orderForm.purchasePlaceId || 'none'} onValueChange={(v) => setOrderForm(f => ({ ...f, purchasePlaceId: v === 'none' ? '' : v }))}>
-                <SelectTrigger><SelectValue placeholder="选择进货地（可选）" /></SelectTrigger>
-                <SelectContent><SelectItem value="none">不选择</SelectItem>
-                  {purchasePlaces.map((pp: PurchasePlace) => <SelectItem key={pp.id} value={pp.id}>{pp.place} - {pp.marketName}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div><label className="text-sm font-medium">备注</label><Input value={orderForm.description} onChange={(e) => setOrderForm(f => ({ ...f, description: e.target.value }))} /></div>
-            <div className="flex justify-end gap-2"><Button variant="outline" onClick={() => setOrderDialogOpen(false)}>取消</Button><Button onClick={handleSaveOrder} disabled={orderSaving}>{orderSaving ? '保存中...' : '保存'}</Button></div>
+          <div>
+            <label style={{ fontSize: 13, fontWeight: 500 }}>金额 *</label>
+            <InputNumber
+              style={{ width: '100%' }}
+              min={0} step={0.01} value={itemForm.lineTotal ? Number(itemForm.lineTotal) : undefined}
+              onChange={(v) => handleLineTotalChange(String(v ?? ''))} placeholder="自动计算"
+            />
           </div>
-        </DialogContent>
-      </Dialog>
+          <div>
+            <label style={{ fontSize: 13, fontWeight: 500 }}>备注</label>
+            <Input value={itemForm.description} onChange={(e) => setItemForm(f => ({ ...f, description: e.target.value }))} placeholder="输入备注（可选）" />
+          </div>
+        </div>
+      </Modal>
+
+      {/* 订单编辑弹窗 */}
+      <Modal
+        title="编辑订单"
+        open={orderDialogOpen}
+        onOk={handleSaveOrder}
+        onCancel={() => setOrderDialogOpen(false)}
+        confirmLoading={orderSaving}
+        okText="保存"
+        cancelText="取消"
+      >
+        <Form form={orderForm} layout="vertical">
+          <Form.Item name="name" label="订单名称" rules={[{ required: true, message: '请输入订单名称' }]}>
+            <Input placeholder="输入订单名称" />
+          </Form.Item>
+          <Form.Item name="purchasePlaceId" label="进货地">
+            <Select
+              placeholder="选择进货地（可选）"
+              allowClear
+              options={purchasePlaces.map((pp) => ({ value: pp.id, label: `${pp.place} - ${pp.marketName}` }))}
+            />
+          </Form.Item>
+          <Form.Item name="description" label="备注">
+            <Input placeholder="输入备注（可选）" />
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   );
 }

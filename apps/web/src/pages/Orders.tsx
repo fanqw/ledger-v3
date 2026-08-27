@@ -1,18 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button } from '../components/ui/button';
-import { Input } from '../components/ui/input';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from '../components/ui/alert-dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { DataTable, type Column, type PaginationInfo } from '../components/ui/data-table';
+import { Table, Button, Input, Modal, Form, Select, Space, App as AntdApp, Typography } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
+import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined } from '@ant-design/icons';
 import { toast } from '../lib/toast';
 import { authFetch } from '../lib/api';
 import { fetchAllPages } from '../lib/paged-request';
-import { Plus, Pencil, Trash2, Eye } from 'lucide-react';
 
 interface PurchasePlace { id: string; place: string; marketName: string; }
-
 interface Order {
   id: string;
   name: string;
@@ -24,14 +19,14 @@ interface Order {
 
 export default function OrdersPage() {
   const navigate = useNavigate();
+  const { modal } = AntdApp.useApp();
+  const [form] = Form.useForm<{ name: string; description?: string; purchasePlaceId?: string }>();
   const [data, setData] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
-  const [pagination, setPagination] = useState<PaginationInfo>({ page: 1, pageSize: 20, total: 0 });
+  const [pagination, setPagination] = useState({ page: 1, pageSize: 20, total: 0 });
   const [keyword, setKeyword] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Order | null>(null);
-  const [form, setForm] = useState({ name: '', description: '', purchasePlaceId: '' });
-  const [deleteTarget, setDeleteTarget] = useState<Order | null>(null);
   const [saving, setSaving] = useState(false);
   const [purchasePlaces, setPurchasePlaces] = useState<PurchasePlace[]>([]);
 
@@ -65,35 +60,41 @@ export default function OrdersPage() {
 
   const openCreate = async () => {
     setEditing(null);
-    setForm({ name: '', description: '', purchasePlaceId: '' });
+    form.resetFields();
     loadPurchasePlaces();
-    // 获取默认名称
     try {
       const res = await authFetch('/api/orders/next-name');
       const json = await res.json();
-      if (json.success) setForm((f) => ({ ...f, name: json.data.name }));
+      if (json.success) form.setFieldsValue({ name: json.data.name });
     } catch { /* 默认名称获取失败不影响弹窗打开 */ }
     setDialogOpen(true);
   };
 
   const openEdit = (row: Order) => {
     setEditing(row);
-    setForm({ name: row.name, description: row.description || '', purchasePlaceId: row.purchasePlaceId || '' });
     loadPurchasePlaces();
+    form.setFieldsValue({
+      name: row.name,
+      description: row.description || '',
+      purchasePlaceId: row.purchasePlaceId || undefined,
+    });
     setDialogOpen(true);
   };
 
   const handleSave = async () => {
-    if (!form.name.trim()) { toast.error('订单名称不能为空'); return; }
+    let values: { name: string; description?: string; purchasePlaceId?: string };
+    try {
+      values = await form.validateFields();
+    } catch { return; }
     setSaving(true);
     try {
       const url = editing ? `/api/orders/${editing.id}` : '/api/orders';
       const method = editing ? 'PATCH' : 'POST';
       const body: Record<string, string | null | undefined> = {
-        name: form.name.trim(),
-        description: form.description.trim() || undefined,
+        name: values.name.trim(),
+        description: values.description?.trim() || undefined,
         // null 表示清空进货地；undefined 表示不修改
-        purchasePlaceId: form.purchasePlaceId || null,
+        purchasePlaceId: values.purchasePlaceId || null,
       };
       const res = await authFetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
       const json = await res.json();
@@ -103,67 +104,100 @@ export default function OrdersPage() {
     finally { setSaving(false); }
   };
 
-  const handleDelete = async () => {
-    if (!deleteTarget) return;
+  const handleDelete = async (id: string) => {
     try {
-      const res = await authFetch(`/api/orders/${deleteTarget.id}`, { method: 'DELETE' });
+      const res = await authFetch(`/api/orders/${id}`, { method: 'DELETE' });
       const json = await res.json();
       if (json.success) { toast.success('删除成功'); fetchData(pagination.page, keyword); }
       else { toast.error(json.error?.message || '删除失败'); }
     } catch { toast.error('删除失败'); }
-    finally { setDeleteTarget(null); }
+  };
+
+  const confirmDelete = (row: Order) => {
+    modal.confirm({
+      title: `确定删除订单 "${row.name}"？`,
+      content: '如下有明细数据将无法删除。',
+      okText: '删除',
+      okButtonProps: { danger: true },
+      cancelText: '取消',
+      onOk: () => handleDelete(row.id),
+    });
   };
 
   const formatDate = (dateStr: string) => new Date(dateStr).toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' });
 
-  const columns: Column<Order>[] = [
-    { key: 'name', label: '订单名称' },
-    { key: 'purchasePlace', label: '进货地', render: (_, row) => row.purchasePlace ? `${row.purchasePlace.place} - ${row.purchasePlace.marketName}` : '-' },
-    { key: 'description', label: '备注', render: (v) => (v as string) || '-' },
-    { key: 'createdAt', label: '创建时间', render: (v) => formatDate(v as string) },
-    { key: 'actions', label: '操作', width: '140px', render: (_, row) => (
-      <div className="flex items-center gap-1">
-        <Button variant="ghost" size="default" className="h-8 w-8 p-0" onClick={() => navigate(`/orders/${row.id}`)}><Eye className="h-4 w-4" /></Button>
-        <Button variant="ghost" size="default" className="h-8 w-8 p-0" onClick={() => openEdit(row)}><Pencil className="h-4 w-4" /></Button>
-        <Button variant="ghost" size="default" className="h-8 w-8 p-0 text-red-500" onClick={() => setDeleteTarget(row)}><Trash2 className="h-4 w-4" /></Button>
-      </div>
-    )},
+  const columns: ColumnsType<Order> = [
+    { title: '订单名称', dataIndex: 'name' },
+    { title: '进货地', render: (_, row) => row.purchasePlace ? `${row.purchasePlace.place} - ${row.purchasePlace.marketName}` : '-' },
+    { title: '备注', dataIndex: 'description', render: (v) => v || '-' },
+    { title: '创建时间', dataIndex: 'createdAt', render: (v) => formatDate(v as string) },
+    {
+      title: '操作',
+      width: 140,
+      render: (_, row) => (
+        <Space size={4}>
+          <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => navigate(`/orders/${row.id}`)} />
+          <Button type="link" size="small" icon={<EditOutlined />} onClick={() => openEdit(row)} />
+          <Button type="link" size="small" danger icon={<DeleteOutlined />} onClick={() => confirmDelete(row)} />
+        </Space>
+      ),
+    },
   ];
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-[18px] font-bold text-[#0F172A] dark:text-white">订单管理</h1>
-        <Button onClick={openCreate} className="bg-[#3B82F6] hover:bg-[#3B82F6]/90"><Plus className="mr-1 h-4 w-4" /> 新增订单</Button>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Typography.Title level={4} style={{ margin: 0 }}>订单管理</Typography.Title>
+        <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>新增订单</Button>
       </div>
-      <Input placeholder="搜索..." className="w-[320px]" value={keyword} onChange={(e) => setKeyword(e.target.value)} />
-      <DataTable columns={columns} data={data} loading={loading} pagination={pagination} onPageChange={(page) => { setPagination((p) => ({ ...p, page })); fetchData(page, keyword); }} />
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>{editing ? '编辑订单' : '新增订单'}</DialogTitle></DialogHeader>
-          <div className="space-y-4">
-            <div><label className="text-sm font-medium">名称 *</label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="输入订单名称" /></div>
-            <div>
-              <label className="text-sm font-medium">进货地</label>
-              <Select value={form.purchasePlaceId || 'none'} onValueChange={(v) => setForm({ ...form, purchasePlaceId: v === 'none' ? '' : v })}>
-                <SelectTrigger><SelectValue placeholder="选择进货地（可选）" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">不选择</SelectItem>
-                  {purchasePlaces.map((pp) => <SelectItem key={pp.id} value={pp.id}>{pp.place} - {pp.marketName}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div><label className="text-sm font-medium">备注</label><Input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="输入备注（可选）" /></div>
-            <div className="flex justify-end gap-2"><Button variant="outline" onClick={() => setDialogOpen(false)}>取消</Button><Button onClick={handleSave} disabled={saving}>{saving ? '保存中...' : '保存'}</Button></div>
-          </div>
-        </DialogContent>
-      </Dialog>
-      <AlertDialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader><AlertDialogTitle>确定删除订单 "{deleteTarget?.name}"？</AlertDialogTitle><AlertDialogDescription>如下有明细数据将无法删除。</AlertDialogDescription></AlertDialogHeader>
-          <div className="flex justify-end gap-2"><AlertDialogCancel>取消</AlertDialogCancel><AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">删除</AlertDialogAction></div>
-        </AlertDialogContent>
-      </AlertDialog>
+
+      <Input.Search
+        placeholder="搜索订单名称/备注/进货地..."
+        style={{ width: 320 }}
+        allowClear
+        onChange={(e) => setKeyword(e.target.value)}
+        onSearch={(v) => fetchData(1, v)}
+      />
+
+      <Table<Order>
+        rowKey="id"
+        columns={columns}
+        dataSource={data}
+        loading={loading}
+        pagination={{
+          current: pagination.page,
+          pageSize: pagination.pageSize,
+          total: pagination.total,
+          showTotal: (t) => `共 ${t} 条`,
+          onChange: (page) => { setPagination((p) => ({ ...p, page })); fetchData(page, keyword); },
+        }}
+      />
+
+      <Modal
+        title={editing ? '编辑订单' : '新增订单'}
+        open={dialogOpen}
+        onOk={handleSave}
+        onCancel={() => setDialogOpen(false)}
+        confirmLoading={saving}
+        okText="保存"
+        cancelText="取消"
+      >
+        <Form form={form} layout="vertical">
+          <Form.Item name="name" label="订单名称" rules={[{ required: true, message: '请输入订单名称' }]}>
+            <Input placeholder="输入订单名称" />
+          </Form.Item>
+          <Form.Item name="purchasePlaceId" label="进货地">
+            <Select
+              placeholder="选择进货地（可选）"
+              allowClear
+              options={purchasePlaces.map((pp) => ({ value: pp.id, label: `${pp.place} - ${pp.marketName}` }))}
+            />
+          </Form.Item>
+          <Form.Item name="description" label="备注">
+            <Input placeholder="输入备注（可选）" />
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   );
 }

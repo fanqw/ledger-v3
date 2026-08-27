@@ -1,7 +1,8 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { ThemeProvider } from './lib/theme';
+import { App as AntdApp } from 'antd';
 import { AuthProvider, useAuth } from './lib/auth';
 import { setGlobalAuth } from './lib/api';
+import { setMessageApi } from './lib/toast';
 import { lazy, Suspense, useEffect } from 'react';
 import AppShell from './components/layout/AppShell';
 import ChunkErrorBoundary from './components/ChunkErrorBoundary';
@@ -19,6 +20,13 @@ function AuthInit({ children }: { children: React.ReactNode }) {
   const auth = useAuth();
   useEffect(() => { setGlobalAuth(auth); }, [auth]);
   return <>{children}</>;
+}
+
+// 将 antd message 实例注入 lib/toast（供模块级 toast 调用）
+function MessageBridge() {
+  const { message } = AntdApp.useApp();
+  useEffect(() => { setMessageApi(message); }, [message]);
+  return null;
 }
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -48,7 +56,8 @@ function LoginRedirect() {
 
 export default function App() {
   return (
-    <ThemeProvider>
+    <>
+      <MessageBridge />
       <AuthProvider>
         <AuthInit>
           <ChunkErrorBoundary>
@@ -82,6 +91,6 @@ export default function App() {
           </ChunkErrorBoundary>
         </AuthInit>
       </AuthProvider>
-    </ThemeProvider>
+    </>
   );
 }

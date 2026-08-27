@@ -1,12 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { DayPicker } from 'react-day-picker';
-import 'react-day-picker/style.css';
-import type { DateRange } from 'react-day-picker';
+import { Segmented, DatePicker, Button } from 'antd';
+import dayjs from 'dayjs';
 import { authFetch } from '../lib/api';
 import { toast } from '../lib/toast';
-import { Button } from '../components/ui/button';
-import { Popover, PopoverContent, PopoverTrigger } from '../components/ui/popover';
-import { CalendarDays } from 'lucide-react';
 import useECharts, { type EChartsOption } from '../lib/use-echarts';
 import type {
   AnalyticsWorkbenchResponse,
@@ -150,8 +146,8 @@ function TopCommoditiesCard({ data, loading }: { data: AnalyticsTopCommodities; 
   return (
     <div className="space-y-2">
       <div className="flex gap-1">
-        <Button variant={tab === 'amount' ? 'default' : 'outline'} size="default" className="h-8 px-3 text-[12px]" onClick={() => setTab('amount')}>金额排行</Button>
-        <Button variant={tab === 'quantity' ? 'default' : 'outline'} size="default" className="h-8 px-3 text-[12px]" onClick={() => setTab('quantity')}>数量排行</Button>
+        <Button type={tab === 'amount' ? 'primary' : 'default'} size="small" onClick={() => setTab('amount')}>金额排行</Button>
+        <Button type={tab === 'quantity' ? 'primary' : 'default'} size="small" onClick={() => setTab('quantity')}>数量排行</Button>
       </div>
       <div className="space-y-1.5">
         {list.map((c, i) => {
@@ -274,8 +270,6 @@ export default function AnalyticsPage() {
   const [range, setRange] = useState<string>('近1个月');
   const [customStart, setCustomStart] = useState('');
   const [customEnd, setCustomEnd] = useState('');
-  const [rangePickerOpen, setRangePickerOpen] = useState(false);
-  const [tempRange, setTempRange] = useState<DateRange | undefined>(undefined);
   const [data, setData] = useState<AnalyticsWorkbenchResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -333,66 +327,31 @@ export default function AnalyticsPage() {
       {/* 标题 + 时间范围 */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-[18px] font-bold text-[#0F172A] dark:text-white">数据分析工作台</h1>
-        <div className="flex items-center gap-1">
-          {RANGE_OPTIONS.map((r) => (
-            <button
-              key={r.label}
-              onClick={() => setRange(r.label)}
-              className={`rounded-full px-3 py-1 text-[12px] transition-colors ${
-                range === r.label
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-[#E2E8F0] text-[#334155] hover:bg-[#CBD5E1] dark:bg-[#334155] dark:text-[#E2E8F0]'
-              }`}
-            >
-              {r.label}
-            </button>
-          ))}
-          {/* antd 风格 RangePicker：单个输入框，点击展开双月日历 */}
-          <Popover open={rangePickerOpen} onOpenChange={setRangePickerOpen}>
-            <PopoverTrigger asChild>
-              <button
-                type="button"
-                onClick={() => {
-                  setTempRange(customStart && customEnd
-                    ? { from: new Date(`${customStart}T00:00:00`), to: new Date(`${customEnd}T00:00:00`) }
-                    : undefined);
-                  setRangePickerOpen(true);
-                }}
-                className={`flex h-7 items-center gap-1.5 rounded-md border px-2.5 text-[12px] transition-colors ${
-                  range === '自定义'
-                    ? 'border-blue-600 bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300'
-                    : 'border-[#E2E8F0] bg-white text-[#64748B] hover:border-[#CBD5E1] dark:border-[#334155] dark:bg-[#1E293B] dark:text-[#94A3B8]'
-                }`}
-              >
-                <CalendarDays className="h-3.5 w-3.5" />
-                {customStart && customEnd ? (
-                  <span className="font-medium">{formatDate(new Date(customStart))} ~ {formatDate(new Date(customEnd))}</span>
-                ) : (
-                  <span>自定义</span>
-                )}
-              </button>
-            </PopoverTrigger>
-            <PopoverContent align="start" className="w-auto p-2">
-              <DayPicker
-                mode="range"
-                selected={tempRange}
-                onSelect={(range) => {
-                  setTempRange(range);
-                  // 仅在完整区间（from ≠ to）时应用并关闭；单日点击（from===to）不关闭，等待用户选结束日
-                  if (range?.from && range?.to && formatDate(range.from) !== formatDate(range.to)) {
-                    setCustomStart(formatDate(range.from));
-                    setCustomEnd(formatDate(range.to));
-                    setRange('自定义');
-                    setRangePickerOpen(false);
-                    setReloadKey((k) => k + 1);
-                  }
-                }}
-                numberOfMonths={2}
-                disabled={{ after: new Date() }}
-                className="mx-auto"
-              />
-            </PopoverContent>
-          </Popover>
+        <div className="flex items-center gap-2">
+          <Segmented
+            options={[...RANGE_OPTIONS.map((r) => r.label), '自定义']}
+            value={range}
+            onChange={(v) => {
+              const val = v as string;
+              setRange(val);
+              if (val !== '自定义') setReloadKey((k) => k + 1);
+            }}
+            size="small"
+          />
+          {range === '自定义' && (
+            <DatePicker.RangePicker
+              size="small"
+              value={customStart && customEnd ? [dayjs(customStart), dayjs(customEnd)] : null}
+              onChange={(dates) => {
+                if (dates && dates[0] && dates[1]) {
+                  setCustomStart(dates[0].format('YYYY-MM-DD'));
+                  setCustomEnd(dates[1].format('YYYY-MM-DD'));
+                  setReloadKey((k) => k + 1);
+                }
+              }}
+              disabledDate={(d) => !!d && d.isAfter(dayjs(), 'day')}
+            />
+          )}
         </div>
       </div>
 
@@ -400,7 +359,7 @@ export default function AnalyticsPage() {
       {error && (
         <div className="flex items-center gap-3 rounded-md border border-red-200 bg-red-50 p-3 text-[13px] text-red-600 dark:border-red-900 dark:bg-red-950">
           <span>数据加载失败</span>
-          <Button size="default" className="h-8 px-3 text-[12px]" variant="outline" onClick={() => setReloadKey((k) => k + 1)}>重试</Button>
+          <Button size="small" onClick={() => setReloadKey((k) => k + 1)}>重试</Button>
         </div>
       )}
 
