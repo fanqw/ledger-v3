@@ -245,7 +245,7 @@ function OrderSizeHistogram({ data, loading }: { data: AnalyticsOrderSizeBucket[
       {
         type: 'bar',
         data: data.map((b) => b.count),
-        itemStyle: { color: '#0288D1', borderRadius: [4, 4, 0, 0] },
+        itemStyle: { color: '#3B82F6', borderRadius: [4, 4, 0, 0] },
         label: { show: true, position: 'top', fontSize: 11 },
       },
     ],
