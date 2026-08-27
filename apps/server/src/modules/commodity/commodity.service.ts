@@ -39,7 +39,7 @@ export class CommodityService {
     const [items, total] = await Promise.all([
       this.prisma.commodity.findMany({
         where,
-        orderBy: { updatedAt: 'desc' },
+        orderBy: { createdAt: 'desc' },
         skip: (page - 1) * pageSize,
         take: pageSize,
         include: { category: true, unit: true },

@@ -29,7 +29,7 @@ export class UnitService {
       ];
     }
     const [items, total] = await Promise.all([
-      this.prisma.unit.findMany({ where, orderBy: { updatedAt: 'desc' }, skip: (page - 1) * pageSize, take: pageSize }),
+      this.prisma.unit.findMany({ where, orderBy: { createdAt: 'asc' }, skip: (page - 1) * pageSize, take: pageSize }),
       this.prisma.unit.count({ where }),
     ]);
     return { items, meta: { page, pageSize, total } };
