@@ -19,6 +19,10 @@ function check(id, cond, detail) {
   console.log(`  ${cond ? '✅' : '❌'} ${id}: ${detail || ''}`);
 }
 
+async function clickDialogSave(page) {
+  await page.getByRole('dialog').getByRole('button', { name: /保\s*存/ }).click();
+}
+
 function summarize() {
   const pass = results.filter(r => r.pass).length;
   const fail = results.filter(r => !r.pass);
@@ -64,9 +68,11 @@ async function login(page) {
 async function openTestOrder(page) {
   await page.goto(`${BASE}/orders`, { waitUntil: 'networkidle' });
   await page.waitForTimeout(1500);
-  // 找到测试订单行并点击进入
-  const row = page.locator('tbody tr').filter({ hasText: TEST_ORDER });
-  await row.locator('button:has(.lucide-eye)').click();
+  const search = page.getByPlaceholder('搜索订单名称/备注/进货地...');
+  await search.fill(TEST_ORDER);
+  await search.press('Enter');
+  await page.waitForTimeout(800);
+  await page.getByRole('button', { name: `查看${TEST_ORDER}` }).click();
   await page.waitForTimeout(2000);
 }
 
@@ -90,7 +96,7 @@ async function openAddItemDialog(page) {
 }
 
 async function clickCombobox(page, n) {
-  await page.locator('button[role="combobox"]').nth(n).click();
+  await page.locator('[role="dialog"] [role="combobox"]:visible').nth(n).click();
   await page.waitForTimeout(800);
 }
 
@@ -117,7 +123,8 @@ async function clickFirstItem(page) {
 }
 
 async function getComboboxValue(page, n) {
-  return (await page.locator('button[role="combobox"]').nth(n).innerText()).replace(/[▼\n\t]/g, '').trim();
+  const combobox = page.locator('[role="dialog"] [role="combobox"]:visible').nth(n);
+  return ((await combobox.inputValue().catch(() => '')) || (await combobox.innerText().catch(() => ''))).replace(/[▼\n\t]/g, '').trim();
 }
 
 async function getNumberInputs(page) {
@@ -162,8 +169,8 @@ async function main() {
 
     // ================= A. 订单详情页加载 =================
     console.log('\n=== A. 订单详情页加载 ===');
-    const h1 = await page.locator('h1').innerText().catch(() => '');
-    check('A1', h1.includes(TEST_ORDER), `h1="${h1}"`);
+    const pageHeading = await page.getByRole('heading', { name: TEST_ORDER }).innerText().catch(() => '');
+    check('A1', pageHeading.includes(TEST_ORDER), `heading="${pageHeading}"`);
 
     const bodyA = await page.locator('body').innerText();
     check('A2', bodyA.includes('创建时间:'), '显示创建时间');
@@ -227,8 +234,8 @@ async function main() {
       }
       return { total: totalCells[0], subs: subCells };
     });
-    const subSum = totals.subs.reduce((s, t) => s + t, 0);
-    check('A7', Math.abs(subSum - totals.total) < 0.01, `分类小计和=${subSum}, 总计=${totals.total}`);
+    const expectedTotal = prep.reduce((sum, item) => sum + item.lineTotal, 0);
+    check('A7', Math.abs(expectedTotal - totals.total) < 0.01, `预期总计=${expectedTotal}, 页面总计=${totals.total}`);
 
     const totalRowspan = await page.evaluate(() => {
       const rows = document.querySelectorAll('tbody tr');
@@ -266,7 +273,7 @@ async function main() {
     const totalB6 = await numInputsB.nth(2).inputValue();
     check('B6', Math.abs(parseFloat(totalB6) - 31) < 0.01, `2×15.5 => ${totalB6}`);
 
-    await page.locator('[role="dialog"] button:has-text("保存")').click();
+    await clickDialogSave(page);
     await page.waitForTimeout(2000);
     const savedB = await waitForToast(page, '添加成功');
     const tableB = await getTableBodyText(page);
@@ -295,7 +302,7 @@ async function main() {
     await numsC.nth(1).fill('10.00');
     await page.waitForTimeout(300);
     check('C6', Math.abs(parseFloat(await numsC.nth(2).inputValue()) - 40) < 0.01, `金额=${await numsC.nth(2).inputValue()}`);
-    await page.locator('[role="dialog"] button:has-text("保存")').click();
+    await clickDialogSave(page);
     await page.waitForTimeout(2500);
     const savedC = await waitForToast(page, '添加成功');
     const tableC = await getTableBodyText(page);
@@ -368,7 +375,7 @@ async function main() {
     await numsF.nth(0).fill('2');
     await numsF.nth(1).fill('8');
     await page.waitForTimeout(300);
-    await page.locator('[role="dialog"] button:has-text("保存")').click();
+    await clickDialogSave(page);
     await page.waitForTimeout(2000);
 
     const fRow = page.locator('tbody tr').filter({ hasText: fName });
@@ -393,7 +400,7 @@ async function main() {
     const reversedPrice = await editNums.nth(1).inputValue();
     check('F4b', Math.abs(parseFloat(reversedPrice) - 11.11) < 0.01, `反向单价=${reversedPrice}`);
 
-    await page.locator('[role="dialog"] button:has-text("保存")').click();
+    await clickDialogSave(page);
     await page.waitForTimeout(2000);
     await waitForToast(page, '更新成功');
     const fRowAfter = page.locator('tbody tr').filter({ hasText: fName });
@@ -421,7 +428,7 @@ async function main() {
     const gBorder2 = await gNums.nth(2).evaluate(el => getComputedStyle(el).borderColor);
     const gPrice = await gNums.nth(1).inputValue();
     check('G2', (gBorder2 === 'rgb(248, 113, 113)' || gBorder2 === 'rgb(239, 68, 68)') && Math.abs(parseFloat(gPrice) - 12) < 0.01, `边框=${gBorder2}, 单价=${gPrice}`);
-    await page.locator('[role="dialog"] button:has-text("保存")').click();
+    await clickDialogSave(page);
     await page.waitForTimeout(2000);
     await waitForToast(page, '更新成功');
     const gRowAfter = page.locator('tbody tr').filter({ hasText: fName });
@@ -483,15 +490,15 @@ async function main() {
     const newOrderName = `${TEST_ORDER}-改`;
     await orderInputs.nth(0).fill(newOrderName);
     await orderInputs.nth(1).fill(`测试备注${UNIQ}`);
-    await page.locator('[role="dialog"] button:has-text("保存")').click();
+    await clickDialogSave(page);
     await page.waitForTimeout(2000);
     const jSaved = await waitForToast(page, '更新成功');
-    const h1After = await page.locator('h1').innerText();
-    check('J2', jSaved && h1After.includes(newOrderName), `保存=${jSaved}, h1=${h1After}`);
+    const headingAfter = await page.getByRole('heading', { name: newOrderName }).innerText();
+    check('J2', jSaved && headingAfter.includes(newOrderName), `保存=${jSaved}, heading=${headingAfter}`);
     // 修改进货地（Select 下拉）
     await page.locator('button:has-text("编辑")').click();
     await page.waitForTimeout(800);
-    const placeSelect = page.locator('[role="dialog"] button[role="combobox"]').last();
+    const placeSelect = page.locator('[role="dialog"] [role="combobox"]:visible').last();
     await placeSelect.click();
     await page.waitForTimeout(500);
     const placeItems = page.locator('[role="option"]');
@@ -503,7 +510,7 @@ async function main() {
     }
     await page.waitForTimeout(500);
     check('J3', placeChosen, placeChosen ? '选中洛阳' : '无洛阳选项');
-    await page.locator('[role="dialog"] button:has-text("保存")').click();
+    await clickDialogSave(page);
     await page.waitForTimeout(2000);
     const j3Saved = await waitForToast(page, '更新成功');
     const bodyJ3 = await page.locator('body').innerText();
@@ -512,7 +519,7 @@ async function main() {
     await page.locator('button:has-text("编辑")').click();
     await page.waitForTimeout(800);
     await page.locator('[role="dialog"] input').nth(1).fill(`最终备注${UNIQ}`);
-    await page.locator('[role="dialog"] button:has-text("保存")').click();
+    await clickDialogSave(page);
     await page.waitForTimeout(2000);
     const j4Saved = await waitForToast(page, '更新成功');
     const bodyJ4 = await page.locator('body').innerText();
@@ -543,22 +550,22 @@ async function main() {
     const lNums = await getNumberInputs(page);
     await lNums.nth(0).fill('0');
     await lNums.nth(1).fill('5');
-    await page.locator('[role="dialog"] button:has-text("保存")').click();
+    await clickDialogSave(page);
     const l2 = await waitForToast(page, '数量必须大于0', 3000);
     check('L2', l2, l2 ? '提示数量错误' : '未提示');
     await lNums.nth(0).fill('-2');
-    await page.locator('[role="dialog"] button:has-text("保存")').click();
+    await clickDialogSave(page);
     const l2b = await waitForToast(page, '数量必须大于0', 3000);
     check('L2b', l2b, l2b ? '负数也提示' : '负数未提示');
 
     await lNums.nth(0).fill('2');
     await lNums.nth(1).fill('-3');
-    await page.locator('[role="dialog"] button:has-text("保存")').click();
+    await clickDialogSave(page);
     const l3 = await waitForToast(page, '单价不能为负', 3000);
     check('L3', l3, l3 ? '提示单价错误' : '未提示');
 
     await lNums.nth(1).fill('5');
-    await page.locator('[role="dialog"] button:has-text("保存")').click();
+    await clickDialogSave(page);
     const l4 = await waitForToast(page, '请选择或输入商品', 3000);
     check('L4', l4, l4 ? '提示选商品' : '未提示');
 
