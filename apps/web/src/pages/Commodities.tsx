@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Table, Button, Input, Modal, Form, Select, Space, App as AntdApp, Typography } from 'antd';
+import { Table, Button, Input, Modal, Form, Select, Space, Card, FloatButton, App as AntdApp, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { toast } from '../lib/toast';
@@ -151,16 +151,16 @@ export default function CommoditiesPage() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Typography.Title level={4} style={{ margin: 0 }}>商品信息</Typography.Title>
-        <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>新增商品</Button>
       </div>
 
-      <Input.Search
-        placeholder="搜索商品名/分类/单位..."
-        style={{ width: 320 }}
-        allowClear
-        onChange={(e) => setKeyword(e.target.value)}
-        onSearch={(v) => fetchData(1, v)}
-      />
+      <Card>
+        <Input.Search
+          placeholder="搜索商品名/分类/单位..."
+          style={{ width: 320, marginBottom: 16 }}
+          allowClear
+          onChange={(e) => setKeyword(e.target.value)}
+          onSearch={(v) => fetchData(1, v)}
+        />
 
       <Table<Commodity>
         rowKey="id"
@@ -175,6 +175,10 @@ export default function CommoditiesPage() {
           onChange: (page) => { setPagination((p) => ({ ...p, page })); fetchData(page, keyword); },
         }}
       />
+
+      </Card>
+
+      <FloatButton type="primary" icon={<PlusOutlined />} tooltip="新增商品" onClick={openCreate} />
 
       <Modal
         title={editing ? '编辑商品' : '新增商品'}

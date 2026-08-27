@@ -81,7 +81,7 @@ export default function SideNav() {
             width: 28,
             height: 28,
             borderRadius: 6,
-            background: '#0F766E',
+            background: '#0288D1',
             color: '#fff',
             fontWeight: 'bold',
             display: 'inline-flex',

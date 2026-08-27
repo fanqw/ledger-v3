@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Table, Button, Input, InputNumber, Modal, Form, Select, AutoComplete, Space, App as AntdApp, Typography, Spin } from 'antd';
+import { Table, Button, Input, InputNumber, Modal, Form, Select, AutoComplete, Space, Card, FloatButton, App as AntdApp, Typography, Spin } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { ArrowLeftOutlined, PlusOutlined, EditOutlined, DeleteOutlined, DownloadOutlined } from '@ant-design/icons';
 import { toast } from '../lib/toast';
@@ -415,23 +415,25 @@ export default function OrderDetailPage() {
       {/* 明细列表 */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Typography.Title level={5} style={{ margin: 0 }}>明细列表</Typography.Title>
-        <Button type="primary" icon={<PlusOutlined />} onClick={openAddItem}>添加明细</Button>
       </div>
 
-      {displayItems.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: 48, border: '1px solid #f0f0f0', borderRadius: 8 }}>
-          <Typography.Text type="secondary">暂无明细</Typography.Text>
-        </div>
-      ) : (
-        <Table<OrderItem>
-          rowKey="id"
-          columns={columns}
-          dataSource={displayItems}
-          pagination={false}
-          size="middle"
-          bordered
-        />
-      )}
+      <Card>
+        {displayItems.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: 48 }}>
+            <Typography.Text type="secondary">暂无明细</Typography.Text>
+          </div>
+        ) : (
+          <Table<OrderItem>
+            rowKey="id"
+            columns={columns}
+            dataSource={displayItems}
+            pagination={false}
+            size="middle"
+          />
+        )}
+      </Card>
+
+      <FloatButton type="primary" icon={<PlusOutlined />} tooltip="添加明细" onClick={openAddItem} />
 
       {/* 明细弹窗 */}
       <Modal

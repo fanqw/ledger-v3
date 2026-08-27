@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Table, Button, Input, Modal, Form, Select, Space, App as AntdApp, Typography } from 'antd';
+import { Table, Button, Input, Modal, Form, Select, Space, Card, FloatButton, App as AntdApp, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined } from '@ant-design/icons';
 import { toast } from '../lib/toast';
@@ -153,16 +153,16 @@ export default function OrdersPage() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Typography.Title level={4} style={{ margin: 0 }}>订单管理</Typography.Title>
-        <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>新增订单</Button>
       </div>
 
-      <Input.Search
-        placeholder="搜索订单名称/备注/进货地..."
-        style={{ width: 320 }}
-        allowClear
-        onChange={(e) => setKeyword(e.target.value)}
-        onSearch={(v) => fetchData(1, v)}
-      />
+      <Card>
+        <Input.Search
+          placeholder="搜索订单名称/备注/进货地..."
+          style={{ width: 320, marginBottom: 16 }}
+          allowClear
+          onChange={(e) => setKeyword(e.target.value)}
+          onSearch={(v) => fetchData(1, v)}
+        />
 
       <Table<Order>
         rowKey="id"
@@ -177,6 +177,10 @@ export default function OrdersPage() {
           onChange: (page) => { setPagination((p) => ({ ...p, page })); fetchData(page, keyword); },
         }}
       />
+
+      </Card>
+
+      <FloatButton type="primary" icon={<PlusOutlined />} tooltip="新增订单" onClick={openCreate} />
 
       <Modal
         title={editing ? '编辑订单' : '新增订单'}

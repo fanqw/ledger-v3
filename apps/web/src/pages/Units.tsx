@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Table, Button, Input, Modal, Form, Space, App as AntdApp, Typography } from 'antd';
+import { Table, Button, Input, Modal, Form, Space, Card, FloatButton, App as AntdApp, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { toast } from '../lib/toast';
@@ -122,16 +122,16 @@ export default function UnitsPage() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Typography.Title level={4} style={{ margin: 0 }}>商品单位</Typography.Title>
-        <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>新增单位</Button>
       </div>
 
-      <Input.Search
-        placeholder="搜索..."
-        style={{ width: 320 }}
-        allowClear
-        onChange={(e) => setKeyword(e.target.value)}
-        onSearch={(v) => fetchData(1, v)}
-      />
+      <Card>
+        <Input.Search
+          placeholder="搜索..."
+          style={{ width: 320, marginBottom: 16 }}
+          allowClear
+          onChange={(e) => setKeyword(e.target.value)}
+          onSearch={(v) => fetchData(1, v)}
+        />
 
       <Table<Unit>
         rowKey="id"
@@ -146,6 +146,10 @@ export default function UnitsPage() {
           onChange: (page) => { setPagination((p) => ({ ...p, page })); fetchData(page, keyword); },
         }}
       />
+
+      </Card>
+
+      <FloatButton type="primary" icon={<PlusOutlined />} tooltip="新增单位" onClick={openCreate} />
 
       <Modal
         title={editing ? '编辑单位' : '新增单位'}
