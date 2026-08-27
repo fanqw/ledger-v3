@@ -1,6 +1,6 @@
 import { useLocation } from 'react-router-dom';
-import { Layout, Avatar, Dropdown, Space } from 'antd';
-import { LogoutOutlined, UserOutlined } from '@ant-design/icons';
+import { Layout, Avatar, Button, Dropdown, Space } from 'antd';
+import { LogoutOutlined, MenuOutlined, UserOutlined } from '@ant-design/icons';
 import { useAuth } from '../../lib/auth';
 
 const { Header } = Layout;
@@ -25,7 +25,7 @@ function getBreadcrumb(pathname: string): string {
   return '';
 }
 
-export default function TopBar() {
+export default function TopBar({ mobile = false, onOpenNavigation }: { mobile?: boolean; onOpenNavigation?: () => void }) {
   const location = useLocation();
   const { user, logout } = useAuth();
 
@@ -46,13 +46,16 @@ export default function TopBar() {
       }}
     >
       {/* 面包屑 */}
-      <div style={{ fontSize: 14 }}>
+      <div className="topbar-location">
+        {mobile && <Button type="text" icon={<MenuOutlined />} aria-label="打开导航" onClick={onOpenNavigation} />}
+        <div style={{ fontSize: 14 }}>
         {breadcrumb.split(' / ').map((part, i, arr) => (
           <span key={i}>
             {i > 0 && <span style={{ color: '#999', margin: '0 4px' }}>/</span>}
             <span style={i === arr.length - 1 ? { fontWeight: 600 } : { color: '#666' }}>{part}</span>
           </span>
         ))}
+        </div>
       </div>
 
       {/* 用户信息 + 登出 */}

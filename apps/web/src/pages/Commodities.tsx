@@ -1,10 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Table, Button, Input, Modal, Form, Select, Space, Card, FloatButton, App as AntdApp, Typography } from 'antd';
+import { Table, Button, Input, Modal, Form, Select, Space, App as AntdApp } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { toast } from '../lib/toast';
 import { authFetch } from '../lib/api';
 import { fetchAllPages } from '../lib/paged-request';
+import PageHeader from '../components/page/PageHeader';
+import PageToolbar from '../components/page/PageToolbar';
 
 interface Category { id: string; name: string; }
 interface Unit { id: string; name: string; }
@@ -148,19 +150,17 @@ export default function CommoditiesPage() {
   ];
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Typography.Title level={4} style={{ margin: 0 }}>商品信息</Typography.Title>
-      </div>
-
-      <Card>
+    <div className="page">
+      <PageHeader title="商品信息" description="维护商品、分类与计量单位" actions={<Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>新增商品</Button>} />
+      <PageToolbar>
         <Input.Search
           placeholder="搜索商品名/分类/单位..."
-          style={{ width: 320, marginBottom: 16 }}
+          style={{ width: 320 }}
           allowClear
           onChange={(e) => setKeyword(e.target.value)}
           onSearch={(v) => fetchData(1, v)}
         />
+      </PageToolbar>
 
       <Table<Commodity>
         rowKey="id"
@@ -175,10 +175,6 @@ export default function CommoditiesPage() {
           onChange: (page) => { setPagination((p) => ({ ...p, page })); fetchData(page, keyword); },
         }}
       />
-
-      </Card>
-
-      <FloatButton type="primary" icon={<PlusOutlined />} tooltip="新增商品" onClick={openCreate} />
 
       <Modal
         title={editing ? '编辑商品' : '新增商品'}

@@ -18,3 +18,36 @@ test('theme and page primitives expose the unified workspace contract', () => {
   assert.match(toolbar, /page-toolbar/);
   assert.match(state, /onRetry/);
 });
+
+test('responsive data and row actions expose mobile and accessible behavior', () => {
+  const responsive = read('src/components/page/ResponsiveDataView.tsx');
+  const actions = read('src/components/page/RowActions.tsx');
+  assert.match(responsive, /responsive-data__mobile/);
+  assert.match(responsive, /renderMobileItem/);
+  assert.match(actions, /aria-label/);
+  assert.match(actions, /modal\.confirm/);
+});
+
+test('application shell uses narrow sider and mobile drawer', () => {
+  const shell = read('src/components/layout/AppShell.tsx');
+  const side = read('src/components/layout/SideNav.tsx');
+  const top = read('src/components/layout/TopBar.tsx');
+  assert.match(shell, /mobileNavOpen/);
+  assert.match(shell, /<Drawer/);
+  assert.match(side, /collapsedWidth=\{64\}/);
+  assert.match(top, /打开导航/);
+});
+
+for (const page of ['Orders', 'Categories', 'Units', 'Commodities', 'PurchasePlaces']) {
+  test(`${page} uses the unified page structure`, () => {
+    const source = read(`src/pages/${page}.tsx`);
+    assert.match(source, /<PageHeader/);
+    assert.match(source, /<PageToolbar/);
+    assert.doesNotMatch(source, /<FloatButton/);
+  });
+}
+
+test('complex pages use the unified page header', () => {
+  assert.match(read('src/pages/OrderDetail.tsx'), /<PageHeader/);
+  assert.match(read('src/pages/Analytics.tsx'), /<PageHeader/);
+});

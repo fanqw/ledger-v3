@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Table, Button, Input, InputNumber, Modal, Form, Select, AutoComplete, Space, Card, FloatButton, App as AntdApp, Typography, Spin } from 'antd';
+import { Table, Button, Input, InputNumber, Modal, Form, Select, AutoComplete, Space, Card, App as AntdApp, Typography, Spin } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { ArrowLeftOutlined, PlusOutlined, EditOutlined, DeleteOutlined, DownloadOutlined } from '@ant-design/icons';
 import { toast } from '../lib/toast';
 import { authFetch } from '../lib/api';
 import ExcelJS from 'exceljs';
+import PageHeader from '../components/page/PageHeader';
 
 // ==================== Types ====================
 
@@ -392,18 +393,15 @@ export default function OrderDetailPage() {
   ];
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      {/* 头部 */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/orders')} />
-          <Typography.Title level={4} style={{ margin: 0 }}>{order.name}</Typography.Title>
-        </div>
+    <div className="page">
+      <PageHeader title={order.name} description="查看订单信息并维护采购明细" actions={
         <Space>
+          <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/orders')}>返回</Button>
           <Button icon={<EditOutlined />} onClick={openOrderEdit}>编辑</Button>
           <Button icon={<DownloadOutlined />} onClick={() => exportToExcel(order)}>导出 Excel</Button>
+          <Button type="primary" icon={<PlusOutlined />} onClick={openAddItem}>添加明细</Button>
         </Space>
-      </div>
+      } />
 
       {/* 订单信息 */}
       <div style={{ display: 'flex', gap: 24, fontSize: 13, color: '#666' }}>
@@ -432,8 +430,6 @@ export default function OrderDetailPage() {
           />
         )}
       </Card>
-
-      <FloatButton type="primary" icon={<PlusOutlined />} tooltip="添加明细" onClick={openAddItem} />
 
       {/* 明细弹窗 */}
       <Modal

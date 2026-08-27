@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Table, Button, Input, Modal, Form, Space, Card, FloatButton, App as AntdApp, Typography } from 'antd';
+import { Table, Button, Input, Modal, Form, Space, App as AntdApp } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { toast } from '../lib/toast';
 import { authFetch } from '../lib/api';
+import PageHeader from '../components/page/PageHeader';
+import PageToolbar from '../components/page/PageToolbar';
 
 interface Category {
   id: string;
@@ -119,19 +121,17 @@ export default function CategoriesPage() {
   ];
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Typography.Title level={4} style={{ margin: 0 }}>商品分类</Typography.Title>
-      </div>
-
-      <Card>
+    <div className="page">
+      <PageHeader title="商品分类" description="维护商品的分类结构" actions={<Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>新增分类</Button>} />
+      <PageToolbar>
         <Input.Search
           placeholder="搜索..."
-          style={{ width: 320, marginBottom: 16 }}
+          style={{ width: 320 }}
           allowClear
           onChange={(e) => setKeyword(e.target.value)}
           onSearch={(v) => fetchData(1, v)}
         />
+      </PageToolbar>
 
       <Table<Category>
         rowKey="id"
@@ -146,10 +146,6 @@ export default function CategoriesPage() {
           onChange: (page) => { setPagination((p) => ({ ...p, page })); fetchData(page, keyword); },
         }}
       />
-
-      </Card>
-
-      <FloatButton type="primary" icon={<PlusOutlined />} tooltip="新增分类" onClick={openCreate} />
 
       <Modal
         title={editing ? '编辑分类' : '新增分类'}

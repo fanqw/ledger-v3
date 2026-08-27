@@ -1,11 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Table, Button, Input, Modal, Form, Select, Space, Card, FloatButton, App as AntdApp, Typography } from 'antd';
+import { Table, Button, Input, Modal, Form, Select, Space, App as AntdApp } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined } from '@ant-design/icons';
 import { toast } from '../lib/toast';
 import { authFetch } from '../lib/api';
 import { fetchAllPages } from '../lib/paged-request';
+import PageHeader from '../components/page/PageHeader';
+import PageToolbar from '../components/page/PageToolbar';
 
 interface PurchasePlace { id: string; place: string; marketName: string; }
 interface Order {
@@ -150,19 +152,17 @@ export default function OrdersPage() {
   ];
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Typography.Title level={4} style={{ margin: 0 }}>订单管理</Typography.Title>
-      </div>
-
-      <Card>
+    <div className="page">
+      <PageHeader title="订单列表" description="查看、创建和维护全部采购订单" actions={<Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>新增订单</Button>} />
+      <PageToolbar>
         <Input.Search
           placeholder="搜索订单名称/备注/进货地..."
-          style={{ width: 320, marginBottom: 16 }}
+          style={{ width: 320 }}
           allowClear
           onChange={(e) => setKeyword(e.target.value)}
           onSearch={(v) => fetchData(1, v)}
         />
+      </PageToolbar>
 
       <Table<Order>
         rowKey="id"
@@ -177,10 +177,6 @@ export default function OrdersPage() {
           onChange: (page) => { setPagination((p) => ({ ...p, page })); fetchData(page, keyword); },
         }}
       />
-
-      </Card>
-
-      <FloatButton type="primary" icon={<PlusOutlined />} tooltip="新增订单" onClick={openCreate} />
 
       <Modal
         title={editing ? '编辑订单' : '新增订单'}

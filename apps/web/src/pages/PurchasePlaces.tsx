@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Table, Button, Input, Modal, Form, Space, Card, FloatButton, App as AntdApp, Typography } from 'antd';
+import { Table, Button, Input, Modal, Form, Space, App as AntdApp } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { toast } from '../lib/toast';
 import { authFetch } from '../lib/api';
+import PageHeader from '../components/page/PageHeader';
+import PageToolbar from '../components/page/PageToolbar';
 
 interface PurchasePlace {
   id: string;
@@ -120,19 +122,17 @@ export default function PurchasePlacesPage() {
   ];
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Typography.Title level={4} style={{ margin: 0 }}>进货地</Typography.Title>
-      </div>
-
-      <Card>
+    <div className="page">
+      <PageHeader title="进货地" description="维护常用采购地点与市场" actions={<Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>新增进货地</Button>} />
+      <PageToolbar>
         <Input.Search
           placeholder="搜索..."
-          style={{ width: 320, marginBottom: 16 }}
+          style={{ width: 320 }}
           allowClear
           onChange={(e) => setKeyword(e.target.value)}
           onSearch={(v) => fetchData(1, v)}
         />
+      </PageToolbar>
 
       <Table<PurchasePlace>
         rowKey="id"
@@ -147,10 +147,6 @@ export default function PurchasePlacesPage() {
           onChange: (page) => { setPagination((p) => ({ ...p, page })); fetchData(page, keyword); },
         }}
       />
-
-      </Card>
-
-      <FloatButton type="primary" icon={<PlusOutlined />} tooltip="新增进货地" onClick={openCreate} />
 
       <Modal
         title={editing ? '编辑进货地' : '新增进货地'}
