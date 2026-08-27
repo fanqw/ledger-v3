@@ -1,3 +1,19 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* 全局背景 */
+body {
+  background-color: #f5f7fa;
+}
+
+/* 表格数字等宽对齐（金额/数量/时间） */
+.ant-table td,
+.ant-table th {
+  font-variant-numeric: tabular-nums;
+}
+
+/* KPI 数字对齐 */
+.kpi-num {
+  font-variant-numeric: tabular-nums;
+}

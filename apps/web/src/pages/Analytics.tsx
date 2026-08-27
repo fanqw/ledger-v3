@@ -246,7 +246,7 @@ function OrderSizeHistogram({ data, loading }: { data: AnalyticsOrderSizeBucket[
       {
         type: 'bar',
         data: data.map((b) => b.count),
-        itemStyle: { color: '#3B82F6', borderRadius: [4, 4, 0, 0] },
+        itemStyle: { color: '#0F766E', borderRadius: [4, 4, 0, 0] },
         label: { show: true, position: 'top', fontSize: 11 },
       },
     ],
@@ -373,7 +373,7 @@ export default function AnalyticsPage() {
         ].map((k) => (
           <div key={k.label} className="rounded-md border border-[#E2E8F0] bg-white p-4 dark:border-[#334155] dark:bg-[#1E293B]">
             <p className="text-[12px] text-[#64748B] dark:text-[#94A3B8]">{k.label}</p>
-            <p className="mt-1 text-[22px] font-bold text-[#0F172A] dark:text-white">{loading ? '...' : k.value}</p>
+            <p className="kpi-num mt-1 text-[22px] font-bold text-[#0F172A] dark:text-white">{loading ? '...' : k.value}</p>
           </div>
         ))}
       </div>
