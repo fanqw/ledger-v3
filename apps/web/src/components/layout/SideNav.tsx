@@ -3,7 +3,6 @@ import { useState } from 'react';
 import { Layout, Menu } from 'antd';
 import type { MenuProps } from 'antd';
 import {
-  DashboardOutlined,
   BarChartOutlined,
   ProfileOutlined,
   BankOutlined,
@@ -15,7 +14,6 @@ const { Sider } = Layout;
 
 // antd Menu items：对齐 V1 layout 结构（分组子菜单 + 路由 key）
 const items: MenuProps['items'] = [
-  { key: '/dashboard', icon: <DashboardOutlined />, label: '仪表台' },
   { key: '/analytics', icon: <BarChartOutlined />, label: '数据分析' },
   {
     key: 'orders',

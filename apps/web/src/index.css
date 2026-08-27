@@ -23,7 +23,7 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-.page { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.page { display: flex; flex-direction: column; gap: 16px; min-width: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06); padding: 20px; }
 .page-header { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; }
 .page-header__copy { min-width: 0; }
 .page-header h2.ant-typography { margin: 0 0 3px; font-size: 24px; line-height: 1.25; letter-spacing: -.02em; }
@@ -38,6 +38,12 @@ body {
 .app-shell { height: 100vh; overflow: hidden; background: var(--workspace-bg); }
 .app-workspace { min-width: 0; background: var(--workspace-bg); }
 .app-content { min-width: 0; padding: 24px 28px 32px; overflow: auto; background: var(--workspace-bg); }
+
+/* Table 内容边界与表头清晰 */
+.ant-table-container { border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.ant-table-wrapper .ant-table-thead > tr > th { background: #f8fafc; font-weight: 600; color: #475569; border-bottom: 1px solid var(--line); }
+.ant-table-wrapper .ant-table-tbody > tr > td { border-bottom: 1px solid #f1f5f9; }
+.ant-table-wrapper .ant-table-tbody > tr:hover > td { background: #f8fafc; }
 .topbar-location { display: flex; align-items: center; gap: 6px; min-width: 0; }
 .mobile-nav-drawer .ant-drawer-body { padding: 8px; }
 

@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Table, Button, Input, InputNumber, Modal, Form, Select, AutoComplete, Space, Card, App as AntdApp, Typography, Spin } from 'antd';
+import { Table, Button, Input, InputNumber, Modal, Select, AutoComplete, Space, Card, App as AntdApp, Typography, Spin } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { ArrowLeftOutlined, PlusOutlined, EditOutlined, DeleteOutlined, DownloadOutlined } from '@ant-design/icons';
+import { ArrowLeftOutlined, PlusOutlined, DownloadOutlined } from '@ant-design/icons';
 import { toast } from '../lib/toast';
 import { authFetch } from '../lib/api';
 import ExcelJS from 'exceljs';
@@ -43,24 +43,6 @@ function groupItems(items: OrderItem[]): ItemGroup[] {
     g.subtotal += item.lineTotal;
   }
   return Array.from(map.values());
-}
-
-// antd Table 合并单元格：计算每行的 rowSpan（分类列/分类金额列按分组，总金额列跨全部行）
-function buildRowSpans(items: OrderItem[]) {
-  const catCount = new Map<string, number>();
-  for (const it of items) {
-    const cid = it.commodity?.category?.id || '__none__';
-    catCount.set(cid, (catCount.get(cid) || 0) + 1);
-  }
-  return items.map((it, idx) => {
-    const cid = it.commodity?.category?.id || '__none__';
-    const prevCid = idx > 0 ? items[idx - 1].commodity?.category?.id || '__none__' : null;
-    const isCatFirst = prevCid !== cid;
-    return {
-      categoryRowSpan: isCatFirst ? catCount.get(cid)! : 0,
-      totalRowSpan: idx === 0 ? items.length : 0,
-    };
-  });
 }
 
 function border(c: { top?: string; bottom?: string; left?: string; right?: string }) {
@@ -129,10 +111,6 @@ export default function OrderDetailPage() {
   const [units, setUnits] = useState<Unit[]>([]);
 
   const [deleteItemTarget, setDeleteItemTarget] = useState<OrderItem | null>(null);
-  const [orderDialogOpen, setOrderDialogOpen] = useState(false);
-  const [orderForm] = Form.useForm<{ name: string; description?: string; purchasePlaceId?: string }>();
-  const [orderSaving, setOrderSaving] = useState(false);
-  const [purchasePlaces, setPurchasePlaces] = useState<PurchasePlace[]>([]);
 
   const fetchOrder = useCallback(async () => {
     setLoading(true);
@@ -291,31 +269,6 @@ export default function OrderDetailPage() {
     });
   };
 
-  const openOrderEdit = () => {
-    if (!order) return;
-    orderForm.setFieldsValue({ name: order.name, description: order.description || '', purchasePlaceId: order.purchasePlaceId || undefined });
-    setPurchasePlaces([]);
-    authFetch('/api/purchase-places?page=1&pageSize=100')
-      .then(r => r.json())
-      .then(j => { if (j.success) setPurchasePlaces(j.data.items); })
-      .catch(() => toast.error('进货地加载失败'));
-    setOrderDialogOpen(true);
-  };
-
-  const handleSaveOrder = async () => {
-    if (orderSaving) return;
-    let values: { name: string; description?: string; purchasePlaceId?: string };
-    try {
-      values = await orderForm.validateFields();
-    } catch { return; }
-    setOrderSaving(true);
-    try {
-      const res = await authFetch(`/api/orders/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: values.name.trim(), description: values.description?.trim() || undefined, purchasePlaceId: values.purchasePlaceId || null }) });
-      const json = await res.json();
-      if (json.success) { toast.success('更新成功'); setOrderDialogOpen(false); fetchOrder(); } else { toast.error(json.error?.message || '操作失败'); }
-    } catch { toast.error('操作失败'); } finally { setOrderSaving(false); }
-  };
-
   // ============ Render ============
 
   if (loading) {
@@ -340,7 +293,6 @@ export default function OrderDetailPage() {
   }));
   const groups = groupItems(displayItems);
   const grandTotal = groups.reduce((s, g) => s + g.subtotal, 0);
-  const spans = buildRowSpans(displayItems);
 
   // AutoComplete options
   const commodityOptions = commodities
@@ -352,10 +304,11 @@ export default function OrderDetailPage() {
   const columns: ColumnsType<OrderItem> = [
     {
       title: '分类',
-      onCell: (_, index) => ({ rowSpan: spans[index!].categoryRowSpan }),
-      render: (_v, record, index) => spans[index!].categoryRowSpan ? (record.commodity?.category?.name || '未分类') : null,
+      width: 90,
+      fixed: 'left',
+      render: (_, record) => record.commodity?.category?.name || '未分类',
     },
-    { title: '名称', render: (_, record) => record.commodity?.name || '-' },
+    { title: '名称', width: 160, fixed: 'left', render: (_, record) => record.commodity?.name || '-' },
     { title: '数量', render: (_, record) => record.quantity },
     { title: '单位', render: (_, record) => record.commodity?.unit?.name || '-' },
     { title: '单价', render: (_, record) => fmt(record.unitPrice) },
@@ -368,25 +321,19 @@ export default function OrderDetailPage() {
     { title: '备注', dataIndex: 'description', render: (v) => v || '-' },
     {
       title: '分类金额',
-      onCell: (_, index) => ({ rowSpan: spans[index!].categoryRowSpan }),
-      render: (_v, record, index) => {
-        if (!spans[index!].categoryRowSpan) return null;
+      render: (_, record) => {
         const g = groups.find(g => g.categoryId === (record.commodity?.category?.id || '__none__'));
         return <span style={{ fontWeight: 500 }}>{fmt(g?.subtotal || 0)}</span>;
       },
     },
     {
-      title: '总金额',
-      onCell: (_, index) => ({ rowSpan: spans[index!].totalRowSpan }),
-      render: (_v, _r, index) => spans[index!].totalRowSpan ? <span style={{ fontWeight: 700, fontSize: 15 }}>{fmt(grandTotal)}</span> : null,
-    },
-    {
       title: '操作',
-      width: 100,
+      width: 120,
+      fixed: 'right',
       render: (_, record) => (
-        <Space size={4}>
-          <Button type="link" size="small" icon={<EditOutlined />} onClick={() => openEditItem(record)} />
-          <Button type="link" size="small" danger icon={<DeleteOutlined />} onClick={() => confirmDeleteItem(record)} />
+        <Space size={0}>
+          <Button type="link" size="small" onClick={() => openEditItem(record)}>编辑</Button>
+          <Button type="link" size="small" danger onClick={() => confirmDeleteItem(record)}>删除</Button>
         </Space>
       ),
     },
@@ -394,21 +341,21 @@ export default function OrderDetailPage() {
 
   return (
     <div className="page" style={{ height: 'calc(100vh - 112px)', overflow: 'hidden' }}>
-      <PageHeader title={order.name} description="查看订单信息并维护采购明细" actions={
-        <Space>
-          <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/orders')}>返回</Button>
-          <Button icon={<EditOutlined />} onClick={openOrderEdit}>编辑</Button>
-          <Button icon={<DownloadOutlined />} onClick={() => exportToExcel(order)}>导出 Excel</Button>
-          <Button type="primary" icon={<PlusOutlined />} onClick={openAddItem}>添加明细</Button>
-        </Space>
-      } />
-
-      {/* 订单信息 */}
-      <div className="order-detail-meta" style={{ display: 'flex', gap: 24, fontSize: 13, color: '#666' }}>
-        {order.purchasePlace && <span>进货地: {order.purchasePlace.place} - {order.purchasePlace.marketName}</span>}
-        <span>创建时间: {fmtDate(order.createdAt)}</span>
-        {order.description && <span>备注: {order.description}</span>}
-      </div>
+      <Card>
+        <PageHeader title={order.name} description="查看订单信息并维护采购明细" actions={
+          <Space>
+            <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/orders')}>返回</Button>
+            <Button icon={<DownloadOutlined />} onClick={() => exportToExcel(order)}>导出 Excel</Button>
+            <Button type="primary" icon={<PlusOutlined />} onClick={openAddItem}>添加明细</Button>
+          </Space>
+        } />
+        {/* 订单信息 */}
+        <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', fontSize: 13, color: '#666', marginTop: 8 }}>
+          {order.purchasePlace && <span>进货地: {order.purchasePlace.place} - {order.purchasePlace.marketName}</span>}
+          <span>创建时间: {fmtDate(order.createdAt)}</span>
+          {order.description && <span>备注: {order.description}</span>}
+        </div>
+      </Card>
 
       {/* 明细列表 */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -428,6 +375,18 @@ export default function OrderDetailPage() {
             pagination={false}
             size="middle"
             scroll={{ x: 1040, y: 'calc(100vh - 383px)' }}
+            summary={() => (
+              <Table.Summary fixed>
+                <Table.Summary.Row>
+                  <Table.Summary.Cell index={0} colSpan={9}>
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
+                      <b>总计</b>
+                      <b style={{ fontSize: 15 }}>{fmt(grandTotal)}</b>
+                    </div>
+                  </Table.Summary.Cell>
+                </Table.Summary.Row>
+              </Table.Summary>
+            )}
           />
         )}
       </Card>
@@ -521,33 +480,6 @@ export default function OrderDetailPage() {
             <Input value={itemForm.description} onChange={(e) => setItemForm(f => ({ ...f, description: e.target.value }))} placeholder="输入备注（可选）" />
           </div>
         </div>
-      </Modal>
-
-      {/* 订单编辑弹窗 */}
-      <Modal
-        title="编辑订单"
-        open={orderDialogOpen}
-        onOk={handleSaveOrder}
-        onCancel={() => setOrderDialogOpen(false)}
-        confirmLoading={orderSaving}
-        okText="保存"
-        cancelText="取消"
-      >
-        <Form form={orderForm} layout="vertical">
-          <Form.Item name="name" label="订单名称" rules={[{ required: true, message: '请输入订单名称' }]}>
-            <Input placeholder="输入订单名称" />
-          </Form.Item>
-          <Form.Item name="purchasePlaceId" label="进货地">
-            <Select
-              placeholder="选择进货地（可选）"
-              allowClear
-              options={purchasePlaces.map((pp) => ({ value: pp.id, label: `${pp.place} - ${pp.marketName}` }))}
-            />
-          </Form.Item>
-          <Form.Item name="description" label="备注">
-            <Input placeholder="输入备注（可选）" />
-          </Form.Item>
-        </Form>
       </Modal>
     </div>
   );
