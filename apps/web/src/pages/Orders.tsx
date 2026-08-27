@@ -28,6 +28,7 @@ export default function OrdersPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Order | null>(null);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [purchasePlaces, setPurchasePlaces] = useState<PurchasePlace[]>([]);
 
   const fetchData = useCallback(async (page: number, kw: string) => {
@@ -82,6 +83,7 @@ export default function OrdersPage() {
   };
 
   const handleSave = async () => {
+    if (saving) return;
     let values: { name: string; description?: string; purchasePlaceId?: string };
     try {
       values = await form.validateFields();
@@ -105,12 +107,15 @@ export default function OrdersPage() {
   };
 
   const handleDelete = async (id: string) => {
+    if (deleting) return;
+    setDeleting(true);
     try {
       const res = await authFetch(`/api/orders/${id}`, { method: 'DELETE' });
       const json = await res.json();
       if (json.success) { toast.success('删除成功'); fetchData(pagination.page, keyword); }
       else { toast.error(json.error?.message || '删除失败'); }
     } catch { toast.error('删除失败'); }
+    finally { setDeleting(false); }
   };
 
   const confirmDelete = (row: Order) => {
