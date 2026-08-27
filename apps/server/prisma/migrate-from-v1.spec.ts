@@ -1,4 +1,4 @@
-import { toDeletedAt, toDate, toHexId, mapFields, runMigration } from './migrate-from-v1';
+import { toDeletedAt, toDate, toHexId, mapFields, roundHalfToEven, runMigration } from './migrate-from-v1';
 
 describe('migrate-from-v1 转换函数', () => {
   describe('toDeletedAt', () => {
@@ -78,6 +78,22 @@ describe('migrate-from-v1 转换函数', () => {
     it('无映射字段时保留原样', () => {
       const result = mapFields({ name: 'x', deleted: false });
       expect(result).toEqual({ name: 'x', deleted: false });
+    });
+  });
+  describe('roundHalfToEven（MongoDB $round 兼容）', () => {
+    it('普通值四舍五入', () => {
+      expect(roundHalfToEven(83.3)).toBe(83);
+      expect(roundHalfToEven(1755.0477)).toBe(1755);
+    });
+
+    it('.5 边界取偶数（银行家舍入）', () => {
+      expect(roundHalfToEven(22.5)).toBe(22); // 22 为偶数
+      expect(roundHalfToEven(23.5)).toBe(24); // 23 为奇数 → 进到 24
+    });
+
+    it('整数与恰 .0 值不变', () => {
+      expect(roundHalfToEven(100)).toBe(100);
+      expect(roundHalfToEven(83)).toBe(83);
     });
   });
 });
@@ -186,15 +202,18 @@ describe('runMigration', () => {
         { _id: { toString: () => 'i1' }, order_id: 'o1', commodity_id: 'c1', count: 49, price: 1.7 },
         // 4 位小数单价：0.7497×2341=1755.0477 → $round → 1755
         { _id: { toString: () => 'i2' }, order_id: 'o1', commodity_id: 'c1', count: 2341, price: 0.7497 },
+        // .5 边界：4.5×5=22.5 → $round half-to-even → 22（非 23）
+        { _id: { toString: () => 'i3' }, order_id: 'o1', commodity_id: 'c1', count: 4.5, price: 5 },
       ],
     });
     count.mockResolvedValue(0);
 
     await runMigration(prisma as never, client as never);
     const itemCalls = upsert.mock.calls.filter((c) => c[0].create?.lineTotal);
-    expect(itemCalls.length).toBe(2);
+    expect(itemCalls.length).toBe(3);
     expect(Number(itemCalls[0][0].create.lineTotal)).toBe(83);
     expect(Number(itemCalls[1][0].create.lineTotal)).toBe(1755);
+    expect(Number(itemCalls[2][0].create.lineTotal)).toBe(22);
     // 单价原样保留（Decimal 4 位精度，不被舍入）
     expect(String(itemCalls[1][0].create.unitPrice)).toBe('0.7497');
   });

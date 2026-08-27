@@ -40,6 +40,18 @@ export function toHexId(v: unknown): string {
 }
 
 /**
+ * 兼容 MongoDB $round 的舍入：四舍五入到偶数（银行家舍入）。
+ * 例：22.5 → 22、23.5 → 24（JS Math.round 是远离零舍入：22.5 → 23，与 V1 不一致）
+ */
+export function roundHalfToEven(x: number): number {
+  const f = Math.floor(x);
+  const r = x - f;
+  if (r < 0.5) return f;
+  if (r > 0.5) return f + 1;
+  return f % 2 === 0 ? f : f + 1;
+}
+
+/**
  * 字段名映射：V1 → V3 字段名
  * - desc → description
  * - count → quantity
@@ -264,12 +276,12 @@ export async function runMigration(
       }
       try {
         const mapped = mapFields(v1);
-        // V1 无 lineTotal 字段，用 count × price 整数四舍五入（对齐 V1 后端 $round：total_price）
+        // V1 无 lineTotal 字段，用 count × price 按 MongoDB $round 规则舍入（round half to even）
         const quantity = Number(v1.count ?? 0);
         const unitPrice = Number(v1.price ?? 0);
         const lineTotal = v1.lineTotal !== undefined
           ? Number(v1.lineTotal)
-          : Math.round(quantity * unitPrice);
+          : roundHalfToEven(quantity * unitPrice);
         const data: Prisma.OrderItemCreateInput = {
           id: v1Id,
           order: { connect: { id: orderId } },
@@ -404,7 +416,7 @@ async function verify(
       const p = Number((o as V1Record).price || 0);
       const lt = (o as V1Record).lineTotal !== undefined
         ? Number((o as V1Record).lineTotal)
-        : Math.round(q * p);
+        : roundHalfToEven(q * p);
       return s + lt;
     }, 0);
   const v3Num = Number(v3Sum._sum.lineTotal || 0);
