@@ -6,7 +6,6 @@ import { ArrowLeftOutlined, PlusOutlined, DownloadOutlined } from '@ant-design/i
 import { toast } from '../lib/toast';
 import { authFetch } from '../lib/api';
 import ExcelJS from 'exceljs';
-import PageHeader from '../components/page/PageHeader';
 
 // ==================== Types ====================
 
@@ -341,28 +340,37 @@ export default function OrderDetailPage() {
 
   return (
     <div className="page" style={{ height: 'calc(100vh - 112px)', overflow: 'hidden' }}>
-      <Card>
-        <PageHeader title={order.name} description="查看订单信息并维护采购明细" actions={
-          <Space>
-            <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/orders')}>返回</Button>
-            <Button icon={<DownloadOutlined />} onClick={() => exportToExcel(order)}>导出 Excel</Button>
-            <Button type="primary" icon={<PlusOutlined />} onClick={openAddItem}>添加明细</Button>
-          </Space>
-        } />
-        {/* 订单信息 */}
-        <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', fontSize: 13, color: '#666', marginTop: 8 }}>
+      {/* 上方：订单信息卡片 */}
+      <Card
+        title={order.name}
+        extra={
+          <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/orders')}>返回</Button>
+        }
+      >
+        <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', fontSize: 13, color: 'var(--muted)' }}>
           {order.purchasePlace && <span>进货地: {order.purchasePlace.place} - {order.purchasePlace.marketName}</span>}
           <span>创建时间: {fmtDate(order.createdAt)}</span>
           {order.description && <span>备注: {order.description}</span>}
         </div>
       </Card>
 
-      {/* 明细列表 */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Typography.Title level={5} style={{ margin: 0 }}>明细列表</Typography.Title>
-      </div>
-
-      <Card style={{ flex: 1, minHeight: 0, overflow: 'hidden' }} styles={{ body: { height: '100%', overflow: 'hidden' } }}>
+      {/* 下方：明细列表卡片 */}
+      <Card
+        title={
+          <Space size={8}>
+            <span>明细列表</span>
+            <Typography.Text type="secondary" style={{ fontSize: 12 }}>共 {displayItems.length} 项</Typography.Text>
+          </Space>
+        }
+        extra={
+          <Space>
+            <Button icon={<DownloadOutlined />} onClick={() => exportToExcel(order)}>导出 Excel</Button>
+            <Button type="primary" icon={<PlusOutlined />} onClick={openAddItem}>添加明细</Button>
+          </Space>
+        }
+        style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}
+        styles={{ header: { flexShrink: 0 }, body: { flex: 1, overflow: 'hidden' } }}
+      >
         {displayItems.length === 0 ? (
           <div style={{ textAlign: 'center', padding: 48 }}>
             <Typography.Text type="secondary">暂无明细</Typography.Text>

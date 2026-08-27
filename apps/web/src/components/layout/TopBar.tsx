@@ -1,72 +1,100 @@
-import { useLocation } from 'react-router-dom';
-import { Layout, Avatar, Button, Dropdown, Space } from 'antd';
-import { LogoutOutlined, MenuOutlined, UserOutlined } from '@ant-design/icons';
+import { useNavigate } from 'react-router-dom';
+import { Layout, Menu, Button, Space, Avatar, Dropdown } from 'antd';
+import type { MenuProps } from 'antd';
+import { MenuOutlined, SunOutlined, MoonOutlined, UserOutlined, LogoutOutlined } from '@ant-design/icons';
 import { useAuth } from '../../lib/auth';
+import { useThemeMode } from '../../lib/theme';
+import { MENU_ITEMS } from './menu';
 
 const { Header } = Layout;
 
-const BREADCRUMB_MAP: Record<string, string> = {
-  '/dashboard': '仪表台',
-  '/orders': '订单管理 / 订单列表',
-  '/categories': '物料管理 / 商品分类',
-  '/units': '物料管理 / 商品单位',
-  '/commodities': '物料管理 / 商品信息',
-  '/purchase-places': '物料管理 / 进货地',
-  '/analytics': '数据分析',
-};
-
-function getBreadcrumb(pathname: string): string {
-  if (BREADCRUMB_MAP[pathname]) return BREADCRUMB_MAP[pathname];
-  for (const [prefix, label] of Object.entries(BREADCRUMB_MAP)) {
-    if (prefix !== '/dashboard' && pathname.startsWith(prefix)) {
-      return label;
-    }
-  }
-  return '';
-}
-
-export default function TopBar({ mobile = false, onOpenNavigation }: { mobile?: boolean; onOpenNavigation?: () => void }) {
-  const location = useLocation();
+export default function TopBar({
+  mobile = false,
+  activeTop,
+  onSelectTop,
+  onOpenNavigation,
+}: {
+  mobile?: boolean;
+  activeTop: string;
+  onSelectTop: (k: string) => void;
+  onOpenNavigation?: () => void;
+}) {
+  const navigate = useNavigate();
   const { user, logout } = useAuth();
-
-  const breadcrumb = getBreadcrumb(location.pathname);
+  const { mode, toggle } = useThemeMode();
   const initials = (user?.username || 'U')[0].toUpperCase();
+
+  const topItems: MenuProps['items'] = MENU_ITEMS.map((t) => ({
+    key: t.key,
+    icon: t.icon,
+    label: t.label,
+  }));
+
+  const onClick: MenuProps['onClick'] = ({ key }) => {
+    onSelectTop(key);
+    const top = MENU_ITEMS.find((t) => t.key === key);
+    if (!top?.children) navigate(key); // 一级直达（无二级）
+  };
 
   return (
     <Header
+      className="app-header"
       style={{
         height: 56,
         lineHeight: '56px',
-        background: '#fff',
-        padding: '0 24px',
+        background: 'var(--surface)',
+        padding: '0 16px',
         display: 'flex',
-        justifyContent: 'space-between',
         alignItems: 'center',
-        borderBottom: '1px solid #f0f0f0',
+        borderBottom: '1px solid var(--line)',
+        flex: '0 0 auto',
       }}
     >
-      {/* 面包屑 */}
-      <div className="topbar-location">
-        {mobile && <Button type="text" icon={<MenuOutlined />} aria-label="打开导航" onClick={onOpenNavigation} />}
-        <div style={{ fontSize: 14 }}>
-        {breadcrumb.split(' / ').map((part, i, arr) => (
-          <span key={i}>
-            {i > 0 && <span style={{ color: '#999', margin: '0 4px' }}>/</span>}
-            <span style={i === arr.length - 1 ? { fontWeight: 600 } : { color: '#666' }}>{part}</span>
-          </span>
-        ))}
-        </div>
+      {mobile && (
+        <Button type="text" icon={<MenuOutlined />} onClick={onOpenNavigation} style={{ marginRight: 4 }} />
+      )}
+      {/* Logo */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginRight: mobile ? 8 : 24 }}>
+        <span
+          style={{
+            width: 28,
+            height: 28,
+            borderRadius: 6,
+            background: '#3B82F6',
+            color: '#fff',
+            fontWeight: 'bold',
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+          }}
+        >
+          台
+        </span>
+        {!mobile && <span style={{ fontWeight: 'bold', fontSize: 15, color: 'var(--text)' }}>台帐系统</span>}
       </div>
 
-      {/* 用户信息 + 登出 */}
-      <Space size={12}>
-        <span style={{ fontSize: 13, color: '#595959' }}>{user?.username || '用户'}</span>
+      {/* 一级菜单（横向） */}
+      {!mobile && (
+        <Menu
+          mode="horizontal"
+          items={topItems}
+          selectedKeys={[activeTop]}
+          onClick={onClick}
+          style={{ flex: 1, minWidth: 0, borderBottom: 0, background: 'transparent' }}
+        />
+      )}
+
+      {/* 右侧操作 */}
+      <Space size={8} style={{ marginLeft: 'auto' }}>
+        <Button
+          type="text"
+          icon={mode === 'dark' ? <SunOutlined /> : <MoonOutlined />}
+          onClick={toggle}
+          aria-label="切换主题"
+        />
         <Dropdown
-          menu={{
-            items: [
-              { key: 'logout', icon: <LogoutOutlined />, label: '退出登录', onClick: logout },
-            ],
-          }}
+          menu={{ items: [{ key: 'logout', icon: <LogoutOutlined />, label: '退出登录', onClick: logout }] }}
           placement="bottomRight"
         >
           <Avatar style={{ background: '#3B82F6', cursor: 'pointer' }} icon={<UserOutlined />}>
