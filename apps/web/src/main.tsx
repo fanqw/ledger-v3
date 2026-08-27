@@ -14,9 +14,9 @@ createRoot(document.getElementById('root')!).render(
       locale={zhCN}
       theme={{
         token: {
-          colorPrimary: '#0288D1',
-          colorInfo: '#0288D1',
-          colorLink: '#0288D1',
+          colorPrimary: '#3B82F6',
+          colorInfo: '#3B82F6',
+          colorLink: '#3B82F6',
           colorBgLayout: '#F5F7FA',
           colorTextBase: '#0F172A',
           colorBorder: '#E5E7EB',
@@ -43,10 +43,10 @@ createRoot(document.getElementById('root')!).render(
             headerSplitColor: 'transparent',
           },
           Button: {
-            primaryShadow: '0 2px 6px rgba(2, 136, 209, 0.35)',
+            primaryShadow: '0 2px 6px rgba(59, 130, 246, 0.35)',
           },
           FloatButton: {
-            colorPrimary: '#0288D1',
+            colorPrimary: '#3B82F6',
           },
         },
       }}

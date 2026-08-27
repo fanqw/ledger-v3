@@ -66,7 +66,7 @@ export default function TopBar() {
           }}
           placement="bottomRight"
         >
-          <Avatar style={{ background: '#0288D1', cursor: 'pointer' }} icon={<UserOutlined />}>
+          <Avatar style={{ background: '#3B82F6', cursor: 'pointer' }} icon={<UserOutlined />}>
             {initials}
           </Avatar>
         </Dropdown>
