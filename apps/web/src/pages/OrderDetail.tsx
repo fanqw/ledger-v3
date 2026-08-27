@@ -393,7 +393,7 @@ export default function OrderDetailPage() {
   ];
 
   return (
-    <div className="page">
+    <div className="page" style={{ height: 'calc(100vh - 112px)', overflow: 'hidden' }}>
       <PageHeader title={order.name} description="查看订单信息并维护采购明细" actions={
         <Space>
           <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/orders')}>返回</Button>
@@ -415,7 +415,7 @@ export default function OrderDetailPage() {
         <Typography.Title level={5} style={{ margin: 0 }}>明细列表</Typography.Title>
       </div>
 
-      <Card>
+      <Card style={{ flex: 1, minHeight: 0, overflow: 'hidden' }} styles={{ body: { height: '100%', overflow: 'hidden' } }}>
         {displayItems.length === 0 ? (
           <div style={{ textAlign: 'center', padding: 48 }}>
             <Typography.Text type="secondary">暂无明细</Typography.Text>
@@ -427,7 +427,7 @@ export default function OrderDetailPage() {
             dataSource={displayItems}
             pagination={false}
             size="middle"
-            scroll={{ x: 1040 }}
+            scroll={{ x: 1040, y: 'calc(100vh - 383px)' }}
           />
         )}
       </Card>

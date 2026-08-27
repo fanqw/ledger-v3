@@ -35,7 +35,7 @@ body {
 .mobile-record__title { display: block; margin-bottom: 5px; font-weight: 650; }
 .mobile-record__meta { display: flex; justify-content: space-between; gap: 12px; color: var(--muted); font-size: 12px; }
 .row-actions .ant-btn { min-width: 40px; min-height: 40px; }
-.app-shell { min-height: 100vh; background: var(--workspace-bg); }
+.app-shell { height: 100vh; overflow: hidden; background: var(--workspace-bg); }
 .app-workspace { min-width: 0; background: var(--workspace-bg); }
 .app-content { min-width: 0; padding: 24px 28px 32px; overflow: auto; background: var(--workspace-bg); }
 .topbar-location { display: flex; align-items: center; gap: 6px; min-width: 0; }
