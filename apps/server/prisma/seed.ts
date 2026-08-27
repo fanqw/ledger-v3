@@ -26,7 +26,7 @@ export async function seed() {
       const hash = await bcrypt.hash(u.password, 10);
       await prisma.user.upsert({
         where: { username: u.username },
-        update: { passwordHash: hash },
+        update: { passwordHash: hash, role: u.role || 'admin' },
         create: {
           username: u.username,
           passwordHash: hash,
@@ -48,7 +48,7 @@ export async function createUser(username: string, password: string, role = 'adm
     const hash = await bcrypt.hash(password, 10);
     await prisma.user.upsert({
       where: { username },
-      update: { passwordHash: hash },
+      update: { passwordHash: hash, role },
       create: { username, passwordHash: hash, role },
     });
     console.log(`User created/updated: ${username}`);
