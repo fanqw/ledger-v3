@@ -264,12 +264,12 @@ export async function runMigration(
       }
       try {
         const mapped = mapFields(v1);
-        // V1 无 lineTotal 字段，用 count × price 计算（舍入 2 位，与 V3 前端一致）
+        // V1 无 lineTotal 字段，用 count × price 整数四舍五入（对齐 V1 后端 $round：total_price）
         const quantity = Number(v1.count ?? 0);
         const unitPrice = Number(v1.price ?? 0);
         const lineTotal = v1.lineTotal !== undefined
           ? Number(v1.lineTotal)
-          : Math.round(quantity * unitPrice * 100) / 100;
+          : Math.round(quantity * unitPrice);
         const data: Prisma.OrderItemCreateInput = {
           id: v1Id,
           order: { connect: { id: orderId } },
@@ -404,7 +404,7 @@ async function verify(
       const p = Number((o as V1Record).price || 0);
       const lt = (o as V1Record).lineTotal !== undefined
         ? Number((o as V1Record).lineTotal)
-        : Math.round(q * p * 100) / 100;
+        : Math.round(q * p);
       return s + lt;
     }, 0);
   const v3Num = Number(v3Sum._sum.lineTotal || 0);

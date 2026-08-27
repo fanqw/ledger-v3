@@ -168,9 +168,34 @@ describe('runMigration', () => {
       category: [], unit: [], commodity: [], order: [], ordercommodity: [],
     });
     count.mockResolvedValue(1); // V3 应有 1 个非删除用户
-    
+
     const result = await runMigration(prisma as never, client as never);
     // 记录数验证应通过（V3=1 == V1 非删除=1）
     expect(result.failures.some((f) => f.includes('users'))).toBe(false);
+  });
+
+  it('lineTotal 用 count × price 整数四舍五入（对齐 V1 $round）', async () => {
+    const client = makeClient({
+      users: [],
+      category: [{ _id: { toString: () => 'cat1' }, name: '蔬菜' }],
+      unit: [{ _id: { toString: () => 'u1' }, name: '千克' }],
+      commodity: [{ _id: { toString: () => 'c1' }, name: '蒜苗', category_id: 'cat1', unit_id: 'u1' }],
+      order: [{ _id: { toString: () => 'o1' }, name: '订单' }],
+      order_commodity: [
+        // count × price 有小数：1.7×49=83.3 → $round → 83（非 83.3）
+        { _id: { toString: () => 'i1' }, order_id: 'o1', commodity_id: 'c1', count: 49, price: 1.7 },
+        // 4 位小数单价：0.7497×2341=1755.0477 → $round → 1755
+        { _id: { toString: () => 'i2' }, order_id: 'o1', commodity_id: 'c1', count: 2341, price: 0.7497 },
+      ],
+    });
+    count.mockResolvedValue(0);
+
+    await runMigration(prisma as never, client as never);
+    const itemCalls = upsert.mock.calls.filter((c) => c[0].create?.lineTotal);
+    expect(itemCalls.length).toBe(2);
+    expect(Number(itemCalls[0][0].create.lineTotal)).toBe(83);
+    expect(Number(itemCalls[1][0].create.lineTotal)).toBe(1755);
+    // 单价原样保留（Decimal 4 位精度，不被舍入）
+    expect(String(itemCalls[1][0].create.unitPrice)).toBe('0.7497');
   });
 });
