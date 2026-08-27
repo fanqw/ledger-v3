@@ -98,7 +98,7 @@ export class OrderService {
               include: { category: true, unit: true },
             },
           },
-          orderBy: [{ commodity: { category: { name: 'asc' } } }, { createdAt: 'asc' }],
+          orderBy: [{ commodity: { category: { name: 'desc' } } }, { createdAt: 'desc' }],
         },
       },
     });
