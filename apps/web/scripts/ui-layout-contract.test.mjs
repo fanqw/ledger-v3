@@ -1,0 +1,80 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import test from 'node:test';
+
+const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
+
+test('theme and page primitives expose the unified workspace contract', () => {
+  const main = read('src/main.tsx');
+  const css = read('src/index.css');
+  const header = read('src/components/page/PageHeader.tsx');
+  const toolbar = read('src/components/page/PageToolbar.tsx');
+  const state = read('src/components/page/DataState.tsx');
+
+  assert.match(main, /colorPrimary:\s*'#3B82F6'/);
+  assert.match(css, /--workspace-bg:/);
+  assert.match(css, /prefers-reduced-motion:\s*reduce/);
+  assert.match(header, /page-header__actions/);
+  assert.match(toolbar, /page-toolbar/);
+  assert.match(state, /onRetry/);
+});
+
+test('responsive data and row actions expose mobile and accessible behavior', () => {
+  const responsive = read('src/components/page/ResponsiveDataView.tsx');
+  const actions = read('src/components/page/RowActions.tsx');
+  assert.match(responsive, /responsive-data__mobile/);
+  assert.match(responsive, /renderMobileItem/);
+  assert.match(responsive, /mobile-empty/);
+  assert.match(actions, /aria-label/);
+  assert.match(actions, /modal\.confirm/);
+});
+
+test('application shell uses narrow sider and mobile drawer', () => {
+  const shell = read('src/components/layout/AppShell.tsx');
+  const side = read('src/components/layout/SideNav.tsx');
+  const top = read('src/components/layout/TopBar.tsx');
+  assert.match(shell, /mobileNavOpen/);
+  assert.match(shell, /<Drawer/);
+  assert.match(shell, /size=\{280\}/);
+  assert.doesNotMatch(shell, /<Drawer[^>]*\bwidth=/s);
+  assert.match(side, /collapsedWidth=\{64\}/);
+  assert.match(top, /打开导航/);
+});
+
+test('tablet and phone breakpoints prioritize usable workspace width', () => {
+  const shell = read('src/components/layout/AppShell.tsx');
+  const css = read('src/index.css');
+
+  assert.match(shell, /screens\.lg === false/);
+  assert.match(css, /@media \(max-width: 991px\)/);
+  assert.match(css, /\.responsive-data__desktop \.ant-table\s*\{[^}]*display:\s*none/s);
+  assert.match(css, /\.responsive-data__desktop \.ant-pagination\s*\{[^}]*display:\s*flex/s);
+  assert.match(css, /\.page-toolbar \.ant-input-search\s*\{[^}]*width:\s*100%/s);
+});
+
+test('phone layout stacks page actions without forcing horizontal compression', () => {
+  const css = read('src/index.css');
+  assert.match(css, /@media \(max-width: 479px\)/);
+  assert.match(css, /\.page-header\s*\{[^}]*align-items:\s*stretch[^}]*flex-direction:\s*column/s);
+  assert.match(css, /\.page-header__actions\s*>\s*\.ant-space\s*\{[^}]*grid-template-columns:\s*repeat\(2,/s);
+  assert.match(css, /\.page-header__actions[^}]*\.ant-btn[^}]*\{[^}]*width:\s*100%/s);
+});
+
+for (const page of ['Orders', 'Categories', 'Units', 'Commodities', 'PurchasePlaces']) {
+  test(`${page} uses the unified page structure`, () => {
+    const source = read(`src/pages/${page}.tsx`);
+    assert.match(source, /<PageHeader/);
+    assert.match(source, /<PageToolbar/);
+    assert.match(source, /<ResponsiveDataView/);
+    assert.doesNotMatch(source, /<FloatButton/);
+    assert.match(source, /aria-label=/);
+  });
+}
+
+test('complex pages use the unified page header', () => {
+  const detail = read('src/pages/OrderDetail.tsx');
+  assert.match(detail, /<PageHeader/);
+  assert.match(detail, /className="order-detail-meta"/);
+  assert.match(detail, /scroll=\{\{\s*x:\s*1040\s*\}\}/);
+  assert.match(read('src/pages/Analytics.tsx'), /<PageHeader/);
+});

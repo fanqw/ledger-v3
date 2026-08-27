@@ -1,10 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Table, Button, Input, Modal, Form, Select, Space, Card, FloatButton, App as AntdApp, Typography } from 'antd';
+import { Table, Button, Input, Modal, Form, Select, Space, App as AntdApp } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { toast } from '../lib/toast';
 import { authFetch } from '../lib/api';
 import { fetchAllPages } from '../lib/paged-request';
+import PageHeader from '../components/page/PageHeader';
+import PageToolbar from '../components/page/PageToolbar';
+import ResponsiveDataView from '../components/page/ResponsiveDataView';
 
 interface Category { id: string; name: string; }
 interface Unit { id: string; name: string; }
@@ -140,29 +143,27 @@ export default function CommoditiesPage() {
       width: 120,
       render: (_, row) => (
         <Space size={4}>
-          <Button type="link" size="small" icon={<EditOutlined />} onClick={() => openEdit(row)} />
-          <Button type="link" size="small" danger icon={<DeleteOutlined />} onClick={() => confirmDelete(row)} />
+          <Button type="link" size="small" aria-label={`编辑${row.name}`} icon={<EditOutlined />} onClick={() => openEdit(row)} />
+          <Button type="link" size="small" danger aria-label={`删除${row.name}`} icon={<DeleteOutlined />} onClick={() => confirmDelete(row)} />
         </Space>
       ),
     },
   ];
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Typography.Title level={4} style={{ margin: 0 }}>商品信息</Typography.Title>
-      </div>
-
-      <Card>
+    <div className="page">
+      <PageHeader title="商品信息" description="维护商品、分类与计量单位" actions={<Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>新增商品</Button>} />
+      <PageToolbar>
         <Input.Search
           placeholder="搜索商品名/分类/单位..."
-          style={{ width: 320, marginBottom: 16 }}
+          style={{ width: 320 }}
           allowClear
           onChange={(e) => setKeyword(e.target.value)}
           onSearch={(v) => fetchData(1, v)}
         />
+      </PageToolbar>
 
-      <Table<Commodity>
+      <ResponsiveDataView items={data} rowKey={(row) => row.id} desktop={<Table<Commodity>
         rowKey="id"
         columns={columns}
         dataSource={data}
@@ -174,11 +175,7 @@ export default function CommoditiesPage() {
           showTotal: (t) => `共 ${t} 条`,
           onChange: (page) => { setPagination((p) => ({ ...p, page })); fetchData(page, keyword); },
         }}
-      />
-
-      </Card>
-
-      <FloatButton type="primary" icon={<PlusOutlined />} tooltip="新增商品" onClick={openCreate} />
+      />} renderMobileItem={(row) => <button className="mobile-record" onClick={() => openEdit(row)}><span className="mobile-record__title">{row.name}</span><span className="mobile-record__meta"><span>{row.category?.name || '未分类'} · {row.unit?.name || '无单位'}</span><span>编辑 ›</span></span></button>} />
 
       <Modal
         title={editing ? '编辑商品' : '新增商品'}

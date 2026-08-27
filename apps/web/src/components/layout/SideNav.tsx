@@ -36,7 +36,7 @@ const items: MenuProps['items'] = [
   },
 ];
 
-export default function SideNav() {
+export default function SideNav({ mobile = false, onNavigate }: { mobile?: boolean; onNavigate?: () => void }) {
   const [collapsed, setCollapsed] = useState(() => {
     if (typeof window === 'undefined') return true;
     if (window.innerWidth < 1280) return true;
@@ -53,7 +53,14 @@ export default function SideNav() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const onClick: MenuProps['onClick'] = ({ key }) => navigate(key);
+  const onClick: MenuProps['onClick'] = ({ key }) => { navigate(key); onNavigate?.(); };
+
+  const menu = (
+    <Menu mode="inline" inlineCollapsed={!mobile && collapsed} selectedKeys={[location.pathname]}
+      items={items} onClick={onClick} style={{ borderRight: 0 }} />
+  );
+
+  if (mobile) return <nav aria-label="主导航">{menu}</nav>;
 
   return (
     <Sider
@@ -97,17 +104,12 @@ export default function SideNav() {
         )}
       </div>
 
-      <Menu
-        mode="inline"
-        inlineCollapsed={collapsed}
-        selectedKeys={[location.pathname]}
-        items={items}
-        onClick={onClick}
-        style={{ borderRight: 0 }}
-      />
+      <nav aria-label="主导航">{menu}</nav>
 
       {/* Collapse toggle */}
-      <div
+      <button
+        type="button"
+        aria-label={collapsed ? '展开导航' : '收起导航'}
         onClick={toggle}
         style={{
           position: 'absolute',
@@ -117,14 +119,16 @@ export default function SideNav() {
           textAlign: 'center',
           cursor: 'pointer',
           color: '#8c8c8c',
+          border: 0,
           borderTop: '1px solid #f0f0f0',
+          background: '#fff',
         }}
       >
         {collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
         {!collapsed && (
           <span style={{ fontSize: 12, marginLeft: 6 }}>收起菜单</span>
         )}
-      </div>
+      </button>
     </Sider>
   );
 }

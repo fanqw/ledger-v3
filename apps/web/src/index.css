@@ -2,9 +2,79 @@
 @tailwind components;
 @tailwind utilities;
 
-/* 全局背景 */
+/* 轻量专业工作区 */
+:root {
+  --workspace-bg: #f6f8fc;
+  --surface: #ffffff;
+  --line: #e8edf4;
+  --text: #0f172a;
+  --muted: #64748b;
+  --accent: #3b82f6;
+}
+
+* { box-sizing: border-box; }
+
+html, body, #root { min-height: 100%; }
+
 body {
-  background-color: #f5f7fa;
+  margin: 0;
+  background: var(--workspace-bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+}
+
+.page { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.page-header { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; }
+.page-header__copy { min-width: 0; }
+.page-header h2.ant-typography { margin: 0 0 3px; font-size: 24px; line-height: 1.25; letter-spacing: -.02em; }
+.page-header__actions { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
+.page-toolbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.data-state { min-height: 240px; display: grid; place-items: center; padding: 32px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+.responsive-data__mobile { display: none; }
+.mobile-record { display: block; width: 100%; padding: 14px 4px; color: inherit; text-align: left; background: transparent; border: 0; border-bottom: 1px solid var(--line); }
+.mobile-record__title { display: block; margin-bottom: 5px; font-weight: 650; }
+.mobile-record__meta { display: flex; justify-content: space-between; gap: 12px; color: var(--muted); font-size: 12px; }
+.row-actions .ant-btn { min-width: 40px; min-height: 40px; }
+.app-shell { min-height: 100vh; background: var(--workspace-bg); }
+.app-workspace { min-width: 0; background: var(--workspace-bg); }
+.app-content { min-width: 0; padding: 24px 28px 32px; overflow: auto; background: var(--workspace-bg); }
+.topbar-location { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.mobile-nav-drawer .ant-drawer-body { padding: 8px; }
+
+:where(button, a, input, [tabindex]):focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+@media (max-width: 991px) {
+  .page { gap: 12px; }
+  .page-header { align-items: center; gap: 12px; }
+  .page-header h2.ant-typography { font-size: 20px; }
+  .page-toolbar { align-items: stretch; }
+  .page-toolbar .ant-input-search { width: 100% !important; max-width: 420px; }
+  .responsive-data__desktop .ant-table { display: none; }
+  .responsive-data__desktop .ant-pagination { display: flex; justify-content: flex-end; margin: 16px 0 0; }
+  .responsive-data__mobile { display: block; padding: 0 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+  .mobile-empty { padding: 48px 16px; color: var(--muted); text-align: center; }
+  .app-content { padding: 20px 20px 28px; }
+  .topbar-location > div { max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+}
+
+@media (max-width: 479px) {
+  .page-header { align-items: stretch; flex-direction: column; }
+  .page-header__copy > .ant-typography-secondary { display: none; }
+  .page-header__actions { width: 100%; }
+  .page-header__actions > .ant-btn { width: 100%; }
+  .page-header__actions > .ant-space { display: grid; width: 100%; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px !important; }
+  .page-header__actions > .ant-space > .ant-space-item > .ant-btn { width: 100%; }
+  .page-header__actions > .ant-btn:only-child { grid-column: 1 / -1; }
+  .order-detail-meta { flex-direction: column; gap: 4px !important; }
+  .responsive-data__mobile { padding: 0 12px; }
+  .responsive-data__desktop .ant-pagination { justify-content: center; flex-wrap: wrap; gap: 4px; }
+  .responsive-data__desktop .ant-pagination-options { display: none; }
+  .app-content { padding: 16px 14px 24px; }
+  .topbar-location > div { max-width: 180px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
 }
 
 /* 表格数字等宽对齐（金额/数量/时间） */

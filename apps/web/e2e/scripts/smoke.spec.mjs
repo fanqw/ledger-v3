@@ -1,7 +1,7 @@
 import { chromium } from '/Users/fanqw/Documents/Program/ledger-v3/node_modules/.pnpm/playwright-core@1.62.1/node_modules/playwright-core/index.mjs';
 
-const BASE = 'http://localhost:5173';
-const API = 'http://localhost:3001';
+const BASE = process.env.BASE_URL || 'http://localhost:5173';
+const API = process.env.API_URL || 'http://localhost:3001';
 const UNIQ = Date.now().toString().slice(-4);
 const PREFIX = `冒烟${UNIQ}`;
 const results = [];
@@ -10,6 +10,10 @@ const consoleErrors = [];
 function check(id, cond, detail) {
   results.push({ id, pass: !!cond, detail: detail || '' });
   console.log(`  ${cond ? '✅' : '❌'} ${id}: ${detail || ''}`);
+}
+
+async function clickDialogSave(page) {
+  await page.getByRole('dialog').getByRole('button', { name: /保\s*存/ }).click();
 }
 
 let API_TOKEN = '';
@@ -64,10 +68,14 @@ try {
   });
   await page.waitForTimeout(800);
   await page.locator('[role="dialog"] input').first().fill(catName);
-  await page.locator('[role="dialog"] button:has-text("保存")').click();
+  await clickDialogSave(page);
   await page.waitForTimeout(1500);
-  const catList = await page.locator('tbody').innerText().catch(() => '');
-  check('分类已创建', catList.includes(catName), catName);
+  const categorySearch = page.getByPlaceholder('搜索...');
+  await categorySearch.fill(catName);
+  await categorySearch.press('Enter');
+  await page.waitForTimeout(800);
+  const categoryVisible = await page.getByText(catName, { exact: true }).count();
+  check('分类已创建', categoryVisible > 0, catName);
   // 记录分类 id 供清理
   const catRes = await api(`/categories?page=1&pageSize=50&keyword=${encodeURIComponent(catName)}`);
   created.categoryId = catRes.data?.items?.find(i => i.name === catName)?.id;
@@ -80,7 +88,7 @@ try {
   await page.locator('button:has-text("新增订单")').click();
   await page.waitForTimeout(800);
   await page.locator('[role="dialog"] input').first().fill(orderName);
-  await page.locator('[role="dialog"] button:has-text("保存")').click();
+  await clickDialogSave(page);
   await page.waitForTimeout(1500);
   const orderList = await page.locator('tbody').innerText().catch(() => '');
   check('订单已创建', orderList.includes(orderName), orderName);
@@ -101,7 +109,7 @@ try {
   console.log('\n=== 5. 工作台 ===');
   await page.goto(`${BASE}/analytics`, { waitUntil: 'networkidle' });
   await page.waitForTimeout(3000);
-  const wbTitle = await page.locator('h1').innerText().catch(() => '');
+  const wbTitle = await page.getByRole('heading', { name: /数据分析/ }).innerText().catch(() => '');
   check('工作台标题', wbTitle.includes('数据分析'), wbTitle);
   const canvas = await page.locator('canvas').count();
   check('图表渲染', canvas >= 2, `canvas=${canvas}`);
