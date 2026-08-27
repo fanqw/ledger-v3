@@ -2,9 +2,47 @@
 @tailwind components;
 @tailwind utilities;
 
-/* 全局背景 */
+/* 轻量专业工作区 */
+:root {
+  --workspace-bg: #f6f8fc;
+  --surface: #ffffff;
+  --line: #e8edf4;
+  --text: #0f172a;
+  --muted: #64748b;
+  --accent: #3b82f6;
+}
+
+* { box-sizing: border-box; }
+
+html, body, #root { min-height: 100%; }
+
 body {
-  background-color: #f5f7fa;
+  margin: 0;
+  background: var(--workspace-bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+}
+
+.page { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.page-header { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; }
+.page-header__copy { min-width: 0; }
+.page-header h2.ant-typography { margin: 0 0 3px; font-size: 24px; line-height: 1.25; letter-spacing: -.02em; }
+.page-header__actions { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
+.page-toolbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.data-state { min-height: 240px; display: grid; place-items: center; padding: 32px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+
+:where(button, a, input, [tabindex]):focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+@media (max-width: 767px) {
+  .page { gap: 12px; }
+  .page-header { align-items: center; gap: 12px; }
+  .page-header h2.ant-typography { font-size: 20px; }
+  .page-header__copy > .ant-typography-secondary { display: none; }
+  .page-toolbar { align-items: stretch; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
 }
 
 /* 表格数字等宽对齐（金额/数量/时间） */

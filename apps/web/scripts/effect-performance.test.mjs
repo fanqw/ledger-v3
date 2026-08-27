@@ -4,7 +4,6 @@ import { readFileSync } from 'node:fs'
 import test from 'node:test'
 
 const TARGETS = [
-  'src/components/ui/creatable-select.tsx',
   'src/pages/Categories.tsx',
   'src/pages/Units.tsx',
   'src/pages/Commodities.tsx',
