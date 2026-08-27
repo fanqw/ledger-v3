@@ -25,7 +25,7 @@ export class CategoryService {
    *   （mode: 'insensitive' → 数据库 LIKE 不区分大小写）
    * - Promise.all 并行执行 findMany + count（两个独立查询同时发出，比串行快）
    * - 分页公式：skip = (page-1)*pageSize（跳过前 N 条），take = pageSize（取 N 条）
-   * - orderBy updatedAt desc：最近更新的排最前（前端体验：刚改的能看见）
+   * - orderBy createdAt asc：插入顺序（对齐 V1 无显式排序的 _id 升序）
    * - 返回 { items, meta: { page, pageSize, total } } 是项目统一分页协议
    */
   async findAll(page: number, pageSize: number, keyword?: string) {
@@ -40,7 +40,7 @@ export class CategoryService {
     const [items, total] = await Promise.all([
       this.prisma.category.findMany({
         where,
-        orderBy: { updatedAt: 'desc' },
+        orderBy: { createdAt: 'asc' },
         skip: (page - 1) * pageSize,
         take: pageSize,
       }),

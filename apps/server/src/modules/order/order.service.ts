@@ -61,7 +61,7 @@ export class OrderService {
     const [items, total] = await Promise.all([
       this.prisma.order.findMany({
         where,
-        orderBy: { updatedAt: 'desc' },
+        orderBy: { createdAt: 'desc' },
         skip: (page - 1) * pageSize,
         take: pageSize,
         include: { purchasePlace: true },
