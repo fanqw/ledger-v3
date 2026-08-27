@@ -21,3 +21,5 @@ apps/server/apps/
 .playwright-cli/
 .codex/
 .playwright-mcp/
+.worktrees/
+.superpowers/
