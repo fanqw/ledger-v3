@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Segmented, DatePicker, Button } from 'antd';
+import { Segmented, DatePicker, Button, Card } from 'antd';
 import dayjs from 'dayjs';
 import { authFetch } from '../lib/api';
 import { toast } from '../lib/toast';
@@ -48,14 +48,13 @@ const fmtAmount = (v: number) => (Number.isFinite(v) ? v.toFixed(2) : '0.00');
 
 function ChartCard({ title, children, loading }: { title: string; children: React.ReactNode; loading: boolean }) {
   return (
-    <div className="rounded-md border border-[#E2E8F0] bg-white p-4 dark:border-[#334155] dark:bg-[#1E293B]">
-      <h3 className="mb-2 text-[14px] font-semibold text-[#0F172A] dark:text-white">{title}</h3>
+    <Card title={title} style={{ height: '100%' }}>
       {loading ? (
         <div className="flex h-[260px] items-center justify-center text-[13px] text-[#94A3B8]">加载中...</div>
       ) : (
         children
       )}
-    </div>
+    </Card>
   );
 }
 
@@ -246,7 +245,7 @@ function OrderSizeHistogram({ data, loading }: { data: AnalyticsOrderSizeBucket[
       {
         type: 'bar',
         data: data.map((b) => b.count),
-        itemStyle: { color: '#0F766E', borderRadius: [4, 4, 0, 0] },
+        itemStyle: { color: '#0288D1', borderRadius: [4, 4, 0, 0] },
         label: { show: true, position: 'top', fontSize: 11 },
       },
     ],
@@ -371,10 +370,10 @@ export default function AnalyticsPage() {
           { label: '商品种类', value: kpis ? String(kpis.commodityCount) : '--' },
           { label: '平均订单金额', value: kpis ? fmtAmount(kpis.avgOrderAmount) : '--' },
         ].map((k) => (
-          <div key={k.label} className="rounded-md border border-[#E2E8F0] bg-white p-4 dark:border-[#334155] dark:bg-[#1E293B]">
+          <Card key={k.label} style={{ textAlign: 'left' }}>
             <p className="text-[12px] text-[#64748B] dark:text-[#94A3B8]">{k.label}</p>
             <p className="kpi-num mt-1 text-[22px] font-bold text-[#0F172A] dark:text-white">{loading ? '...' : k.value}</p>
-          </div>
+          </Card>
         ))}
       </div>
 
