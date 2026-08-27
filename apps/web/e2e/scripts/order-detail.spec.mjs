@@ -3,8 +3,8 @@ import { createRequire } from 'node:module';
 const require = createRequire('/Users/fanqw/Documents/Program/ledger-v3/apps/web/');
 const ExcelJS = require('exceljs');
 
-const BASE = 'http://localhost:5173';
-const API = 'http://localhost:3001';
+const BASE = process.env.BASE_URL || 'http://localhost:5173';
+const API = process.env.API_URL || 'http://localhost:3001';
 const UNIQ = Date.now().toString().slice(-4);
 const TEST_ORDER = `E2E测试订单-${UNIQ}`;
 

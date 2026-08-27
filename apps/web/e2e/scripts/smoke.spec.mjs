@@ -1,7 +1,7 @@
 import { chromium } from '/Users/fanqw/Documents/Program/ledger-v3/node_modules/.pnpm/playwright-core@1.62.1/node_modules/playwright-core/index.mjs';
 
-const BASE = 'http://localhost:5173';
-const API = 'http://localhost:3001';
+const BASE = process.env.BASE_URL || 'http://localhost:5173';
+const API = process.env.API_URL || 'http://localhost:3001';
 const UNIQ = Date.now().toString().slice(-4);
 const PREFIX = `冒烟${UNIQ}`;
 const results = [];
