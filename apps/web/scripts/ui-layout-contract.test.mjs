@@ -43,7 +43,9 @@ for (const page of ['Orders', 'Categories', 'Units', 'Commodities', 'PurchasePla
     const source = read(`src/pages/${page}.tsx`);
     assert.match(source, /<PageHeader/);
     assert.match(source, /<PageToolbar/);
+    assert.match(source, /<ResponsiveDataView/);
     assert.doesNotMatch(source, /<FloatButton/);
+    assert.match(source, /aria-label=/);
   });
 }
 

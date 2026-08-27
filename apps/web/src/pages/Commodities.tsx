@@ -7,6 +7,7 @@ import { authFetch } from '../lib/api';
 import { fetchAllPages } from '../lib/paged-request';
 import PageHeader from '../components/page/PageHeader';
 import PageToolbar from '../components/page/PageToolbar';
+import ResponsiveDataView from '../components/page/ResponsiveDataView';
 
 interface Category { id: string; name: string; }
 interface Unit { id: string; name: string; }
@@ -142,8 +143,8 @@ export default function CommoditiesPage() {
       width: 120,
       render: (_, row) => (
         <Space size={4}>
-          <Button type="link" size="small" icon={<EditOutlined />} onClick={() => openEdit(row)} />
-          <Button type="link" size="small" danger icon={<DeleteOutlined />} onClick={() => confirmDelete(row)} />
+          <Button type="link" size="small" aria-label={`编辑${row.name}`} icon={<EditOutlined />} onClick={() => openEdit(row)} />
+          <Button type="link" size="small" danger aria-label={`删除${row.name}`} icon={<DeleteOutlined />} onClick={() => confirmDelete(row)} />
         </Space>
       ),
     },
@@ -162,7 +163,7 @@ export default function CommoditiesPage() {
         />
       </PageToolbar>
 
-      <Table<Commodity>
+      <ResponsiveDataView items={data} rowKey={(row) => row.id} desktop={<Table<Commodity>
         rowKey="id"
         columns={columns}
         dataSource={data}
@@ -174,7 +175,7 @@ export default function CommoditiesPage() {
           showTotal: (t) => `共 ${t} 条`,
           onChange: (page) => { setPagination((p) => ({ ...p, page })); fetchData(page, keyword); },
         }}
-      />
+      />} renderMobileItem={(row) => <button className="mobile-record" onClick={() => openEdit(row)}><span className="mobile-record__title">{row.name}</span><span className="mobile-record__meta"><span>{row.category?.name || '未分类'} · {row.unit?.name || '无单位'}</span><span>编辑 ›</span></span></button>} />
 
       <Modal
         title={editing ? '编辑商品' : '新增商品'}

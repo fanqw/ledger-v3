@@ -6,6 +6,7 @@ import { toast } from '../lib/toast';
 import { authFetch } from '../lib/api';
 import PageHeader from '../components/page/PageHeader';
 import PageToolbar from '../components/page/PageToolbar';
+import ResponsiveDataView from '../components/page/ResponsiveDataView';
 
 interface Category {
   id: string;
@@ -113,8 +114,8 @@ export default function CategoriesPage() {
       width: 120,
       render: (_, row) => (
         <Space size={4}>
-          <Button type="link" size="small" icon={<EditOutlined />} onClick={() => openEdit(row)} />
-          <Button type="link" size="small" danger icon={<DeleteOutlined />} onClick={() => confirmDelete(row)} />
+          <Button type="link" size="small" aria-label={`编辑${row.name}`} icon={<EditOutlined />} onClick={() => openEdit(row)} />
+          <Button type="link" size="small" danger aria-label={`删除${row.name}`} icon={<DeleteOutlined />} onClick={() => confirmDelete(row)} />
         </Space>
       ),
     },
@@ -133,7 +134,7 @@ export default function CategoriesPage() {
         />
       </PageToolbar>
 
-      <Table<Category>
+      <ResponsiveDataView items={data} rowKey={(row) => row.id} desktop={<Table<Category>
         rowKey="id"
         columns={columns}
         dataSource={data}
@@ -145,7 +146,7 @@ export default function CategoriesPage() {
           showTotal: (t) => `共 ${t} 条`,
           onChange: (page) => { setPagination((p) => ({ ...p, page })); fetchData(page, keyword); },
         }}
-      />
+      />} renderMobileItem={(row) => <button className="mobile-record" onClick={() => openEdit(row)}><span className="mobile-record__title">{row.name}</span><span className="mobile-record__meta"><span>{row.description || '无备注'}</span><span>编辑 ›</span></span></button>} />
 
       <Modal
         title={editing ? '编辑分类' : '新增分类'}
