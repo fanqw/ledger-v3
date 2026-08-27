@@ -43,16 +43,34 @@ body {
 
 :where(button, a, input, [tabindex]):focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-@media (max-width: 767px) {
+@media (max-width: 991px) {
   .page { gap: 12px; }
   .page-header { align-items: center; gap: 12px; }
   .page-header h2.ant-typography { font-size: 20px; }
-  .page-header__copy > .ant-typography-secondary { display: none; }
   .page-toolbar { align-items: stretch; }
-  .responsive-data__desktop { display: none; }
+  .page-toolbar .ant-input-search { width: 100% !important; max-width: 420px; }
+  .responsive-data__desktop .ant-table { display: none; }
+  .responsive-data__desktop .ant-pagination { display: flex; justify-content: flex-end; margin: 16px 0 0; }
   .responsive-data__mobile { display: block; padding: 0 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+  .mobile-empty { padding: 48px 16px; color: var(--muted); text-align: center; }
+  .app-content { padding: 20px 20px 28px; }
+  .topbar-location > div { max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+}
+
+@media (max-width: 479px) {
+  .page-header { align-items: stretch; flex-direction: column; }
+  .page-header__copy > .ant-typography-secondary { display: none; }
+  .page-header__actions { width: 100%; }
+  .page-header__actions > .ant-btn { width: 100%; }
+  .page-header__actions > .ant-space { display: grid; width: 100%; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px !important; }
+  .page-header__actions > .ant-space > .ant-space-item > .ant-btn { width: 100%; }
+  .page-header__actions > .ant-btn:only-child { grid-column: 1 / -1; }
+  .order-detail-meta { flex-direction: column; gap: 4px !important; }
+  .responsive-data__mobile { padding: 0 12px; }
+  .responsive-data__desktop .ant-pagination { justify-content: center; flex-wrap: wrap; gap: 4px; }
+  .responsive-data__desktop .ant-pagination-options { display: none; }
   .app-content { padding: 16px 14px 24px; }
-  .topbar-location > div { max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .topbar-location > div { max-width: 180px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

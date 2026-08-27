@@ -404,7 +404,7 @@ export default function OrderDetailPage() {
       } />
 
       {/* 订单信息 */}
-      <div style={{ display: 'flex', gap: 24, fontSize: 13, color: '#666' }}>
+      <div className="order-detail-meta" style={{ display: 'flex', gap: 24, fontSize: 13, color: '#666' }}>
         {order.purchasePlace && <span>进货地: {order.purchasePlace.place} - {order.purchasePlace.marketName}</span>}
         <span>创建时间: {fmtDate(order.createdAt)}</span>
         {order.description && <span>备注: {order.description}</span>}
@@ -427,6 +427,7 @@ export default function OrderDetailPage() {
             dataSource={displayItems}
             pagination={false}
             size="middle"
+            scroll={{ x: 1040 }}
           />
         )}
       </Card>

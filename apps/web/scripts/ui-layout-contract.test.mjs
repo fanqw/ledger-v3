@@ -24,6 +24,7 @@ test('responsive data and row actions expose mobile and accessible behavior', ()
   const actions = read('src/components/page/RowActions.tsx');
   assert.match(responsive, /responsive-data__mobile/);
   assert.match(responsive, /renderMobileItem/);
+  assert.match(responsive, /mobile-empty/);
   assert.match(actions, /aria-label/);
   assert.match(actions, /modal\.confirm/);
 });
@@ -34,8 +35,29 @@ test('application shell uses narrow sider and mobile drawer', () => {
   const top = read('src/components/layout/TopBar.tsx');
   assert.match(shell, /mobileNavOpen/);
   assert.match(shell, /<Drawer/);
+  assert.match(shell, /size=\{280\}/);
+  assert.doesNotMatch(shell, /<Drawer[^>]*\bwidth=/s);
   assert.match(side, /collapsedWidth=\{64\}/);
   assert.match(top, /打开导航/);
+});
+
+test('tablet and phone breakpoints prioritize usable workspace width', () => {
+  const shell = read('src/components/layout/AppShell.tsx');
+  const css = read('src/index.css');
+
+  assert.match(shell, /screens\.lg === false/);
+  assert.match(css, /@media \(max-width: 991px\)/);
+  assert.match(css, /\.responsive-data__desktop \.ant-table\s*\{[^}]*display:\s*none/s);
+  assert.match(css, /\.responsive-data__desktop \.ant-pagination\s*\{[^}]*display:\s*flex/s);
+  assert.match(css, /\.page-toolbar \.ant-input-search\s*\{[^}]*width:\s*100%/s);
+});
+
+test('phone layout stacks page actions without forcing horizontal compression', () => {
+  const css = read('src/index.css');
+  assert.match(css, /@media \(max-width: 479px\)/);
+  assert.match(css, /\.page-header\s*\{[^}]*align-items:\s*stretch[^}]*flex-direction:\s*column/s);
+  assert.match(css, /\.page-header__actions\s*>\s*\.ant-space\s*\{[^}]*grid-template-columns:\s*repeat\(2,/s);
+  assert.match(css, /\.page-header__actions[^}]*\.ant-btn[^}]*\{[^}]*width:\s*100%/s);
 });
 
 for (const page of ['Orders', 'Categories', 'Units', 'Commodities', 'PurchasePlaces']) {
@@ -50,6 +72,9 @@ for (const page of ['Orders', 'Categories', 'Units', 'Commodities', 'PurchasePla
 }
 
 test('complex pages use the unified page header', () => {
-  assert.match(read('src/pages/OrderDetail.tsx'), /<PageHeader/);
+  const detail = read('src/pages/OrderDetail.tsx');
+  assert.match(detail, /<PageHeader/);
+  assert.match(detail, /className="order-detail-meta"/);
+  assert.match(detail, /scroll=\{\{\s*x:\s*1040\s*\}\}/);
   assert.match(read('src/pages/Analytics.tsx'), /<PageHeader/);
 });

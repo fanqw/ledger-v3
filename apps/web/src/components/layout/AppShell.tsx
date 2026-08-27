@@ -8,7 +8,7 @@ const { Content } = Layout;
 
 export default function AppShell() {
   const screens = Grid.useBreakpoint();
-  const mobile = screens.md === false;
+  const mobile = screens.lg === false;
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   return (
@@ -18,7 +18,7 @@ export default function AppShell() {
         <TopBar mobile={mobile} onOpenNavigation={() => setMobileNavOpen(true)} />
         <Content className="app-content"><Outlet /></Content>
       </Layout>
-      <Drawer title="台帐系统" placement="left" width={280} open={mobileNavOpen}
+      <Drawer title="台帐系统" placement="left" size={280} open={mobileNavOpen}
         onClose={() => setMobileNavOpen(false)} className="mobile-nav-drawer">
         <SideNav mobile onNavigate={() => setMobileNavOpen(false)} />
       </Drawer>
