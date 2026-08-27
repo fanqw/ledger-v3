@@ -1,9 +1,9 @@
 import { useLocation } from 'react-router-dom';
-import { Sun, Moon, LogOut } from 'lucide-react';
+import { Layout, Avatar, Dropdown, Space } from 'antd';
+import { LogoutOutlined, UserOutlined } from '@ant-design/icons';
 import { useAuth } from '../../lib/auth';
-import { useTheme } from '../../lib/theme';
-import { Avatar, AvatarFallback } from '../ui/avatar';
-import { Button } from '../ui/button';
+
+const { Header } = Layout;
 
 const BREADCRUMB_MAP: Record<string, string> = {
   '/dashboard': '仪表台',
@@ -12,15 +12,14 @@ const BREADCRUMB_MAP: Record<string, string> = {
   '/units': '物料管理 / 商品单位',
   '/commodities': '物料管理 / 商品信息',
   '/purchase-places': '物料管理 / 进货地',
+  '/analytics': '数据分析',
 };
 
 function getBreadcrumb(pathname: string): string {
-  // Exact match
-  if (BREADCRUMB_MAP[pathname]) return `${BREADCRUMB_MAP[pathname]}`;
-  // Partial match (e.g. /orders/xxx)
+  if (BREADCRUMB_MAP[pathname]) return BREADCRUMB_MAP[pathname];
   for (const [prefix, label] of Object.entries(BREADCRUMB_MAP)) {
     if (prefix !== '/dashboard' && pathname.startsWith(prefix)) {
-      return `${label}`;
+      return label;
     }
   }
   return '';
@@ -29,50 +28,49 @@ function getBreadcrumb(pathname: string): string {
 export default function TopBar() {
   const location = useLocation();
   const { user, logout } = useAuth();
-  const { theme, toggle } = useTheme();
 
   const breadcrumb = getBreadcrumb(location.pathname);
   const initials = (user?.username || 'U')[0].toUpperCase();
 
   return (
-    <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center justify-between border-b border-[#E2E8F0] bg-white px-6 dark:border-[#1E293B] dark:bg-[#0F172A] box-content">
-      {/* Left: Breadcrumb */}
-      <div className="flex items-center gap-1 text-sm">
+    <Header
+      style={{
+        height: 56,
+        lineHeight: '56px',
+        background: '#fff',
+        padding: '0 24px',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        borderBottom: '1px solid #f0f0f0',
+      }}
+    >
+      {/* 面包屑 */}
+      <div style={{ fontSize: 14 }}>
         {breadcrumb.split(' / ').map((part, i, arr) => (
-          <span key={i} className="flex items-center gap-1">
-            {i > 0 && <span className="text-[#94A3B8]">/</span>}
-            <span className={i === arr.length - 1 ? 'font-semibold text-[#0F172A] dark:text-white' : 'text-[#94A3B8]'}>
-              {part}
-            </span>
+          <span key={i}>
+            {i > 0 && <span style={{ color: '#999', margin: '0 4px' }}>/</span>}
+            <span style={i === arr.length - 1 ? { fontWeight: 600 } : { color: '#666' }}>{part}</span>
           </span>
         ))}
       </div>
 
-      {/* Right: Theme + User + Logout */}
-      <div className="flex items-center gap-4">
-        <button onClick={toggle} className="text-[#475569] hover:text-[#0F172A] dark:text-[#CBD5E1] dark:hover:text-white">
-          {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
-        </button>
-
-        <span className="text-[13px] font-medium text-[#475569] dark:text-[#CBD5E1]">
-          {user?.username || '用户'}
-        </span>
-
-        <Avatar className="h-8 w-8">
-          <AvatarFallback className="bg-[#3B82F6] text-[14px] font-semibold text-white">
-            {initials}
-          </AvatarFallback>
-        </Avatar>
-
-        <Button
-          variant="ghost"
-          size="default"
-          onClick={logout}
-          className="h-8 px-2 text-[#475569] hover:text-red-600 dark:text-[#CBD5E1]"
+      {/* 用户信息 + 登出 */}
+      <Space size={12}>
+        <span style={{ fontSize: 13, color: '#595959' }}>{user?.username || '用户'}</span>
+        <Dropdown
+          menu={{
+            items: [
+              { key: 'logout', icon: <LogoutOutlined />, label: '退出登录', onClick: logout },
+            ],
+          }}
+          placement="bottomRight"
         >
-          <LogOut size={16} />
-        </Button>
-      </div>
-    </header>
+          <Avatar style={{ background: '#1677ff', cursor: 'pointer' }} icon={<UserOutlined />}>
+            {initials}
+          </Avatar>
+        </Dropdown>
+      </Space>
+    </Header>
   );
 }

@@ -1,19 +1,20 @@
 import { Outlet } from 'react-router-dom';
-import { Toaster } from 'sonner';
+import { Layout } from 'antd';
 import SideNav from './SideNav';
 import TopBar from './TopBar';
 
+const { Content } = Layout;
+
 export default function AppShell() {
   return (
-    <div className="flex h-screen overflow-hidden bg-[#F8FAFC] dark:bg-[#0F172A]">
+    <Layout style={{ minHeight: '100vh' }}>
       <SideNav />
-      <div className="flex flex-1 flex-col overflow-hidden">
+      <Layout>
         <TopBar />
-        <main className="flex-1 overflow-y-auto p-6">
+        <Content style={{ padding: 24, background: '#f0f2f5', overflow: 'auto' }}>
           <Outlet />
-        </main>
-      </div>
-      <Toaster position="top-right" richColors />
-    </div>
+        </Content>
+      </Layout>
+    </Layout>
   );
 }

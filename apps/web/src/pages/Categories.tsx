@@ -1,12 +1,9 @@
-import { useState, useEffect, useCallback } from "react";
-import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from "../components/ui/alert-dialog";
-import { DataTable, type Column, type PaginationInfo } from "../components/ui/data-table";
-import { toast } from "../lib/toast";
-import { authFetch } from "../lib/api";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { useState, useEffect, useCallback } from 'react';
+import { Table, Button, Input, Modal, Form, Space, App as AntdApp, Typography } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
+import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { toast } from '../lib/toast';
+import { authFetch } from '../lib/api';
 
 interface Category {
   id: string;
@@ -17,159 +14,152 @@ interface Category {
 }
 
 export default function CategoriesPage() {
+  const { modal } = AntdApp.useApp();
+  const [form] = Form.useForm<{ name: string; description?: string }>();
   const [data, setData] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
-  const [pagination, setPagination] = useState<PaginationInfo>({ page: 1, pageSize: 20, total: 0 });
-  const [keyword, setKeyword] = useState("");
+  const [pagination, setPagination] = useState({ page: 1, pageSize: 20, total: 0 });
+  const [keyword, setKeyword] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Category | null>(null);
-  const [form, setForm] = useState({ name: "", description: "" });
-  const [deleteTarget, setDeleteTarget] = useState<Category | null>(null);
   const [saving, setSaving] = useState(false);
 
   const fetchData = useCallback(async (page: number, kw: string) => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({ page: String(page), pageSize: "20" });
-      if (kw) params.set("keyword", kw);
+      const params = new URLSearchParams({ page: String(page), pageSize: '20' });
+      if (kw) params.set('keyword', kw);
       const res = await authFetch(`/api/categories?${params}`);
       const json = await res.json();
       if (json.success) {
         setData(json.data.items);
         setPagination(json.data.meta);
       }
-    } catch { toast.error("加载分类失败"); }
+    } catch { toast.error('加载分类失败'); }
     finally { setLoading(false); }
   }, []);
 
-  // One cancellable task is StrictMode-safe and also handles debounced search.
   useEffect(() => {
     const delay = keyword.trim() ? 300 : 0;
     const task = setTimeout(() => { void fetchData(1, keyword); }, delay);
     return () => clearTimeout(task);
   }, [keyword, fetchData]);
 
-  const openCreate = () => { setEditing(null); setForm({ name: "", description: "" }); setDialogOpen(true); };
-  const openEdit = (row: Category) => { setEditing(row); setForm({ name: row.name, description: row.description || "" }); setDialogOpen(true); };
+  const openCreate = () => { setEditing(null); form.resetFields(); setDialogOpen(true); };
+  const openEdit = (row: Category) => { setEditing(row); form.setFieldsValue({ name: row.name, description: row.description || '' }); setDialogOpen(true); };
 
   const handleSave = async () => {
-    if (!form.name.trim()) { toast.error("名称不能为空"); return; }
+    let values: { name: string; description?: string };
+    try {
+      values = await form.validateFields();
+    } catch { return; }
     setSaving(true);
     try {
-      const url = editing ? `/api/categories/${editing.id}` : "/api/categories";
-      const method = editing ? "PATCH" : "POST";
+      const url = editing ? `/api/categories/${editing.id}` : '/api/categories';
+      const method = editing ? 'PATCH' : 'POST';
       const res = await authFetch(url, {
         method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: form.name.trim(), description: form.description.trim() || undefined }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: values.name.trim(), description: values.description?.trim() || undefined }),
       });
       const json = await res.json();
       if (json.success) {
-        toast.success(editing ? "更新成功" : "创建成功");
+        toast.success(editing ? '更新成功' : '创建成功');
         setDialogOpen(false);
         fetchData(pagination.page, keyword);
       } else {
-        toast.error(json.error?.message || "操作失败");
+        toast.error(json.error?.message || '操作失败');
       }
-    } catch { toast.error("操作失败"); }
+    } catch { toast.error('操作失败'); }
     finally { setSaving(false); }
   };
 
-  const handleDelete = async () => {
-    if (!deleteTarget) return;
+  const handleDelete = async (id: string) => {
     try {
-      const res = await authFetch(`/api/categories/${deleteTarget.id}`, { method: "DELETE" });
+      const res = await authFetch(`/api/categories/${id}`, { method: 'DELETE' });
       const json = await res.json();
       if (json.success) {
-        toast.success("删除成功");
+        toast.success('删除成功');
         fetchData(pagination.page, keyword);
       } else {
-        toast.error(json.error?.message || "删除失败");
+        toast.error(json.error?.message || '删除失败');
       }
-    } catch { toast.error("删除失败"); }
-    finally { setDeleteTarget(null); }
+    } catch { toast.error('删除失败'); }
   };
 
-  const columns: Column<Category>[] = [
-    { key: "name", label: "名称" },
-    { key: "description", label: "备注", render: (v) => (v as string) || "-" },
+  const confirmDelete = (row: Category) => {
+    modal.confirm({
+      title: `确定删除分类 "${row.name}"？`,
+      content: '如有商品关联将无法删除。',
+      okText: '删除',
+      okButtonProps: { danger: true },
+      cancelText: '取消',
+      onOk: () => handleDelete(row.id),
+    });
+  };
+
+  const columns: ColumnsType<Category> = [
+    { title: '名称', dataIndex: 'name' },
+    { title: '备注', dataIndex: 'description', render: (v) => v || '-' },
     {
-      key: "actions",
-      label: "操作",
-      width: "120px",
+      title: '操作',
+      width: 120,
       render: (_, row) => (
-        <div className="flex items-center gap-1">
-          <Button variant="ghost" size="default" className="h-8 w-8 p-0" onClick={() => openEdit(row)}>
-            <Pencil className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="default" className="h-8 w-8 p-0 text-red-500 hover:text-red-600" onClick={() => setDeleteTarget(row)}>
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
+        <Space size={4}>
+          <Button type="link" size="small" icon={<EditOutlined />} onClick={() => openEdit(row)} />
+          <Button type="link" size="small" danger icon={<DeleteOutlined />} onClick={() => confirmDelete(row)} />
+        </Space>
       ),
     },
   ];
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-[18px] font-bold text-[#0F172A] dark:text-white">商品分类</h1>
-        <Button onClick={openCreate} className="bg-[#3B82F6] hover:bg-[#3B82F6]/90">
-          <Plus className="mr-1 h-4 w-4" /> 新增分类
-        </Button>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Typography.Title level={4} style={{ margin: 0 }}>商品分类</Typography.Title>
+        <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>新增分类</Button>
       </div>
 
-      <Input
+      <Input.Search
         placeholder="搜索..."
-        className="w-[320px]"
-        value={keyword}
+        style={{ width: 320 }}
+        allowClear
         onChange={(e) => setKeyword(e.target.value)}
+        onSearch={(v) => fetchData(1, v)}
       />
 
-      <DataTable
+      <Table<Category>
+        rowKey="id"
         columns={columns}
-        data={data}
+        dataSource={data}
         loading={loading}
-        pagination={pagination}
-        onPageChange={(page) => { setPagination((p) => ({ ...p, page })); fetchData(page, keyword); }}
+        pagination={{
+          current: pagination.page,
+          pageSize: pagination.pageSize,
+          total: pagination.total,
+          showTotal: (t) => `共 ${t} 条`,
+          onChange: (page) => { setPagination((p) => ({ ...p, page })); fetchData(page, keyword); },
+        }}
       />
 
-      {/* Create/Edit Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{editing ? "编辑分类" : "新增分类"}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <label className="text-sm font-medium">名称 *</label>
-              <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="输入分类名称" />
-            </div>
-            <div>
-              <label className="text-sm font-medium">备注</label>
-              <Input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="输入备注（可选）" />
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setDialogOpen(false)}>取消</Button>
-              <Button onClick={handleSave} disabled={saving}>{saving ? "保存中..." : "保存"}</Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Delete Confirmation */}
-      <AlertDialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>确定删除分类 "{deleteTarget?.name}"？</AlertDialogTitle>
-            <AlertDialogDescription>如有商品关联将无法删除。</AlertDialogDescription>
-          </AlertDialogHeader>
-          <div className="flex justify-end gap-2">
-            <AlertDialogCancel>取消</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">删除</AlertDialogAction>
-          </div>
-        </AlertDialogContent>
-      </AlertDialog>
+      <Modal
+        title={editing ? '编辑分类' : '新增分类'}
+        open={dialogOpen}
+        onOk={handleSave}
+        onCancel={() => setDialogOpen(false)}
+        confirmLoading={saving}
+        okText="保存"
+        cancelText="取消"
+      >
+        <Form form={form} layout="vertical">
+          <Form.Item name="name" label="名称" rules={[{ required: true, message: '请输入名称' }]}>
+            <Input placeholder="输入分类名称" />
+          </Form.Item>
+          <Form.Item name="description" label="备注">
+            <Input placeholder="输入备注（可选）" />
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   );
 }
