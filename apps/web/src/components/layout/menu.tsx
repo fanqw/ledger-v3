@@ -36,15 +36,6 @@ export const MENU_ITEMS: TopMenuItem[] = [
   },
 ];
 
-/** 从路径推断当前一级菜单 key（mix 布局顶栏高亮用） */
-export function findTopKey(pathname: string): string {
-  for (const t of MENU_ITEMS) {
-    if (t.children?.some((c) => pathname.startsWith(c.key))) return t.key;
-    if (pathname === t.key) return t.key;
-  }
-  return 'orders';
-}
-
 /** 面包屑：基于路径返回 [分组, 页面] */
 export function findBreadcrumb(pathname: string): string[] {
   for (const t of MENU_ITEMS) {
