@@ -129,6 +129,29 @@ body {
 }
 .sidebar-collapse-trigger--collapsed:hover { color: var(--accent); }
 [data-theme='dark'] .sidebar-collapse-trigger--collapsed::before { box-shadow: 0 1px 3px rgba(0, 0, 0, .18); }
+
+/* ===== antd pro 风格：折叠态 submenu 弹窗与选中效果 ===== */
+/* 1. 弹窗毛玻璃背景（antd pro: rgba(255,255,255,.42) + blur(8px)） */
+.ant-menu-submenu-popup > .ant-menu-sub {
+  background-color: rgba(255, 255, 255, 0.42) !important;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+[data-theme='dark'] .ant-menu-submenu-popup > .ant-menu-sub {
+  background-color: rgba(20, 20, 20, 0.5) !important;
+}
+/* 2. 折叠态弹窗选中项统一主题色（弹窗渲染在 body 下需单独覆盖） */
+.ant-menu-submenu-popup .ant-menu-item-selected {
+  color: var(--accent) !important;
+  background-color: color-mix(in srgb, var(--accent) 10%, transparent) !important;
+}
+/* 3. 折叠态选中的父级 submenu 高亮（antd pro 折叠菜单选中态） */
+.app-sider.ant-layout-sider-collapsed .ant-menu-submenu-selected > .ant-menu-submenu-title {
+  color: var(--accent);
+  background-color: color-mix(in srgb, var(--accent) 10%, transparent);
+  border-radius: 8px;
+}
+
 .mobile-nav-drawer .ant-drawer-body { padding: 8px; }
 .mobile-nav-drawer .ant-menu { background: transparent; border-inline-end: 0 !important; }
 
