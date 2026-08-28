@@ -44,13 +44,15 @@ export default function SideNav({
     () => !mobile && window.localStorage.getItem(storageKey) === 'true',
   );
   const [requestedOpenKeys, setRequestedOpenKeys] = useState<string[]>([]);
-  const openKeys = routeParent && !requestedOpenKeys.includes(routeParent)
+  // 展开态自动展开当前父级（显示位置）；折叠态不自动展开，避免 submenu 残留
+  const openKeys = !collapsed && routeParent && !requestedOpenKeys.includes(routeParent)
     ? [...requestedOpenKeys, routeParent]
     : requestedOpenKeys;
 
   const onClick: MenuProps['onClick'] = ({ key }) => {
     navigate(key);
     onNavigate?.();
+    setRequestedOpenKeys([]); // 选中菜单后收起子菜单（避免展开态残留）
   };
 
   const menu = (
