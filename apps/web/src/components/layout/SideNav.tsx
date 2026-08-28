@@ -52,7 +52,6 @@ export default function SideNav({
   const onClick: MenuProps['onClick'] = ({ key }) => {
     navigate(key);
     onNavigate?.();
-    setRequestedOpenKeys([]); // 选中菜单后收起子菜单（避免展开态残留）
   };
 
   const menu = (
