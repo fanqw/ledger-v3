@@ -19,17 +19,17 @@ export default function UnitsPage() {
   const [form] = Form.useForm<{ name: string; description?: string }>();
   const [data, setData] = useState<Unit[]>([]);
   const [loading, setLoading] = useState(true);
-  const [pagination, setPagination] = useState({ page: 1, pageSize: 20, total: 0 });
+  const [pagination, setPagination] = useState({ page: 1, pageSize: 10, total: 0 });
   const [keyword, setKeyword] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Unit | null>(null);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  const fetchData = useCallback(async (page: number, kw: string) => {
+  const fetchData = useCallback(async (page: number, kw: string, pageSize: number) => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({ page: String(page), pageSize: '20' });
+      const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
       if (kw) params.set('keyword', kw);
       const res = await authFetch(`/api/units?${params}`);
       const json = await res.json();
@@ -43,9 +43,9 @@ export default function UnitsPage() {
 
   useEffect(() => {
     const delay = keyword.trim() ? 300 : 0;
-    const task = setTimeout(() => { void fetchData(1, keyword); }, delay);
+    const task = setTimeout(() => { void fetchData(pagination.page, keyword, pagination.pageSize); }, delay);
     return () => clearTimeout(task);
-  }, [keyword, fetchData]);
+  }, [keyword, pagination.page, pagination.pageSize, fetchData]);
 
   const openCreate = () => { setEditing(null); form.resetFields(); setDialogOpen(true); };
   const openEdit = (row: Unit) => { setEditing(row); form.setFieldsValue({ name: row.name, description: row.description || '' }); setDialogOpen(true); };
@@ -69,7 +69,7 @@ export default function UnitsPage() {
       if (json.success) {
         toast.success(editing ? '更新成功' : '创建成功');
         setDialogOpen(false);
-        fetchData(pagination.page, keyword);
+        fetchData(pagination.page, keyword, pagination.pageSize);
       } else {
         toast.error(json.error?.message || '操作失败');
       }
@@ -85,7 +85,7 @@ export default function UnitsPage() {
       const json = await res.json();
       if (json.success) {
         toast.success('删除成功');
-        fetchData(pagination.page, keyword);
+        fetchData(pagination.page, keyword, pagination.pageSize);
       } else {
         toast.error(json.error?.message || '删除失败');
       }
@@ -129,7 +129,7 @@ export default function UnitsPage() {
             style={{ width: 320 }}
             allowClear
             onChange={(e) => setKeyword(e.target.value)}
-            onSearch={(v) => fetchData(1, v)}
+            onSearch={(v) => fetchData(1, v, pagination.pageSize)}
           />
           <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>新增单位</Button>
         </div>
@@ -144,7 +144,7 @@ export default function UnitsPage() {
             pageSize: pagination.pageSize,
             total: pagination.total,
             showTotal: (t) => `共 ${t} 条`,
-            onChange: (page) => { setPagination((p) => ({ ...p, page })); fetchData(page, keyword); },
+            onChange: (page, pageSize) => setPagination((p) => ({ ...p, page, pageSize })),
           }}
         />} renderMobileItem={(row) => <button className="mobile-record" onClick={() => openEdit(row)}><span className="mobile-record__title">{row.name}</span><span className="mobile-record__meta"><span>{row.description || '无备注'}</span><span>编辑 ›</span></span></button>} />
       </div>

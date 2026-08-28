@@ -24,7 +24,7 @@ export default function OrdersPage() {
   const [form] = Form.useForm<{ name: string; description?: string; purchasePlaceId?: string }>();
   const [data, setData] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
-  const [pagination, setPagination] = useState({ page: 1, pageSize: 20, total: 0 });
+  const [pagination, setPagination] = useState({ page: 1, pageSize: 10, total: 0 });
   const [keyword, setKeyword] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Order | null>(null);
@@ -32,10 +32,10 @@ export default function OrdersPage() {
   const [deleting, setDeleting] = useState(false);
   const [purchasePlaces, setPurchasePlaces] = useState<PurchasePlace[]>([]);
 
-  const fetchData = useCallback(async (page: number, kw: string) => {
+  const fetchData = useCallback(async (page: number, kw: string, pageSize: number) => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({ page: String(page), pageSize: '20' });
+      const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
       if (kw) params.set('keyword', kw);
       const res = await authFetch(`/api/orders?${params}`);
       const json = await res.json();
@@ -47,9 +47,9 @@ export default function OrdersPage() {
 
   useEffect(() => {
     const delay = keyword.trim() ? 300 : 0;
-    const task = setTimeout(() => { void fetchData(1, keyword); }, delay);
+    const task = setTimeout(() => { void fetchData(pagination.page, keyword, pagination.pageSize); }, delay);
     return () => clearTimeout(task);
-  }, [keyword, fetchData]);
+  }, [keyword, pagination.page, pagination.pageSize, fetchData]);
 
   const loadPurchasePlaces = async () => {
     try {
@@ -101,7 +101,7 @@ export default function OrdersPage() {
       };
       const res = await authFetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
       const json = await res.json();
-      if (json.success) { toast.success(editing ? '更新成功' : '创建成功'); setDialogOpen(false); fetchData(pagination.page, keyword); }
+      if (json.success) { toast.success(editing ? '更新成功' : '创建成功'); setDialogOpen(false); fetchData(pagination.page, keyword, pagination.pageSize); }
       else { toast.error(json.error?.message || '操作失败'); }
     } catch { toast.error('操作失败'); }
     finally { setSaving(false); }
@@ -113,7 +113,7 @@ export default function OrdersPage() {
     try {
       const res = await authFetch(`/api/orders/${id}`, { method: 'DELETE' });
       const json = await res.json();
-      if (json.success) { toast.success('删除成功'); fetchData(pagination.page, keyword); }
+      if (json.success) { toast.success('删除成功'); fetchData(pagination.page, keyword, pagination.pageSize); }
       else { toast.error(json.error?.message || '删除失败'); }
     } catch { toast.error('删除失败'); }
     finally { setDeleting(false); }
@@ -160,7 +160,7 @@ export default function OrdersPage() {
             style={{ width: 320 }}
             allowClear
             onChange={(e) => setKeyword(e.target.value)}
-            onSearch={(v) => fetchData(1, v)}
+            onSearch={(v) => fetchData(1, v, pagination.pageSize)}
           />
           <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>新增订单</Button>
         </div>
@@ -175,7 +175,7 @@ export default function OrdersPage() {
           pageSize: pagination.pageSize,
           total: pagination.total,
           showTotal: (t) => `共 ${t} 条`,
-          onChange: (page) => { setPagination((p) => ({ ...p, page })); fetchData(page, keyword); },
+          onChange: (page, pageSize) => setPagination((p) => ({ ...p, page, pageSize })),
         }}
       />} renderMobileItem={(row) => <button className="mobile-record" onClick={() => navigate(`/orders/${row.id}`)}><span className="mobile-record__title">{row.name}</span><span className="mobile-record__meta"><span>{row.purchasePlace ? `${row.purchasePlace.place} - ${row.purchasePlace.marketName}` : '未设置进货地'}</span><span>{formatDate(row.createdAt)} ›</span></span></button>} />
       </div>

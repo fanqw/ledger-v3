@@ -14,7 +14,7 @@ export const loginSchema = z.object({
 
 export const paginationSchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
-  pageSize: z.coerce.number().int().min(1).max(100).default(20),
+  pageSize: z.coerce.number().int().min(1).max(100).default(10),
   keyword: z.string().trim().max(100, '关键词长度不能超过100').optional(),
 });
 
