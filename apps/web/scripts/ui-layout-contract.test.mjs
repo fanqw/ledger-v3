@@ -50,6 +50,18 @@ test('navigation exposes direct items and expandable parent menus', () => {
   assert.match(menu, /findParentMenuKey/);
 });
 
+test('desktop sidebar persists pro-style collapse state', () => {
+  const side = read('src/components/layout/SideNav.tsx');
+  assert.match(side, /width=\{220\}/);
+  assert.match(side, /collapsedWidth=\{64\}/);
+  assert.match(side, /ledger:sidebar-collapsed/);
+  assert.match(side, /trigger=\{null\}/);
+  assert.match(side, /sidebar-collapse-trigger/);
+  assert.match(side, /aria-label=\{collapsed \? '展开导航' : '收起导航'\}/);
+  assert.match(side, /openKeys=\{openKeys\}/);
+  assert.match(side, /findParentMenuKey/);
+});
+
 test('tablet and phone breakpoints prioritize usable workspace width', () => {
   const shell = read('src/components/layout/AppShell.tsx');
   const css = read('src/index.css');
