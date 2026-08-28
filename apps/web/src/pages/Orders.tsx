@@ -175,8 +175,8 @@ export default function OrdersPage() {
       fixed: 'right',
       render: (_, row) => (
         <Space size={12}>
-          <Button type="link" size="small" onClick={(e) => { e.stopPropagation(); openEdit(row); }}>编辑</Button>
-          <Button type="link" size="small" danger onClick={(e) => { e.stopPropagation(); confirmDelete(row); }}>删除</Button>
+          <Button type="link" size="small" aria-label={`编辑${row.name}`} onClick={(e) => { e.stopPropagation(); openEdit(row); }}>编辑</Button>
+          <Button type="link" size="small" danger aria-label={`删除${row.name}`} onClick={(e) => { e.stopPropagation(); confirmDelete(row); }}>删除</Button>
         </Space>
       ),
     },
