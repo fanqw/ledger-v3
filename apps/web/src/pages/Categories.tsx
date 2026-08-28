@@ -1,11 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Table, Button, Input, Modal, Form, Space, App as AntdApp } from 'antd';
+import { Table, Button, Input, Modal, Form, Space, App as AntdApp, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { toast } from '../lib/toast';
 import { authFetch } from '../lib/api';
-import PageHeader from '../components/page/PageHeader';
-import PageToolbar from '../components/page/PageToolbar';
 import ResponsiveDataView from '../components/page/ResponsiveDataView';
 
 interface Category {
@@ -122,31 +120,37 @@ export default function CategoriesPage() {
   ];
 
   return (
-    <div className="page">
-      <PageHeader title="商品分类" description="维护商品的分类结构" actions={<Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>新增分类</Button>} />
-      <PageToolbar>
-        <Input.Search
-          placeholder="搜索..."
-          style={{ width: 320 }}
-          allowClear
-          onChange={(e) => setKeyword(e.target.value)}
-          onSearch={(v) => fetchData(1, v)}
-        />
-      </PageToolbar>
-
-      <ResponsiveDataView items={data} rowKey={(row) => row.id} desktop={<Table<Category>
-        rowKey="id"
-        columns={columns}
-        dataSource={data}
-        loading={loading}
-        pagination={{
-          current: pagination.page,
-          pageSize: pagination.pageSize,
-          total: pagination.total,
-          showTotal: (t) => `共 ${t} 条`,
-          onChange: (page) => { setPagination((p) => ({ ...p, page })); fetchData(page, keyword); },
-        }}
-      />} renderMobileItem={(row) => <button className="mobile-record" onClick={() => openEdit(row)}><span className="mobile-record__title">{row.name}</span><span className="mobile-record__meta"><span>{row.description || '无备注'}</span><span>编辑 ›</span></span></button>} />
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      {/* 页面标题（内容区顶部，移出卡片） */}
+      <Typography.Title level={3} style={{ margin: 0 }}>商品分类</Typography.Title>
+      <div className="page">
+        {/* 工具行：搜索左 + 操作右 */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+          <Input.Search
+            placeholder="搜索..."
+            style={{ width: 320 }}
+            allowClear
+            onChange={(e) => setKeyword(e.target.value)}
+            onSearch={(v) => fetchData(1, v)}
+          />
+          <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>新增分类</Button>
+        </div>
+        {/* 共 x 项 */}
+        <div style={{ fontSize: 13, color: 'var(--muted)' }}>共 {pagination.total} 项</div>
+        <ResponsiveDataView items={data} rowKey={(row) => row.id} desktop={<Table<Category>
+          rowKey="id"
+          columns={columns}
+          dataSource={data}
+          loading={loading}
+          pagination={{
+            current: pagination.page,
+            pageSize: pagination.pageSize,
+            total: pagination.total,
+            showTotal: (t) => `共 ${t} 条`,
+            onChange: (page) => { setPagination((p) => ({ ...p, page })); fetchData(page, keyword); },
+          }}
+        />} renderMobileItem={(row) => <button className="mobile-record" onClick={() => openEdit(row)}><span className="mobile-record__title">{row.name}</span><span className="mobile-record__meta"><span>{row.description || '无备注'}</span><span>编辑 ›</span></span></button>} />
+      </div>
 
       <Modal
         title={editing ? '编辑分类' : '新增分类'}
