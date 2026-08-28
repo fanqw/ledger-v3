@@ -87,7 +87,7 @@ export default function SideNav({
       <nav aria-label="主导航">{menu}</nav>
       <button
         type="button"
-        className="sidebar-collapse-trigger"
+        className={`sidebar-collapse-trigger${collapsed ? ' sidebar-collapse-trigger--collapsed' : ''}`}
         aria-label={collapsed ? '展开导航' : '收起导航'}
         onClick={toggleCollapsed}
       >

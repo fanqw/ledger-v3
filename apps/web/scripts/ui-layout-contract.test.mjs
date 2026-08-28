@@ -63,6 +63,7 @@ test('desktop sidebar persists pro-style collapse state', () => {
 });
 
 test('sidebar trigger matches the reference boundary treatment', () => {
+  const side = read('src/components/layout/SideNav.tsx');
   const css = read('src/index.css');
   assert.match(css, /\.app-sider\s*\{[^}]*position:\s*relative/s);
   assert.match(css, /\.app-sider \.ant-menu-item-selected\s*\{[^}]*background:/s);
@@ -72,6 +73,10 @@ test('sidebar trigger matches the reference boundary treatment', () => {
   assert.match(css, /\.sidebar-collapse-trigger:hover/);
   assert.match(css, /\.sidebar-collapse-trigger:focus-visible/);
   assert.match(css, /\[data-theme='dark'\] \.sidebar-collapse-trigger/);
+  assert.match(side, /sidebar-collapse-trigger--collapsed/);
+  assert.match(css, /\.sidebar-collapse-trigger--collapsed::before\s*\{[^}]*width:\s*22px[^}]*height:\s*22px/s);
+  assert.match(css, /\.sidebar-collapse-trigger--collapsed\s*\{[^}]*color:\s*#b8bec8/s);
+  assert.match(css, /\.sidebar-collapse-trigger--collapsed:hover\s*\{[^}]*color:\s*var\(--accent\)/s);
 });
 
 test('tablet and phone breakpoints prioritize usable workspace width', () => {
