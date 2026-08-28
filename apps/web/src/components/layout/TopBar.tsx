@@ -1,4 +1,4 @@
-import { Layout, Button, Space, Avatar, Dropdown } from 'antd';
+import { Layout, Button, Space, Avatar, Tooltip, Divider } from 'antd';
 import { MenuOutlined, SunOutlined, MoonOutlined, UserOutlined, LogoutOutlined } from '@ant-design/icons';
 import { useAuth } from '../../lib/auth';
 import { useThemeMode } from '../../lib/theme';
@@ -23,7 +23,7 @@ export default function TopBar({
         height: 56,
         lineHeight: '56px',
         background: 'var(--surface)',
-        padding: '0 16px',
+        padding: '0 20px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
@@ -61,23 +61,25 @@ export default function TopBar({
         <span style={{ fontWeight: 'bold', fontSize: 15, color: 'var(--text)' }}>台帐系统</span>
       </div>
 
-      {/* 右侧：主题切换 + 用户名 + 头像 */}
-      <Space size={12}>
+      {/* 右侧：主题切换 │ 用户区（头像+名称）│ 退出登录（独立功能区） */}
+      <Space size={8}>
         <Button
           type="text"
           icon={mode === 'dark' ? <SunOutlined /> : <MoonOutlined />}
           onClick={toggle}
           aria-label="切换主题"
         />
-        <span style={{ fontSize: 13, color: 'var(--muted)' }}>{user?.username || '用户'}</span>
-        <Dropdown
-          menu={{ items: [{ key: 'logout', icon: <LogoutOutlined />, label: '退出登录', onClick: logout }] }}
-          placement="bottomRight"
-        >
-          <Avatar style={{ background: '#3B82F6', cursor: 'pointer' }} icon={<UserOutlined />}>
+        <Divider type="vertical" style={{ height: 18, margin: '0 2px', borderColor: 'var(--line)' }} />
+        <Space size={8}>
+          <Avatar size={24} style={{ background: '#3B82F6' }} icon={<UserOutlined />}>
             {initials}
           </Avatar>
-        </Dropdown>
+          <span style={{ fontSize: 13, color: 'var(--muted)' }}>{user?.username || '用户'}</span>
+        </Space>
+        <Divider type="vertical" style={{ height: 18, margin: '0 2px', borderColor: 'var(--line)' }} />
+        <Tooltip title="退出登录">
+          <Button type="text" icon={<LogoutOutlined />} onClick={logout} aria-label="退出登录" />
+        </Tooltip>
       </Space>
     </Header>
   );
