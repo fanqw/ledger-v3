@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Table, Button, Input, InputNumber, Modal, Select, AutoComplete, Space, Card, App as AntdApp, Typography, Spin } from 'antd';
+import { Table, Button, Input, InputNumber, Modal, Select, AutoComplete, Space, Card, Descriptions, App as AntdApp, Typography, Spin } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { ArrowLeftOutlined, PlusOutlined, DownloadOutlined } from '@ant-design/icons';
 import { toast } from '../lib/toast';
@@ -300,11 +300,19 @@ export default function OrderDetailPage() {
   const categoryOptions = categories.map(c => ({ value: c.name, id: c.id }));
   const unitOptions = units.map(u => ({ value: u.name, id: u.id }));
 
+  // 分类分组合并：组内第一行 rowSpan = 组内行数，其余 0（隐藏），实现纵向合并
+  const groupMeta = (record: OrderItem) => {
+    const g = groups.find(g => g.categoryId === (record.commodity?.category?.id || '__none__'));
+    const idx = g ? g.items.findIndex(i => i.id === record.id) : 0;
+    return { rowSpan: idx === 0 ? (g?.items.length || 0) : 0, g };
+  };
+
   const columns: ColumnsType<OrderItem> = [
     {
       title: '分类',
       width: 90,
       fixed: 'left',
+      onCell: (record) => ({ rowSpan: groupMeta(record).rowSpan }),
       render: (_, record) => record.commodity?.category?.name || '未分类',
     },
     { title: '名称', width: 160, fixed: 'left', render: (_, record) => record.commodity?.name || '-' },
@@ -320,10 +328,8 @@ export default function OrderDetailPage() {
     { title: '备注', dataIndex: 'description', render: (v) => v || '-' },
     {
       title: '分类金额',
-      render: (_, record) => {
-        const g = groups.find(g => g.categoryId === (record.commodity?.category?.id || '__none__'));
-        return <span style={{ fontWeight: 500 }}>{fmt(g?.subtotal || 0)}</span>;
-      },
+      onCell: (record) => ({ rowSpan: groupMeta(record).rowSpan }),
+      render: (_, record) => <span style={{ fontWeight: 500 }}>{fmt(groupMeta(record).g?.subtotal || 0)}</span>,
     },
     {
       title: '操作',
@@ -339,38 +345,39 @@ export default function OrderDetailPage() {
   ];
 
   return (
-    <div className="page" style={{ height: 'calc(100vh - 112px)', overflow: 'hidden' }}>
-      {/* 上方：订单信息卡片 */}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16, height: 'calc(100vh - 112px)', overflow: 'hidden' }}>
+      {/* 上方：订单信息卡片（Descriptions 展示核心字段） */}
       <Card
         title={order.name}
         extra={
           <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/orders')}>返回</Button>
         }
       >
-        <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', fontSize: 13, color: 'var(--muted)' }}>
-          {order.market && <span>进货市场: {order.market.name} ({order.market.city?.place})</span>}
-          <span>创建时间: {fmtDate(order.createdAt)}</span>
-          {order.description && <span>备注: {order.description}</span>}
-        </div>
+        <Descriptions column={3} size="small">
+          <Descriptions.Item label="进货地">{order.market?.city?.place || '-'}</Descriptions.Item>
+          <Descriptions.Item label="进货市场">{order.market?.name || '-'}</Descriptions.Item>
+          <Descriptions.Item label="进货金额">{fmt(grandTotal)}</Descriptions.Item>
+          <Descriptions.Item label="创建时间">{fmtDate(order.createdAt)}</Descriptions.Item>
+          <Descriptions.Item label="修改时间">{fmtDate(order.updatedAt)}</Descriptions.Item>
+          <Descriptions.Item label="备注">{order.description || '-'}</Descriptions.Item>
+        </Descriptions>
       </Card>
 
-      {/* 下方：明细列表卡片 */}
+      {/* 下方：明细列表卡片（无 header，标题/操作放 body 顶部） */}
       <Card
-        title={
+        style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}
+        styles={{ body: { flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' } }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexShrink: 0 }}>
           <Space size={8}>
-            <span>明细列表</span>
+            <span style={{ fontWeight: 500 }}>明细列表</span>
             <Typography.Text type="secondary" style={{ fontSize: 12 }}>共 {displayItems.length} 项</Typography.Text>
           </Space>
-        }
-        extra={
           <Space>
             <Button icon={<DownloadOutlined />} onClick={() => exportToExcel(order)}>导出 Excel</Button>
             <Button type="primary" icon={<PlusOutlined />} onClick={openAddItem}>添加明细</Button>
           </Space>
-        }
-        style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}
-        styles={{ header: { flexShrink: 0 }, body: { flex: 1, overflow: 'hidden' } }}
-      >
+        </div>
         {displayItems.length === 0 ? (
           <div style={{ textAlign: 'center', padding: 48 }}>
             <Typography.Text type="secondary">暂无明细</Typography.Text>

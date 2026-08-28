@@ -76,8 +76,9 @@ export function getMatchMenu(pathname: string, menuData: MenuDataItem[] = MENU_I
   return [];
 }
 
-/** 面包屑：基于路径返回 [分组, 页面] */
+/** 面包屑：基于路径返回 [分组, 页面]；订单详情特殊处理为 [订单管理, 订单详情] */
 export function findBreadcrumb(pathname: string, menuData: MenuDataItem[] = MENU_ITEMS): string[] {
+  if (/^\/orders\/[^/]+$/.test(pathname)) return ['订单管理', '订单详情'];
   return getMatchMenu(pathname, menuData).map((item) => item.name);
 }
 
