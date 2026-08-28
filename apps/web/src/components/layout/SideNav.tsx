@@ -63,6 +63,9 @@ export default function SideNav({
       onOpenChange={setRequestedOpenKeys}
       items={items}
       onClick={onClick}
+      // 折叠态弹框切换：新弹框快开、旧弹框缓关，避免鼠标经过空隙时新旧之间出现空档闪烁
+      subMenuOpenDelay={0.05}
+      subMenuCloseDelay={0.3}
     />
   );
 
