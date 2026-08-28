@@ -66,7 +66,9 @@ test('sidebar trigger matches the reference boundary treatment', () => {
   const css = read('src/index.css');
   assert.match(css, /\.app-sider\s*\{[^}]*position:\s*relative/s);
   assert.match(css, /\.app-sider \.ant-menu-item-selected\s*\{[^}]*background:/s);
-  assert.match(css, /\.sidebar-collapse-trigger\s*\{[^}]*right:\s*-16px[^}]*border-radius:\s*50%/s);
+  assert.match(css, /\.sidebar-collapse-trigger\s*\{[^}]*right:\s*-16px[^}]*width:\s*32px[^}]*height:\s*32px/s);
+  assert.match(css, /\.sidebar-collapse-trigger::before\s*\{[^}]*width:\s*24px[^}]*height:\s*24px[^}]*border-radius:\s*50%/s);
+  assert.match(css, /box-shadow:\s*0 1px 4px rgba\(15, 23, 42, \.08\)/);
   assert.match(css, /\.sidebar-collapse-trigger:hover/);
   assert.match(css, /\.sidebar-collapse-trigger:focus-visible/);
   assert.match(css, /\[data-theme='dark'\] \.sidebar-collapse-trigger/);
