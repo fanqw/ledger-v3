@@ -1,11 +1,34 @@
-import { useLocation, useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { LeftOutlined, RightOutlined } from '@ant-design/icons';
 import { Layout, Menu } from 'antd';
 import type { MenuProps } from 'antd';
-import type { ItemType } from 'antd/es/menu/interface';
-import { MENU_ITEMS } from './menu';
+import { useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { findParentMenuKey, MENU_ITEMS } from './menu';
 
 const { Sider } = Layout;
+const storageKey = 'ledger:sidebar-collapsed';
+
+const items: MenuProps['items'] = MENU_ITEMS.map((item) => ({
+  key: item.key,
+  label: item.label,
+  icon: item.icon,
+  children: item.children?.map((child) => ({
+    key: child.key,
+    label: child.label,
+    icon: child.icon,
+  })),
+}));
+
+function findSelectedMenuKey(pathname: string): string {
+  for (const item of MENU_ITEMS) {
+    if (item.key === pathname) return item.key;
+    const child = item.children?.find(
+      (candidate) => pathname === candidate.key || pathname.startsWith(`${candidate.key}/`),
+    );
+    if (child) return child.key;
+  }
+  return pathname;
+}
 
 export default function SideNav({
   mobile = false,
@@ -14,47 +37,62 @@ export default function SideNav({
   mobile?: boolean;
   onNavigate?: () => void;
 }) {
-  const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-
-  // 经典模式：一级独立项 + 分组二级（antd Menu group）
-  const items = MENU_ITEMS.flatMap((t): ItemType[] => {
-    if (t.children) {
-      return [
-        {
-          type: 'group',
-          label: t.label,
-          children: t.children.map((c) => ({ key: c.key, label: c.label, icon: c.icon })),
-        },
-      ];
-    }
-    return [{ key: t.key, label: t.label, icon: t.icon }];
-  });
+  const routeParent = findParentMenuKey(location.pathname);
+  const [collapsed, setCollapsed] = useState(
+    () => !mobile && window.localStorage.getItem(storageKey) === 'true',
+  );
+  const [requestedOpenKeys, setRequestedOpenKeys] = useState<string[]>([]);
+  const openKeys = routeParent && !requestedOpenKeys.includes(routeParent)
+    ? [...requestedOpenKeys, routeParent]
+    : requestedOpenKeys;
 
   const onClick: MenuProps['onClick'] = ({ key }) => {
     navigate(key);
     onNavigate?.();
   };
 
-  // antd pro 风格折叠：使用 antd Sider 默认 trigger（底部条，48px 高，图标居中，悬停变色）
+  const menu = (
+    <Menu
+      mode="inline"
+      inlineCollapsed={mobile ? undefined : collapsed}
+      selectedKeys={[findSelectedMenuKey(location.pathname)]}
+      openKeys={openKeys}
+      onOpenChange={setRequestedOpenKeys}
+      items={items}
+      onClick={onClick}
+    />
+  );
+
+  if (mobile) {
+    return <nav aria-label="主导航">{menu}</nav>;
+  }
+
+  const toggleCollapsed = () => {
+    const next = !collapsed;
+    setCollapsed(next);
+    window.localStorage.setItem(storageKey, String(next));
+  };
+
   return (
     <Sider
-      width={180}
+      width={220}
       collapsedWidth={64}
-      collapsible={!mobile}
       collapsed={collapsed}
-      onCollapse={(c) => setCollapsed(c)}
-      style={{ background: 'var(--surface)', borderRight: '1px solid var(--line)' }}
+      trigger={null}
+      className="app-sider"
+      style={{ background: 'var(--surface)' }}
     >
-      <Menu
-        mode="inline"
-        inlineCollapsed={collapsed}
-        selectedKeys={[location.pathname]}
-        items={items}
-        onClick={onClick}
-        style={{ borderRight: 0, background: 'transparent' }}
-      />
+      <nav aria-label="主导航">{menu}</nav>
+      <button
+        type="button"
+        className={`sidebar-collapse-trigger${collapsed ? ' sidebar-collapse-trigger--collapsed' : ''}`}
+        aria-label={collapsed ? '展开导航' : '收起导航'}
+        onClick={toggleCollapsed}
+      >
+        {collapsed ? <RightOutlined /> : <LeftOutlined />}
+      </button>
     </Sider>
   );
 }
