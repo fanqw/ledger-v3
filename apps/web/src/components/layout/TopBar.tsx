@@ -34,7 +34,13 @@ export default function TopBar({
       {/* 左侧：logo + 系统名 */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         {mobile && (
-          <Button type="text" icon={<MenuOutlined />} onClick={onOpenNavigation} style={{ marginRight: 4 }} />
+          <Button
+            type="text"
+            icon={<MenuOutlined />}
+            aria-label="打开导航"
+            onClick={onOpenNavigation}
+            style={{ marginRight: 4 }}
+          />
         )}
         <span
           style={{

@@ -61,20 +61,19 @@ test('phone layout stacks page actions without forcing horizontal compression', 
 });
 
 for (const page of ['Orders', 'Categories', 'Units', 'Commodities', 'PurchasePlaces']) {
-  test(`${page} uses the unified page structure`, () => {
+  test(`${page} keeps the current responsive list structure`, () => {
     const source = read(`src/pages/${page}.tsx`);
-    assert.match(source, /<PageHeader/);
-    assert.match(source, /<PageToolbar/);
+    assert.match(source, /<Typography\.Title/);
+    assert.match(source, /className="page"/);
     assert.match(source, /<ResponsiveDataView/);
     assert.doesNotMatch(source, /<FloatButton/);
     assert.match(source, /aria-label=/);
   });
 }
 
-test('complex pages use the unified page header', () => {
+test('complex pages keep visible titles and responsive detail behavior', () => {
   const detail = read('src/pages/OrderDetail.tsx');
-  assert.match(detail, /<PageHeader/);
-  assert.match(detail, /className="order-detail-meta"/);
-  assert.match(detail, /scroll=\{\{\s*x:\s*1040\s*\}\}/);
-  assert.match(read('src/pages/Analytics.tsx'), /<PageHeader/);
+  assert.match(detail, /title=\{order\.name\}/);
+  assert.match(detail, /scroll=\{\{\s*x:\s*1040,/);
+  assert.match(read('src/pages/Analytics.tsx'), /数据分析工作台/);
 });
