@@ -51,7 +51,14 @@ export default function SideNav({
 
   const onClick: MenuProps['onClick'] = ({ key }) => {
     navigate(key);
+    setRequestedOpenKeys([]); // 点击导航后关闭所有弹窗，避免残留
     onNavigate?.();
+  };
+
+  // 折叠态 hover 弹窗：裁剪 openKeys 只保留最新 hover 的父级。
+  // 默认 closeDelay=0.3 会让旧父级延迟移除，快速切换时新旧弹窗重叠（父菜单收起失效/弹窗错乱）。
+  const onOpenChange: MenuProps['onOpenChange'] = (keys) => {
+    setRequestedOpenKeys(collapsed && keys.length > 1 ? [keys[keys.length - 1]] : keys);
   };
 
   const menu = (
@@ -60,7 +67,7 @@ export default function SideNav({
       inlineCollapsed={mobile ? undefined : collapsed}
       selectedKeys={[findSelectedMenuKey(location.pathname)]}
       openKeys={openKeys}
-      onOpenChange={setRequestedOpenKeys}
+      onOpenChange={onOpenChange}
       items={items}
       onClick={onClick}
       // 折叠态弹框切换：新弹框即时打开、旧弹框 0.3s 缓冲关闭（配合 index.css 禁用 zoom-big 动画），
@@ -78,6 +85,7 @@ export default function SideNav({
   const toggleCollapsed = () => {
     const next = !collapsed;
     setCollapsed(next);
+    if (next) setRequestedOpenKeys([]); // 收起时清空展开态残留的父级展开，避免折叠态弹窗残留
     window.localStorage.setItem(storageKey, String(next));
   };
 
