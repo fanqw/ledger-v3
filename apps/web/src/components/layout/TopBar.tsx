@@ -1,4 +1,4 @@
-import { Layout, Button, Space, Avatar, Tooltip } from 'antd';
+import { Layout, Button, Space, Avatar, Tooltip, Divider } from 'antd';
 import { MenuOutlined, SunOutlined, MoonOutlined, UserOutlined, LogoutOutlined } from '@ant-design/icons';
 import { useAuth } from '../../lib/auth';
 import { useThemeMode } from '../../lib/theme';
@@ -61,7 +61,7 @@ export default function TopBar({
         <span style={{ fontWeight: 'bold', fontSize: 15, color: 'var(--text)' }}>台帐系统</span>
       </div>
 
-      {/* 右侧：主题切换 + 头像 + 名称 + 退出登录图标 */}
+      {/* 右侧：主题切换 ｜ 用户区（头像+名称+退出登录图标） */}
       <Space size={8}>
         <Button
           type="text"
@@ -69,6 +69,7 @@ export default function TopBar({
           onClick={toggle}
           aria-label="切换主题"
         />
+        <Divider type="vertical" style={{ height: 18, margin: '0 2px', borderColor: 'var(--line)' }} />
         <Space size={8}>
           <Avatar size={24} style={{ background: '#3B82F6' }} icon={<UserOutlined />}>
             {initials}
