@@ -182,7 +182,7 @@ function TopCommoditiesCard({ data, loading }: { data: AnalyticsTopCommodities; 
 }
 
 // 环形图（分类/市场占比）
-function DonutChart({ title, data, loading, centerLabel }: {
+function DonutChart({ title: _title, data, loading, centerLabel }: {
   title: string;
   data: { name: string; value: number }[];
   loading: boolean;
@@ -291,7 +291,9 @@ export default function AnalyticsPage() {
     }
 
     // 取消过期请求
-    abortRef.current?.abort();
+    const staleController = abortRef.current;
+    abortRef.current = null;
+    staleController?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
 
@@ -307,15 +309,19 @@ export default function AnalyticsPage() {
       setError(true);
       toast.error('加载数据分析失败');
     } finally {
-      setLoading(false);
+      if (abortRef.current === controller) setLoading(false);
     }
   }, [range, customStart, customEnd]);
 
   useEffect(() => {
-    void fetchData();
+    const task = setTimeout(() => { void fetchData(); }, 0);
+    return () => {
+      clearTimeout(task);
+      const staleController = abortRef.current;
+      abortRef.current = null;
+      staleController?.abort();
+    };
   }, [fetchData, reloadKey]);
-
-  useEffect(() => () => abortRef.current?.abort(), []);
 
   const kpis = data?.kpis;
   const categoryData = (data?.categoryShare ?? []).map((c: AnalyticsCategoryShare) => ({ name: c.name, value: c.amount }));

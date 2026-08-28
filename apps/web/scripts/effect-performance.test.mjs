@@ -9,6 +9,7 @@ const TARGETS = [
   'src/pages/Commodities.tsx',
   'src/pages/PurchasePlaces.tsx',
   'src/pages/Orders.tsx',
+  'src/pages/Analytics.tsx',
 ]
 
 test('initial data effects do not synchronously update React state', () => {
@@ -19,6 +20,18 @@ test('initial data effects do not synchronously update React state', () => {
   )
 
   assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`)
+})
+
+test('analytics schedules one cancellable load and stale requests cannot clear loading', () => {
+  const source = readFileSync(new URL('../src/pages/Analytics.tsx', import.meta.url), 'utf8')
+
+  assert.match(source, /const task = setTimeout\(\(\) => \{ void fetchData\(\); \}, 0\)/)
+  assert.match(source, /clearTimeout\(task\)/)
+  const invalidations = source.match(
+    /const staleController = abortRef\.current;\s*abortRef\.current = null;\s*staleController\?\.abort\(\);/g,
+  )
+  assert.equal(invalidations?.length, 2, 'replacement and cleanup must invalidate stale controllers before aborting')
+  assert.match(source, /if \(abortRef\.current === controller\) setLoading\(false\)/)
 })
 
 const LIST_PAGES = [
