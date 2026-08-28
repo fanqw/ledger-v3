@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Table, Button, Input, Modal, Form, Space, App as AntdApp, Typography } from 'antd';
+import { Table, Button, Tooltip, Input, Modal, Form, Space, App as AntdApp, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import type { TableProps } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { PlusOutlined } from '@ant-design/icons';
 import { toast } from '../lib/toast';
 import { authFetch } from '../lib/api';
 import ResponsiveDataView from '../components/page/ResponsiveDataView';
@@ -121,16 +121,17 @@ export default function PurchasePlacesPage() {
   };
 const columns: ColumnsType<PurchasePlace> = [
     { title: '进货地（城市）', dataIndex: 'place' },
-    { title: '备注', dataIndex: 'description', render: (v) => v || '-' },
-    { title: '创建时间', dataIndex: 'createdAt', key: 'createdAt', sorter: true, sortOrder: sortDir('createdAt'), render: (v) => formatDate(v as string) },
-    { title: '修改时间', dataIndex: 'updatedAt', key: 'updatedAt', sorter: true, sortOrder: sortDir('updatedAt'), render: (v) => formatDate(v as string) },
+    { title: '备注', dataIndex: 'description', ellipsis: { showTitle: false }, render: (v) => v ? <Tooltip title={v}>{v}</Tooltip> : '-' },
+    { title: '创建时间', dataIndex: 'createdAt', key: 'createdAt', sorter: true, sortOrder: sortDir('createdAt'), width: 110, render: (v) => formatDate(v as string) },
+    { title: '修改时间', dataIndex: 'updatedAt', key: 'updatedAt', sorter: true, sortOrder: sortDir('updatedAt'), width: 110, render: (v) => formatDate(v as string) },
     {
       title: '操作',
       width: 120,
+      fixed: 'right',
       render: (_, row) => (
         <Space size={4}>
-          <Button type="link" size="small" aria-label={`编辑${row.place}`} icon={<EditOutlined />} onClick={() => openEdit(row)} />
-          <Button type="link" size="small" danger aria-label={`删除${row.place}`} icon={<DeleteOutlined />} onClick={() => confirmDelete(row)} />
+          <Button type="link" size="small" onClick={() => openEdit(row)}>编辑</Button>
+          <Button type="link" size="small" danger onClick={() => confirmDelete(row)}>删除</Button>
         </Space>
       ),
     },
@@ -156,6 +157,7 @@ const columns: ColumnsType<PurchasePlace> = [
         columns={columns}
         dataSource={data}
         loading={loading}
+        scroll={{ x: 'max-content' }}
         onChange={handleTableChange}
         pagination={{
           current: pagination.page,

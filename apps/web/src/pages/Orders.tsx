@@ -167,11 +167,12 @@ export default function OrdersPage() {
     { title: '进货地', render: (_, row) => row.market?.city?.place ?? '-' },
     { title: '进货市场', render: (_, row) => row.market?.name ?? '-' },
     { title: '进货金额', align: 'right', key: 'amount', sorter: true, sortOrder: sortDir('amount'), render: (_, row) => formatAmount(row.totalAmount) },
-    { title: '创建时间', dataIndex: 'createdAt', sorter: true, sortOrder: sortDir('createdAt'), render: (v) => formatDate(v as string) },
-    { title: '修改时间', dataIndex: 'updatedAt', sorter: true, sortOrder: sortDir('updatedAt'), render: (v) => formatDate(v as string) },
+    { title: '创建时间', dataIndex: 'createdAt', sorter: true, sortOrder: sortDir('createdAt'), width: 110, render: (v) => formatDate(v as string) },
+    { title: '修改时间', dataIndex: 'updatedAt', sorter: true, sortOrder: sortDir('updatedAt'), width: 110, render: (v) => formatDate(v as string) },
     {
       title: '操作',
       width: 120,
+      fixed: 'right',
       render: (_, row) => (
         <Space size={12}>
           <Button type="link" size="small" onClick={(e) => { e.stopPropagation(); openEdit(row); }}>编辑</Button>
@@ -197,25 +198,29 @@ export default function OrdersPage() {
       <div className="page">
         {/* 搜索：订单名称 / 进货地 / 进货市场 / 备注 */}
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+          <span style={{ fontSize: 13, color: 'var(--muted)' }}>订单名称</span>
           <Input
-            placeholder="订单名称" allowClear style={{ width: 150 }}
+            placeholder="输入订单名称" allowClear style={{ width: 150 }}
             value={filters.name}
             onChange={(e) => setFilters((f) => ({ ...f, name: e.target.value, cityId: '', marketId: '' }))}
           />
+          <span style={{ fontSize: 13, color: 'var(--muted)' }}>进货地</span>
           <Select
-            placeholder="进货地" allowClear style={{ width: 150 }}
+            placeholder="选择进货地" allowClear style={{ width: 150 }}
             value={filters.cityId || undefined}
             options={cities.map((c) => ({ value: c.id, label: c.place }))}
             onChange={(v) => setFilters((f) => ({ ...f, cityId: v || '', marketId: '' }))}
           />
+          <span style={{ fontSize: 13, color: 'var(--muted)' }}>进货市场</span>
           <Select
-            placeholder="进货市场" allowClear style={{ width: 160 }}
+            placeholder="选择进货市场" allowClear style={{ width: 160 }}
             value={filters.marketId || undefined}
             options={searchMarketOptions}
             onChange={(v) => setFilters((f) => ({ ...f, marketId: v || '' }))}
           />
+          <span style={{ fontSize: 13, color: 'var(--muted)' }}>备注</span>
           <Input
-            placeholder="备注" allowClear style={{ width: 150 }}
+            placeholder="输入备注" allowClear style={{ width: 150 }}
             value={filters.description}
             onChange={(e) => setFilters((f) => ({ ...f, description: e.target.value }))}
           />
@@ -230,6 +235,7 @@ export default function OrdersPage() {
         columns={columns}
         dataSource={data}
         loading={loading}
+        scroll={{ x: 'max-content' }}
         onChange={handleTableChange}
         pagination={{
           current: pagination.page,
