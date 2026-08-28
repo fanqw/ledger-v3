@@ -1,7 +1,7 @@
 import { Outlet, useLocation } from 'react-router-dom';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Layout, Grid, Breadcrumb, Drawer } from 'antd';
-import { findBreadcrumb } from './menu';
+import { findTopKey, findBreadcrumb } from './menu';
 import TopBar from './TopBar';
 import SideNav from './SideNav';
 
@@ -13,13 +13,21 @@ export default function AppShell() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   const location = useLocation();
+  const topKey = findTopKey(location.pathname);
+  const [activeTop, setActiveTop] = useState(topKey);
+  useEffect(() => { setActiveTop(topKey); }, [topKey]);
   const breadcrumb = findBreadcrumb(location.pathname);
 
   return (
     <Layout className="app-shell">
-      <TopBar mobile={mobile} onOpenNavigation={() => setMobileNavOpen(true)} />
+      <TopBar
+        mobile={mobile}
+        activeTop={activeTop}
+        onSelectTop={setActiveTop}
+        onOpenNavigation={() => setMobileNavOpen(true)}
+      />
       <Layout style={{ flex: 1, overflow: 'hidden' }}>
-        {!mobile && <SideNav />}
+        {!mobile && <SideNav activeTop={activeTop} />}
         <Content className="app-content">
           {breadcrumb.length > 0 && (
             <Breadcrumb items={breadcrumb.map((b) => ({ title: b }))} style={{ marginBottom: 16 }} />
@@ -35,7 +43,7 @@ export default function AppShell() {
         onClose={() => setMobileNavOpen(false)}
         className="mobile-nav-drawer"
       >
-        <SideNav mobile onNavigate={() => setMobileNavOpen(false)} />
+        <SideNav mobile activeTop={activeTop} onNavigate={() => setMobileNavOpen(false)} />
       </Drawer>
     </Layout>
   );
