@@ -61,7 +61,7 @@ export default function TopBar({
         <span style={{ fontWeight: 'bold', fontSize: 15, color: 'var(--text)' }}>台帐系统</span>
       </div>
 
-      {/* 右侧：主题切换 ｜ 用户区（头像+名称+退出登录图标） */}
+      {/* 右侧：主题切换 │ 用户区（头像+名称）│ 退出登录（独立功能区） */}
       <Space size={8}>
         <Button
           type="text"
@@ -76,14 +76,9 @@ export default function TopBar({
           </Avatar>
           <span style={{ fontSize: 13, color: 'var(--muted)' }}>{user?.username || '用户'}</span>
         </Space>
+        <Divider type="vertical" style={{ height: 18, margin: '0 2px', borderColor: 'var(--line)' }} />
         <Tooltip title="退出登录">
-          <Button
-            type="text"
-            icon={<LogoutOutlined />}
-            onClick={logout}
-            aria-label="退出登录"
-            style={{ color: 'var(--muted)' }}
-          />
+          <Button type="text" icon={<LogoutOutlined />} onClick={logout} aria-label="退出登录" />
         </Tooltip>
       </Space>
     </Header>
