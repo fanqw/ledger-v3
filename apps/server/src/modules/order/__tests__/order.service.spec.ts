@@ -5,7 +5,7 @@ import { orderItemUpdateSchema, orderItemCreateSchema } from '@ledger-v3/shared/
 describe('OrderService', () => {
   const prisma = {
     order: { findMany: jest.fn(), count: jest.fn(), findFirst: jest.fn(), create: jest.fn(), update: jest.fn() },
-    purchasePlace: { findFirst: jest.fn() },
+    market: { findFirst: jest.fn() },
     orderItem: { count: jest.fn(), findFirst: jest.fn(), create: jest.fn(), update: jest.fn() },
     commodity: { findFirst: jest.fn(), create: jest.fn() },
     category: { findFirst: jest.fn(), create: jest.fn() },
@@ -70,7 +70,7 @@ describe('OrderService', () => {
   it('返回含进货地和明细的订单详情', async () => {
     prisma.order.findFirst.mockResolvedValue({
       id: 'order-1',
-      purchasePlace: { id: 'pp-1' },
+      market: { id: 'pp-1' },
       items: [],
     });
     await expect(service.findById('order-1')).resolves.toMatchObject({ id: 'order-1' });
@@ -79,26 +79,26 @@ describe('OrderService', () => {
   it('创建时名称重复抛出 ConflictException', async () => {
     prisma.order.findFirst.mockResolvedValueOnce({ id: 'existing' });
     await expect(
-      service.create({ name: 'Dup', purchasePlaceId: undefined, description: undefined }),
+      service.create({ name: 'Dup', marketId: undefined, description: undefined }),
     ).rejects.toThrow(ConflictException);
   });
 
   it('创建时进货地不存在抛出 UnprocessableEntityException', async () => {
     prisma.order.findFirst.mockResolvedValueOnce(null);
-    prisma.purchasePlace.findFirst.mockResolvedValue(null);
+    prisma.market.findFirst.mockResolvedValue(null);
     await expect(
-      service.create({ name: 'Ok', purchasePlaceId: 'missing-pp', description: undefined }),
+      service.create({ name: 'Ok', marketId: 'missing-pp', description: undefined }),
     ).rejects.toThrow(UnprocessableEntityException);
   });
 
   it('创建成功并 trim 名称', async () => {
     prisma.order.findFirst.mockResolvedValueOnce(null);
-    prisma.purchasePlace.findFirst.mockResolvedValue({ id: 'pp-1' });
+    prisma.market.findFirst.mockResolvedValue({ id: 'pp-1' });
     prisma.order.create.mockResolvedValue({ id: 'order-1' });
-    await service.create({ name: '  Trim Me  ', purchasePlaceId: 'pp-1', description: '  desc  ' });
+    await service.create({ name: '  Trim Me  ', marketId: 'pp-1', description: '  desc  ' });
     expect(prisma.order.create).toHaveBeenCalledWith({
-      data: { name: 'Trim Me', description: 'desc', purchasePlaceId: 'pp-1' },
-      include: { purchasePlace: true },
+      data: { name: 'Trim Me', description: 'desc', marketId: 'pp-1' },
+      include: { market: { include: { city: true } } },
     });
   });
 
@@ -111,36 +111,36 @@ describe('OrderService', () => {
   it('更新成功包含 relation connect', async () => {
     prisma.order.findFirst.mockResolvedValueOnce({ id: 'order-1', items: [] });
     prisma.order.findFirst.mockResolvedValueOnce(null); // 名称唯一性检查
-    prisma.purchasePlace.findFirst.mockResolvedValue({ id: 'pp-2', deletedAt: null }); // connect 前存在性校验
+    prisma.market.findFirst.mockResolvedValue({ id: 'pp-2', deletedAt: null }); // connect 前存在性校验
     prisma.order.update.mockResolvedValue({ id: 'order-1' });
-    await service.update('order-1', { name: 'New', purchasePlaceId: 'pp-2' });
+    await service.update('order-1', { name: 'New', marketId: 'pp-2' });
     expect(prisma.order.update).toHaveBeenCalledWith({
       where: { id: 'order-1' },
-      data: { name: 'New', purchasePlace: { connect: { id: 'pp-2' } } },
-      include: { purchasePlace: true },
+      data: { name: 'New', market: { connect: { id: 'pp-2' } } },
+      include: { market: { include: { city: true } } },
     });
   });
 
-  it('更新时显式清空进货地（purchasePlaceId=null → disconnect）', async () => {
+  it('更新时显式清空市场（marketId=null → disconnect）', async () => {
     prisma.order.findFirst.mockResolvedValueOnce({ id: 'order-1', items: [] });
     prisma.order.findFirst.mockResolvedValueOnce(null);
     prisma.order.update.mockResolvedValue({ id: 'order-1' });
-    await service.update('order-1', { name: 'New', purchasePlaceId: null });
+    await service.update('order-1', { name: 'New', marketId: null });
     expect(prisma.order.update).toHaveBeenCalledWith({
       where: { id: 'order-1' },
-      data: { name: 'New', purchasePlace: { disconnect: true } },
-      include: { purchasePlace: true },
+      data: { name: 'New', market: { disconnect: true } },
+      include: { market: { include: { city: true } } },
     });
     // disconnect 分支不应触发存在性校验
-    expect(prisma.purchasePlace.findFirst).not.toHaveBeenCalled();
+    expect(prisma.market.findFirst).not.toHaveBeenCalled();
   });
 
   it('更新时进货地不存在抛出 UnprocessableEntityException', async () => {
     prisma.order.findFirst.mockResolvedValueOnce({ id: 'order-1', items: [] });
     prisma.order.findFirst.mockResolvedValueOnce(null);
-    prisma.purchasePlace.findFirst.mockResolvedValue(null);
+    prisma.market.findFirst.mockResolvedValue(null);
     await expect(
-      service.update('order-1', { name: 'New', purchasePlaceId: 'missing-pp' }),
+      service.update('order-1', { name: 'New', marketId: 'missing-pp' }),
     ).rejects.toThrow(UnprocessableEntityException);
   });
 
@@ -152,7 +152,7 @@ describe('OrderService', () => {
     expect(prisma.order.update).toHaveBeenCalledWith({
       where: { id: 'order-1' },
       data: { name: 'New' },
-      include: { purchasePlace: true },
+      include: { market: { include: { city: true } } },
     });
   });
 

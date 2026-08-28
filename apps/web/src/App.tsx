@@ -12,6 +12,8 @@ const CategoriesPage = lazy(() => import('./pages/Categories'));
 const UnitsPage = lazy(() => import('./pages/Units'));
 const CommoditiesPage = lazy(() => import('./pages/Commodities'));
 const PurchasePlacesPage = lazy(() => import('./pages/PurchasePlaces'));
+const MarketsPage = lazy(() => import('./pages/Markets'));
+const SupermarketsPage = lazy(() => import('./pages/Supermarkets'));
 const OrdersPage = lazy(() => import('./pages/Orders'));
 const OrderDetailPage = lazy(() => import('./pages/OrderDetail'));
 const AnalyticsPage = lazy(() => import('./pages/Analytics'));
@@ -83,6 +85,8 @@ export default function App() {
               <Route path="units" element={<UnitsPage />} />
               <Route path="commodities" element={<CommoditiesPage />} />
               <Route path="purchase-places" element={<PurchasePlacesPage />} />
+              <Route path="markets" element={<MarketsPage />} />
+              <Route path="supermarkets" element={<SupermarketsPage />} />
               <Route path="*" element={<Navigate to="/analytics" replace />} />
             </Route>
             </Routes>

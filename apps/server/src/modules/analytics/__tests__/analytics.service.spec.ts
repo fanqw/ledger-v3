@@ -1,13 +1,13 @@
 import { AnalyticsService } from '../analytics.service';
 
-// 构造一个 order mock（含 items + purchasePlace）
+// 构造一个 order mock（含 items + market）
 function makeOrder(overrides: any) {
   const base = {
     id: 'order-1',
     name: '订单1',
     createdAt: '2026-07-15T10:00:00.000Z',
-    purchasePlaceId: null,
-    purchasePlace: null,
+    marketId: null,
+    market: null,
     items: [],
   };
   return { ...base, ...overrides };
@@ -54,7 +54,7 @@ describe('AnalyticsService', () => {
       expect(result.topCommodities.byAmount).toEqual([]);
       expect(result.topCommodities.byQuantity).toEqual([]);
       expect(result.categoryShare).toEqual([]);
-      expect(result.purchasePlaceShare).toEqual([]);
+      expect(result.marketShare).toEqual([]);
       expect(result.orderSizeDistribution).toEqual([
         { bucket: '0-1k', count: 0 },
         { bucket: '1k-5k', count: 0 },
@@ -238,25 +238,25 @@ describe('AnalyticsService', () => {
       expect(result.categoryShare[1]).toMatchObject({ name: '分类2', amount: 10, percentage: 25 });
     });
 
-    it('进货地占比含金额/占比/订单数，无进货地归未指定', async () => {
+    it('市场占比含金额/占比/订单数，无市场归未指定', async () => {
       const orders = [
         makeOrder({
           id: 'o1', createdAt: '2026-07-01T08:00:00Z',
-          purchasePlaceId: 'pp1',
-          purchasePlace: { id: 'pp1', place: '洛阳', marketName: '洪锦' },
+          marketId: 'm1',
+          market: { id: 'm1', name: '洪锦', city: { id: 'c1', place: '洛阳' } },
           items: [{ ...makeItem({}), lineTotal: { toNumber: () => 30 } }],
         }),
         makeOrder({
           id: 'o2', createdAt: '2026-07-02T08:00:00Z',
-          purchasePlaceId: null, purchasePlace: null,
+          marketId: null, market: null,
           items: [{ ...makeItem({}), lineTotal: { toNumber: () => 10 } }],
         }),
       ];
       prisma.order.findMany.mockResolvedValue(orders);
       const result = await service.getWorkbench('2026-07-01', '2026-07-31');
-      expect(result.purchasePlaceShare).toHaveLength(2);
-      expect(result.purchasePlaceShare[0]).toMatchObject({ purchasePlaceId: 'pp1', name: '洛阳 - 洪锦', amount: 30, orderCount: 1 });
-      expect(result.purchasePlaceShare[1]).toMatchObject({ purchasePlaceId: null, name: '未指定', amount: 10 });
+      expect(result.marketShare).toHaveLength(2);
+      expect(result.marketShare[0]).toMatchObject({ marketId: 'm1', name: '洪锦 (洛阳)', amount: 30, orderCount: 1 });
+      expect(result.marketShare[1]).toMatchObject({ marketId: null, name: '未指定', amount: 10 });
     });
   });
 

@@ -6,21 +6,21 @@ import { toast } from '../lib/toast';
 import { authFetch } from '../lib/api';
 import ResponsiveDataView from '../components/page/ResponsiveDataView';
 
-interface PurchasePlace {
+interface Supermarket {
   id: string;
-  place: string;
+  name: string;
   description: string | null;
 }
 
-export default function PurchasePlacesPage() {
+export default function SupermarketsPage() {
   const { modal } = AntdApp.useApp();
-  const [form] = Form.useForm<{ place: string; description?: string }>();
-  const [data, setData] = useState<PurchasePlace[]>([]);
+  const [form] = Form.useForm<{ name: string; description?: string }>();
+  const [data, setData] = useState<Supermarket[]>([]);
   const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState({ page: 1, pageSize: 10, total: 0 });
   const [keyword, setKeyword] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editing, setEditing] = useState<PurchasePlace | null>(null);
+  const [editing, setEditing] = useState<Supermarket | null>(null);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
@@ -29,10 +29,10 @@ export default function PurchasePlacesPage() {
     try {
       const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
       if (kw) params.set('keyword', kw);
-      const res = await authFetch(`/api/purchase-places?${params}`);
+      const res = await authFetch(`/api/supermarkets?${params}`);
       const json = await res.json();
       if (json.success) { setData(json.data.items); setPagination(json.data.meta); }
-    } catch { toast.error('加载进货地失败'); }
+    } catch { toast.error('加载超市失败'); }
     finally { setLoading(false); }
   }, []);
 
@@ -43,26 +43,26 @@ export default function PurchasePlacesPage() {
   }, [keyword, pagination.page, pagination.pageSize, fetchData]);
 
   const openCreate = () => { setEditing(null); form.resetFields(); setDialogOpen(true); };
-  const openEdit = (row: PurchasePlace) => {
+  const openEdit = (row: Supermarket) => {
     setEditing(row);
-    form.setFieldsValue({ place: row.place, description: row.description || '' });
+    form.setFieldsValue({ name: row.name, description: row.description || '' });
     setDialogOpen(true);
   };
 
   const handleSave = async () => {
     if (saving) return;
-    let values: { place: string; description?: string };
+    let values: { name: string; description?: string };
     try {
       values = await form.validateFields();
     } catch { return; }
     setSaving(true);
     try {
-      const url = editing ? `/api/purchase-places/${editing.id}` : '/api/purchase-places';
+      const url = editing ? `/api/supermarkets/${editing.id}` : '/api/supermarkets';
       const method = editing ? 'PATCH' : 'POST';
       const res = await authFetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ place: values.place.trim(), description: values.description?.trim() || undefined }),
+        body: JSON.stringify({ name: values.name.trim(), description: values.description?.trim() || undefined }),
       });
       const json = await res.json();
       if (json.success) {
@@ -80,7 +80,7 @@ export default function PurchasePlacesPage() {
     if (deleting) return;
     setDeleting(true);
     try {
-      const res = await authFetch(`/api/purchase-places/${id}`, { method: 'DELETE' });
+      const res = await authFetch(`/api/supermarkets/${id}`, { method: 'DELETE' });
       const json = await res.json();
       if (json.success) {
         toast.success('删除成功');
@@ -92,10 +92,9 @@ export default function PurchasePlacesPage() {
     finally { setDeleting(false); }
   };
 
-  const confirmDelete = (row: PurchasePlace) => {
+  const confirmDelete = (row: Supermarket) => {
     modal.confirm({
-      title: `确定删除进货地 "${row.place}"？`,
-      content: '如有市场关联将无法删除。',
+      title: `确定删除超市 "${row.name}"？`,
       okText: '删除',
       okButtonProps: { danger: true },
       cancelText: '取消',
@@ -103,16 +102,16 @@ export default function PurchasePlacesPage() {
     });
   };
 
-  const columns: ColumnsType<PurchasePlace> = [
-    { title: '进货地（城市）', dataIndex: 'place' },
+  const columns: ColumnsType<Supermarket> = [
+    { title: '超市名称', dataIndex: 'name' },
     { title: '备注', dataIndex: 'description', render: (v) => v || '-' },
     {
       title: '操作',
       width: 120,
       render: (_, row) => (
         <Space size={4}>
-          <Button type="link" size="small" aria-label={`编辑${row.place}`} icon={<EditOutlined />} onClick={() => openEdit(row)} />
-          <Button type="link" size="small" danger aria-label={`删除${row.place}`} icon={<DeleteOutlined />} onClick={() => confirmDelete(row)} />
+          <Button type="link" size="small" aria-label={`编辑${row.name}`} icon={<EditOutlined />} onClick={() => openEdit(row)} />
+          <Button type="link" size="small" danger aria-label={`删除${row.name}`} icon={<DeleteOutlined />} onClick={() => confirmDelete(row)} />
         </Space>
       ),
     },
@@ -120,7 +119,7 @@ export default function PurchasePlacesPage() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <Typography.Title level={3} style={{ margin: 0 }}>进货地</Typography.Title>
+      <Typography.Title level={3} style={{ margin: 0 }}>超市管理</Typography.Title>
       <div className="page">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
           <Input.Search
@@ -130,10 +129,10 @@ export default function PurchasePlacesPage() {
             onChange={(e) => setKeyword(e.target.value)}
             onSearch={(v) => fetchData(1, v, pagination.pageSize)}
           />
-          <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>新增进货地</Button>
+          <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>新增超市</Button>
         </div>
         <div style={{ fontSize: 13, color: 'var(--muted)' }}>共 {pagination.total} 项</div>
-        <ResponsiveDataView items={data} rowKey={(row) => row.id} desktop={<Table<PurchasePlace>
+        <ResponsiveDataView items={data} rowKey={(row) => row.id} desktop={<Table<Supermarket>
         rowKey="id"
         columns={columns}
         dataSource={data}
@@ -145,11 +144,11 @@ export default function PurchasePlacesPage() {
           showTotal: (t) => `共 ${t} 条`,
           onChange: (page, pageSize) => setPagination((p) => ({ ...p, page, pageSize })),
         }}
-      />} renderMobileItem={(row) => <button className="mobile-record" onClick={() => openEdit(row)}><span className="mobile-record__title">{row.place}</span><span className="mobile-record__meta"><span>{row.description || '无备注'}</span><span>编辑 ›</span></span></button>} />
+      />} renderMobileItem={(row) => <button className="mobile-record" onClick={() => openEdit(row)}><span className="mobile-record__title">{row.name}</span><span className="mobile-record__meta"><span>{row.description || '无备注'}</span><span>编辑 ›</span></span></button>} />
       </div>
 
       <Modal
-        title={editing ? '编辑进货地' : '新增进货地'}
+        title={editing ? '编辑超市' : '新增超市'}
         open={dialogOpen}
         onOk={handleSave}
         onCancel={() => setDialogOpen(false)}
@@ -158,8 +157,8 @@ export default function PurchasePlacesPage() {
         cancelText="取消"
       >
         <Form form={form} layout="vertical">
-          <Form.Item name="place" label="进货地（城市）" rules={[{ required: true, message: '请输入进货地' }]}>
-            <Input placeholder="输入进货地（如晋城）" />
+          <Form.Item name="name" label="超市名称" rules={[{ required: true, message: '请输入超市名称' }]}>
+            <Input placeholder="输入超市名称（如端氏）" />
           </Form.Item>
           <Form.Item name="description" label="备注">
             <Input placeholder="输入备注（可选）" />

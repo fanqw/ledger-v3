@@ -24,13 +24,18 @@ import {
   pageQuery, pageSizeQuery, keywordQuery, idParam, okBody, pagedOkBody, okNullBody, errorBody,
 } from '../../common/swagger-schemas';
 
-/** Swagger 文档：进货地简要对象（订单内嵌用） */
-const orderPurchasePlaceSchema = {
+/** Swagger 文档：市场简要对象（订单内嵌用，含所属城市） */
+const orderMarketSchema = {
   type: 'object',
   properties: {
-    id: { type: 'string', description: '进货地 ID', example: '507f1f77bcf86cd799439011' },
-    place: { type: 'string', description: '进货地点', example: '中关村' },
-    marketName: { type: 'string', description: '市场名称', example: '中发电子批发市场' },
+    id: { type: 'string', description: '市场 ID', example: '507f1f77bcf86cd799439011' },
+    name: { type: 'string', description: '市场名称', example: '长治市场' },
+    city: {
+      type: 'object',
+      nullable: true,
+      description: '所属城市',
+      properties: { id: { type: 'string' }, place: { type: 'string', example: '晋城' } },
+    },
   },
 };
 
@@ -63,14 +68,14 @@ const orderItemSchema = {
   },
 };
 
-/** Swagger 文档：订单对象（列表用，不含明细，含进货地） */
+/** Swagger 文档：订单对象（列表用，不含明细，含市场） */
 const orderListSchema = {
   type: 'object',
   properties: {
     id: { type: 'string', description: '订单 ID', example: '507f1f77bcf86cd799439011' },
     name: { type: 'string', description: '订单名称', example: '20260827-01' },
     description: { type: 'string', nullable: true, description: '备注说明', example: '临期促销订单' },
-    purchasePlace: { type: 'object', nullable: true, description: '进货地（可空）', properties: orderPurchasePlaceSchema.properties },
+    market: { type: 'object', nullable: true, description: '关联市场（可空）', properties: orderMarketSchema.properties },
     createdAt: { type: 'string', description: '创建时间（ISO）', example: '2026-08-27T08:00:00.000Z' },
     updatedAt: { type: 'string', description: '更新时间（ISO）', example: '2026-08-27T08:00:00.000Z' },
     deletedAt: { type: 'string', nullable: true, description: '软删除时间（未删除为 null）', example: null },
@@ -93,7 +98,7 @@ const orderCreateBodySchema = {
   properties: {
     name: { type: 'string', description: '订单名称（必填，自动去除首尾空格）', example: '20260827-01', maxLength: 100 },
     description: { type: 'string', description: '备注说明（可选）', example: '临期促销订单', maxLength: 500 },
-    purchasePlaceId: { type: 'string', nullable: true, description: '进货地 ID（可选，传 null 表示无进货地）', example: '507f1f77bcf86cd799439011' },
+    marketId: { type: 'string', nullable: true, description: '市场 ID（可选，传 null 表示无市场）', example: '507f1f77bcf86cd799439011' },
   },
 };
 
@@ -180,14 +185,14 @@ export class OrderController {
 
   /**
    * GET /api/orders?page=1&pageSize=10&keyword=客户 —— 订单分页列表
-   * keyword 搜 订单名/备注/进货地(place/marketName)
-   * 列表只带 purchasePlace 联表（不含 items，列表页不需要明细，避免大响应）
+   * keyword 搜 订单名/备注/市场(市场名/所属城市)
+   * 列表只带 market 联表（不含 items，列表页不需要明细，避免大响应）
    */
   @Get()
   @ApiOperation({ summary: '获取订单分页列表' })
   @ApiQuery(pageQuery)
   @ApiQuery(pageSizeQuery)
-  @ApiQuery(keywordQuery('搜索关键词：匹配订单名/备注/进货地（地点或市场名）', '20260827'))
+  @ApiQuery(keywordQuery('搜索关键词：匹配订单名/备注/市场（市场名或所属城市）', '20260827'))
   @ApiOkResponse({ description: '订单分页列表（不含明细）', schema: pagedOkBody(orderListSchema, '订单对象数组') })
   async findAll(@Query(new ZodValidationPipe(paginationSchema)) query: PaginationInput) {
     const data = await this.service.findAll(query.page, query.pageSize, query.keyword);
@@ -213,17 +218,17 @@ export class OrderController {
 
   /**
    * POST /api/orders —— 创建订单
-   * body：{ name, description?, purchasePlaceId? }
+   * body：{ name, description?, marketId? }
    * - 名称重复 → 409 ORDER_EXISTS
-   * - 进货地不存在/已删除 → 422 VALIDATION_ERROR
-   * - purchasePlaceId 可选（订单可以没有进货地）
+   * - 市场不存在/已删除 → 422 VALIDATION_ERROR
+   * - marketId 可选（订单可以没有市场）
    */
   @Post()
   @ApiOperation({ summary: '创建订单' })
   @ApiBody({ description: '订单信息', schema: orderCreateBodySchema })
   @ApiOkResponse({ description: '创建成功，返回新订单', schema: okBody(orderDetailSchema) })
   @ApiResponse({ status: 409, description: '订单名称已存在', schema: errorBody('ORDER_EXISTS', '订单名称已存在') })
-  @ApiResponse({ status: 422, description: '进货地不存在，或参数校验失败', schema: errorBody('VALIDATION_ERROR', '请求参数不合法') })
+  @ApiResponse({ status: 422, description: '市场不存在，或参数校验失败', schema: errorBody('VALIDATION_ERROR', '请求参数不合法') })
   async create(@Body(new ZodValidationPipe(orderCreateSchema)) body: OrderCreateInput) {
     const data = await this.service.create(body);
     return { success: true, data };
@@ -231,12 +236,12 @@ export class OrderController {
 
   /**
    * PATCH /api/orders/:id —— 更新订单（部分更新）
-   * 学习点：purchasePlaceId 传 null = 显式清空进货地（service 用 disconnect 断开关系）
+   * 学习点：marketId 传 null = 显式清空市场（service 用 disconnect 断开关系）
    */
   @Patch(':id')
   @ApiOperation({ summary: '更新订单' })
   @ApiParam(idParam('id', '订单 ID（24 位 hex）'))
-  @ApiBody({ description: '要更新的字段（purchasePlaceId 传 null 可清空进货地）', schema: orderUpdateBodySchema })
+  @ApiBody({ description: '要更新的字段（marketId 传 null 可清空市场）', schema: orderUpdateBodySchema })
   @ApiOkResponse({ description: '更新成功，返回更新后订单', schema: okBody(orderDetailSchema) })
   @ApiResponse({ status: 404, description: '订单不存在', schema: errorBody('NOT_FOUND', '资源不存在') })
   @ApiResponse({ status: 409, description: '订单名称已存在', schema: errorBody('ORDER_EXISTS', '订单名称已存在') })

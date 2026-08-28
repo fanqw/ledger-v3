@@ -8,20 +8,20 @@ import { authFetch } from '../lib/api';
 import { fetchAllPages } from '../lib/paged-request';
 import ResponsiveDataView from '../components/page/ResponsiveDataView';
 
-interface PurchasePlace { id: string; place: string; marketName: string; }
+interface Market { id: string; name: string; city?: { id: string; place: string } | null; }
 interface Order {
   id: string;
   name: string;
   description: string | null;
-  purchasePlaceId: string | null;
-  purchasePlace: PurchasePlace | null;
+  marketId: string | null;
+  market: Market | null;
   createdAt: string;
 }
 
 export default function OrdersPage() {
   const navigate = useNavigate();
   const { modal } = AntdApp.useApp();
-  const [form] = Form.useForm<{ name: string; description?: string; purchasePlaceId?: string }>();
+  const [form] = Form.useForm<{ name: string; description?: string; marketId?: string }>();
   const [data, setData] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState({ page: 1, pageSize: 10, total: 0 });
@@ -30,7 +30,7 @@ export default function OrdersPage() {
   const [editing, setEditing] = useState<Order | null>(null);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [purchasePlaces, setPurchasePlaces] = useState<PurchasePlace[]>([]);
+  const [markets, setMarkets] = useState<Market[]>([]);
 
   const fetchData = useCallback(async (page: number, kw: string, pageSize: number) => {
     setLoading(true);
@@ -51,19 +51,19 @@ export default function OrdersPage() {
     return () => clearTimeout(task);
   }, [keyword, pagination.page, pagination.pageSize, fetchData]);
 
-  const loadPurchasePlaces = async () => {
+  const loadMarkets = async () => {
     try {
-      const items = await fetchAllPages<PurchasePlace>(
-        (page, pageSize) => authFetch(`/api/purchase-places?page=${page}&pageSize=${pageSize}`), 100,
+      const items = await fetchAllPages<Market>(
+        (page, pageSize) => authFetch(`/api/markets?page=${page}&pageSize=${pageSize}`), 100,
       );
-      setPurchasePlaces(items);
-    } catch { toast.error('进货地加载失败'); }
+      setMarkets(items);
+    } catch { toast.error('市场加载失败'); }
   };
 
   const openCreate = async () => {
     setEditing(null);
     form.resetFields();
-    loadPurchasePlaces();
+    loadMarkets();
     try {
       const res = await authFetch('/api/orders/next-name');
       const json = await res.json();
@@ -74,18 +74,18 @@ export default function OrdersPage() {
 
   const openEdit = (row: Order) => {
     setEditing(row);
-    loadPurchasePlaces();
+    loadMarkets();
     form.setFieldsValue({
       name: row.name,
       description: row.description || '',
-      purchasePlaceId: row.purchasePlaceId || undefined,
+      marketId: row.marketId || undefined,
     });
     setDialogOpen(true);
   };
 
   const handleSave = async () => {
     if (saving) return;
-    let values: { name: string; description?: string; purchasePlaceId?: string };
+    let values: { name: string; description?: string; marketId?: string };
     try {
       values = await form.validateFields();
     } catch { return; }
@@ -96,8 +96,8 @@ export default function OrdersPage() {
       const body: Record<string, string | null | undefined> = {
         name: values.name.trim(),
         description: values.description?.trim() || undefined,
-        // null 表示清空进货地；undefined 表示不修改
-        purchasePlaceId: values.purchasePlaceId || null,
+        // null 表示清空市场；undefined 表示不修改
+        marketId: values.marketId || null,
       };
       const res = await authFetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
       const json = await res.json();
@@ -134,7 +134,7 @@ export default function OrdersPage() {
 
   const columns: ColumnsType<Order> = [
     { title: '订单名称', dataIndex: 'name' },
-    { title: '进货地', render: (_, row) => row.purchasePlace ? `${row.purchasePlace.place} - ${row.purchasePlace.marketName}` : '-' },
+    { title: '进货市场', render: (_, row) => row.market ? `${row.market.name} (${row.market.city?.place ?? ''})` : '-' },
     { title: '备注', dataIndex: 'description', render: (v) => v || '-' },
     { title: '创建时间', dataIndex: 'createdAt', render: (v) => formatDate(v as string) },
     {
@@ -156,7 +156,7 @@ export default function OrdersPage() {
       <div className="page">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
           <Input.Search
-            placeholder="搜索订单名称/备注/进货地..."
+            placeholder="搜索订单名称/备注/市场..."
             style={{ width: 320 }}
             allowClear
             onChange={(e) => setKeyword(e.target.value)}
@@ -177,7 +177,7 @@ export default function OrdersPage() {
           showTotal: (t) => `共 ${t} 条`,
           onChange: (page, pageSize) => setPagination((p) => ({ ...p, page, pageSize })),
         }}
-      />} renderMobileItem={(row) => <button className="mobile-record" onClick={() => navigate(`/orders/${row.id}`)}><span className="mobile-record__title">{row.name}</span><span className="mobile-record__meta"><span>{row.purchasePlace ? `${row.purchasePlace.place} - ${row.purchasePlace.marketName}` : '未设置进货地'}</span><span>{formatDate(row.createdAt)} ›</span></span></button>} />
+      />} renderMobileItem={(row) => <button className="mobile-record" onClick={() => navigate(`/orders/${row.id}`)}><span className="mobile-record__title">{row.name}</span><span className="mobile-record__meta"><span>{row.market ? `${row.market.name} (${row.market.city?.place ?? ''})` : '未设置市场'}</span><span>{formatDate(row.createdAt)} ›</span></span></button>} />
       </div>
 
       <Modal
@@ -193,11 +193,11 @@ export default function OrdersPage() {
           <Form.Item name="name" label="订单名称" rules={[{ required: true, message: '请输入订单名称' }]}>
             <Input placeholder="输入订单名称" />
           </Form.Item>
-          <Form.Item name="purchasePlaceId" label="进货地">
+          <Form.Item name="marketId" label="进货市场">
             <Select
-              placeholder="选择进货地（可选）"
+              placeholder="选择进货市场（可选）"
               allowClear
-              options={purchasePlaces.map((pp) => ({ value: pp.id, label: `${pp.place} - ${pp.marketName}` }))}
+              options={markets.map((m) => ({ value: m.id, label: m.city ? `${m.name} (${m.city.place})` : m.name }))}
             />
           </Form.Item>
           <Form.Item name="description" label="备注">

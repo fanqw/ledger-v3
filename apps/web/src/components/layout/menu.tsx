@@ -6,6 +6,8 @@ import {
   AppstoreOutlined,
   ShoppingCartOutlined,
   EnvironmentOutlined,
+  ShopOutlined,
+  HomeOutlined,
 } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
 import type { ReactNode } from 'react';
@@ -36,7 +38,16 @@ export const MENU_ITEMS: MenuDataItem[] = [
       { key: '/categories', path: '/categories', name: '商品分类', icon: <TagsOutlined /> },
       { key: '/units', path: '/units', name: '商品单位', icon: <AppstoreOutlined /> },
       { key: '/commodities', path: '/commodities', name: '商品信息', icon: <ShoppingCartOutlined /> },
+    ],
+  },
+  {
+    key: 'purchasing',
+    name: '进货管理',
+    icon: <EnvironmentOutlined />,
+    children: [
       { key: '/purchase-places', path: '/purchase-places', name: '进货地', icon: <EnvironmentOutlined /> },
+      { key: '/markets', path: '/markets', name: '市场管理', icon: <ShopOutlined /> },
+      { key: '/supermarkets', path: '/supermarkets', name: '超市管理', icon: <HomeOutlined /> },
     ],
   },
 ];

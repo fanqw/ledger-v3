@@ -37,14 +37,24 @@ export const commoditySchema = z.object({
 
 export const purchasePlaceSchema = z.object({
   place: z.string().trim().min(1, '进货地不能为空').max(100, '进货地长度不能超过100'),
-  marketName: z.string().trim().min(1, '市场名称不能为空').max(100, '市场名称长度不能超过100'),
+  description: z.string().trim().max(500, '描述长度不能超过500').optional(),
+});
+
+export const marketSchema = z.object({
+  name: z.string().trim().min(1, '市场名称不能为空').max(100, '市场名称长度不能超过100'),
+  cityId: idSchema,
+  description: z.string().trim().max(500, '描述长度不能超过500').optional(),
+});
+
+export const supermarketSchema = z.object({
+  name: z.string().trim().min(1, '超市名称不能为空').max(100, '超市名称长度不能超过100'),
   description: z.string().trim().max(500, '描述长度不能超过500').optional(),
 });
 
 export const orderCreateSchema = z.object({
   name: z.string().trim().min(1, '订单名称不能为空').max(100, '名称长度不能超过100'),
-  // null 表示「清空进货地」（update 时），与「不修改」的 undefined 区分
-  purchasePlaceId: z.union([idSchema, z.null()]).optional(),
+  // null 表示「清空市场」（update 时），与「不修改」的 undefined 区分
+  marketId: z.union([idSchema, z.null()]).optional(),
   description: z.string().trim().max(500, '描述长度不能超过500').optional(),
 });
 
@@ -127,7 +137,7 @@ export const analyticsQuerySchema = z
 // 向后兼容别名
 export const orderSchema = z.object({
   name: z.string().trim().min(1, '订单名称不能为空'),
-  purchasePlaceId: z.string().optional(),
+  marketId: z.string().optional(),
   description: z.string().trim().optional(),
 });
 
@@ -151,6 +161,8 @@ export type CategoryInput = z.infer<typeof categorySchema>;
 export type UnitInput = z.infer<typeof unitSchema>;
 export type CommodityInput = z.infer<typeof commoditySchema>;
 export type PurchasePlaceInput = z.infer<typeof purchasePlaceSchema>;
+export type MarketInput = z.infer<typeof marketSchema>;
+export type SupermarketInput = z.infer<typeof supermarketSchema>;
 export type OrderCreateInput = z.infer<typeof orderCreateSchema>;
 export type OrderUpdateInput = z.infer<typeof orderUpdateSchema>;
 export type OrderItemCreateInput = z.infer<typeof orderItemCreateSchema>;
@@ -205,8 +217,8 @@ export interface AnalyticsCategoryShare {
   orderCount: number;
 }
 
-export interface AnalyticsPurchasePlaceShare {
-  purchasePlaceId: string | null; // null 表示"未指定"
+export interface AnalyticsMarketShare {
+  marketId: string | null; // null 表示"未指定"
   name: string;
   amount: number;
   percentage: number;
@@ -223,7 +235,7 @@ export interface AnalyticsWorkbenchResponse {
   dailyTrend: AnalyticsDailyTrendItem[];
   topCommodities: AnalyticsTopCommodities;
   categoryShare: AnalyticsCategoryShare[];
-  purchasePlaceShare: AnalyticsPurchasePlaceShare[];
+  marketShare: AnalyticsMarketShare[];
   orderSizeDistribution: AnalyticsOrderSizeBucket[];
 }
 
