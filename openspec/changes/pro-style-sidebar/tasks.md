@@ -17,7 +17,7 @@
 - [x] 3.1 为默认展开、220/64px 宽度、localStorage 持久化和边界触发器编写失败契约
 - [x] 3.2 实现桌面折叠状态读取、切换和持久化
 - [x] 3.3 禁用 Sider 默认 trigger，并实现带左右箭头和无障碍名称的圆形边界按钮
-- [ ] 3.4 添加亮色、暗色、hover、focus 和 reduced-motion 样式
+- [x] 3.4 添加亮色、暗色、hover、focus 和 reduced-motion 样式
 
 ## 4. 响应式与浏览器验收
 

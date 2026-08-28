@@ -62,6 +62,16 @@ test('desktop sidebar persists pro-style collapse state', () => {
   assert.match(side, /findParentMenuKey/);
 });
 
+test('sidebar trigger matches the reference boundary treatment', () => {
+  const css = read('src/index.css');
+  assert.match(css, /\.app-sider\s*\{[^}]*position:\s*relative/s);
+  assert.match(css, /\.app-sider \.ant-menu-item-selected\s*\{[^}]*background:/s);
+  assert.match(css, /\.sidebar-collapse-trigger\s*\{[^}]*right:\s*-16px[^}]*border-radius:\s*50%/s);
+  assert.match(css, /\.sidebar-collapse-trigger:hover/);
+  assert.match(css, /\.sidebar-collapse-trigger:focus-visible/);
+  assert.match(css, /\[data-theme='dark'\] \.sidebar-collapse-trigger/);
+});
+
 test('tablet and phone breakpoints prioritize usable workspace width', () => {
   const shell = read('src/components/layout/AppShell.tsx');
   const css = read('src/index.css');
