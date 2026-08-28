@@ -1,13 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Table, Button, Input, Modal, Form, Select, Space, App as AntdApp } from 'antd';
+import { Table, Button, Input, Modal, Form, Select, Space, App as AntdApp, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined } from '@ant-design/icons';
 import { toast } from '../lib/toast';
 import { authFetch } from '../lib/api';
 import { fetchAllPages } from '../lib/paged-request';
-import PageHeader from '../components/page/PageHeader';
-import PageToolbar from '../components/page/PageToolbar';
 import ResponsiveDataView from '../components/page/ResponsiveDataView';
 
 interface PurchasePlace { id: string; place: string; marketName: string; }
@@ -153,19 +151,21 @@ export default function OrdersPage() {
   ];
 
   return (
-    <div className="page">
-      <PageHeader title="订单列表" description="查看、创建和维护全部采购订单" actions={<Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>新增订单</Button>} />
-      <PageToolbar>
-        <Input.Search
-          placeholder="搜索订单名称/备注/进货地..."
-          style={{ width: 320 }}
-          allowClear
-          onChange={(e) => setKeyword(e.target.value)}
-          onSearch={(v) => fetchData(1, v)}
-        />
-      </PageToolbar>
-
-      <ResponsiveDataView items={data} rowKey={(row) => row.id} desktop={<Table<Order>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <Typography.Title level={3} style={{ margin: 0 }}>订单列表</Typography.Title>
+      <div className="page">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+          <Input.Search
+            placeholder="搜索订单名称/备注/进货地..."
+            style={{ width: 320 }}
+            allowClear
+            onChange={(e) => setKeyword(e.target.value)}
+            onSearch={(v) => fetchData(1, v)}
+          />
+          <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>新增订单</Button>
+        </div>
+        <div style={{ fontSize: 13, color: 'var(--muted)' }}>共 {pagination.total} 项</div>
+        <ResponsiveDataView items={data} rowKey={(row) => row.id} desktop={<Table<Order>
         rowKey="id"
         columns={columns}
         dataSource={data}
@@ -178,6 +178,7 @@ export default function OrdersPage() {
           onChange: (page) => { setPagination((p) => ({ ...p, page })); fetchData(page, keyword); },
         }}
       />} renderMobileItem={(row) => <button className="mobile-record" onClick={() => navigate(`/orders/${row.id}`)}><span className="mobile-record__title">{row.name}</span><span className="mobile-record__meta"><span>{row.purchasePlace ? `${row.purchasePlace.place} - ${row.purchasePlace.marketName}` : '未设置进货地'}</span><span>{formatDate(row.createdAt)} ›</span></span></button>} />
+      </div>
 
       <Modal
         title={editing ? '编辑订单' : '新增订单'}

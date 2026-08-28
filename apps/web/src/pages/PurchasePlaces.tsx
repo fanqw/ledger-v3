@@ -1,11 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Table, Button, Input, Modal, Form, Space, App as AntdApp } from 'antd';
+import { Table, Button, Input, Modal, Form, Space, App as AntdApp, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { toast } from '../lib/toast';
 import { authFetch } from '../lib/api';
-import PageHeader from '../components/page/PageHeader';
-import PageToolbar from '../components/page/PageToolbar';
 import ResponsiveDataView from '../components/page/ResponsiveDataView';
 
 interface PurchasePlace {
@@ -123,19 +121,21 @@ export default function PurchasePlacesPage() {
   ];
 
   return (
-    <div className="page">
-      <PageHeader title="进货地" description="维护常用采购地点与市场" actions={<Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>新增进货地</Button>} />
-      <PageToolbar>
-        <Input.Search
-          placeholder="搜索..."
-          style={{ width: 320 }}
-          allowClear
-          onChange={(e) => setKeyword(e.target.value)}
-          onSearch={(v) => fetchData(1, v)}
-        />
-      </PageToolbar>
-
-      <ResponsiveDataView items={data} rowKey={(row) => row.id} desktop={<Table<PurchasePlace>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <Typography.Title level={3} style={{ margin: 0 }}>进货地</Typography.Title>
+      <div className="page">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+          <Input.Search
+            placeholder="搜索..."
+            style={{ width: 320 }}
+            allowClear
+            onChange={(e) => setKeyword(e.target.value)}
+            onSearch={(v) => fetchData(1, v)}
+          />
+          <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>新增进货地</Button>
+        </div>
+        <div style={{ fontSize: 13, color: 'var(--muted)' }}>共 {pagination.total} 项</div>
+        <ResponsiveDataView items={data} rowKey={(row) => row.id} desktop={<Table<PurchasePlace>
         rowKey="id"
         columns={columns}
         dataSource={data}
@@ -148,6 +148,7 @@ export default function PurchasePlacesPage() {
           onChange: (page) => { setPagination((p) => ({ ...p, page })); fetchData(page, keyword); },
         }}
       />} renderMobileItem={(row) => <button className="mobile-record" onClick={() => openEdit(row)}><span className="mobile-record__title">{row.place}</span><span className="mobile-record__meta"><span>{row.marketName}</span><span>编辑 ›</span></span></button>} />
+      </div>
 
       <Modal
         title={editing ? '编辑进货地' : '新增进货地'}

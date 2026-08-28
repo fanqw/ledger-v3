@@ -1,10 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Segmented, DatePicker, Button, Card } from 'antd';
+import { Segmented, DatePicker, Button, Card, Typography } from 'antd';
 import dayjs from 'dayjs';
 import { authFetch } from '../lib/api';
 import { toast } from '../lib/toast';
 import useECharts, { type EChartsOption } from '../lib/use-echarts';
-import PageHeader from '../components/page/PageHeader';
 import type {
   AnalyticsWorkbenchResponse,
   AnalyticsDailyTrendItem,
@@ -323,10 +322,11 @@ export default function AnalyticsPage() {
   const placeData = (data?.purchasePlaceShare ?? []).map((p: AnalyticsPurchasePlaceShare) => ({ name: p.name, value: p.amount }));
 
   return (
-    <div className="page analytics-grid">
-      <PageHeader title="数据分析工作台" description="观察采购趋势、结构与关键指标" />
-      {/* 标题 + 时间范围 */}
-      <div className="flex flex-wrap items-center justify-end gap-3">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <Typography.Title level={3} style={{ margin: 0 }}>数据分析工作台</Typography.Title>
+      <div className="page analytics-grid">
+        {/* 时间范围 */}
+        <div className="flex flex-wrap items-center justify-end gap-3">
         <div className="flex items-center gap-2">
           <Segmented
             options={[...RANGE_OPTIONS.map((r) => r.label), '自定义']}
@@ -398,6 +398,7 @@ export default function AnalyticsPage() {
         <ChartCard title="订单规模分布" loading={loading}>
           <OrderSizeHistogram data={data?.orderSizeDistribution ?? []} loading={loading} />
         </ChartCard>
+      </div>
       </div>
     </div>
   );

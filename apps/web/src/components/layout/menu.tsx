@@ -1,14 +1,20 @@
-import { BarChartOutlined, ProfileOutlined, BankOutlined } from '@ant-design/icons';
+import { BarChartOutlined, ProfileOutlined, BankOutlined, TagsOutlined, AppstoreOutlined, ShoppingCartOutlined, EnvironmentOutlined } from '@ant-design/icons';
 import type { ReactNode } from 'react';
+
+export interface MenuChild {
+  key: string;
+  label: string;
+  icon?: ReactNode;
+}
 
 export interface TopMenuItem {
   key: string;
   label: string;
   icon?: ReactNode;
-  children?: { key: string; label: string }[];
+  children?: MenuChild[];
 }
 
-// antd pro 混合布局菜单：顶栏一级 + 侧边二级（经典模式）
+// 菜单结构：分组（sider 经典模式展示）
 export const MENU_ITEMS: TopMenuItem[] = [
   { key: '/analytics', label: '数据分析', icon: <BarChartOutlined /> },
   {
@@ -22,24 +28,15 @@ export const MENU_ITEMS: TopMenuItem[] = [
     label: '物料管理',
     icon: <BankOutlined />,
     children: [
-      { key: '/categories', label: '商品分类' },
-      { key: '/units', label: '商品单位' },
-      { key: '/commodities', label: '商品信息' },
-      { key: '/purchase-places', label: '进货地' },
+      { key: '/categories', icon: <TagsOutlined />, label: '商品分类' },
+      { key: '/units', icon: <AppstoreOutlined />, label: '商品单位' },
+      { key: '/commodities', icon: <ShoppingCartOutlined />, label: '商品信息' },
+      { key: '/purchase-places', icon: <EnvironmentOutlined />, label: '进货地' },
     ],
   },
 ];
 
-/** 从路径推断当前一级菜单 key */
-export function findTopKey(pathname: string): string {
-  for (const t of MENU_ITEMS) {
-    if (t.children?.some((c) => pathname.startsWith(c.key))) return t.key;
-    if (pathname === t.key) return t.key;
-  }
-  return 'orders';
-}
-
-/** 面包屑：基于路径返回 [一级, 二级] */
+/** 面包屑：基于路径返回 [分组, 页面] */
 export function findBreadcrumb(pathname: string): string[] {
   for (const t of MENU_ITEMS) {
     const child = t.children?.find((c) => pathname.startsWith(c.key));
