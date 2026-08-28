@@ -291,7 +291,9 @@ export default function AnalyticsPage() {
     }
 
     // 取消过期请求
-    abortRef.current?.abort();
+    const staleController = abortRef.current;
+    abortRef.current = null;
+    staleController?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
 
@@ -315,7 +317,9 @@ export default function AnalyticsPage() {
     const task = setTimeout(() => { void fetchData(); }, 0);
     return () => {
       clearTimeout(task);
-      abortRef.current?.abort();
+      const staleController = abortRef.current;
+      abortRef.current = null;
+      staleController?.abort();
     };
   }, [fetchData, reloadKey]);
 

@@ -27,7 +27,10 @@ test('analytics schedules one cancellable load and stale requests cannot clear l
 
   assert.match(source, /const task = setTimeout\(\(\) => \{ void fetchData\(\); \}, 0\)/)
   assert.match(source, /clearTimeout\(task\)/)
-  assert.match(source, /abortRef\.current\?\.abort\(\)/)
+  const invalidations = source.match(
+    /const staleController = abortRef\.current;\s*abortRef\.current = null;\s*staleController\?\.abort\(\);/g,
+  )
+  assert.equal(invalidations?.length, 2, 'replacement and cleanup must invalidate stale controllers before aborting')
   assert.match(source, /if \(abortRef\.current === controller\) setLoading\(false\)/)
 })
 
