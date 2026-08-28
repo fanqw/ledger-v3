@@ -1,7 +1,7 @@
 import { LeftOutlined, RightOutlined } from '@ant-design/icons';
 import { Layout, Menu } from 'antd';
 import type { MenuProps } from 'antd';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { findParentMenuKey, MENU_ITEMS } from './menu';
 
@@ -43,14 +43,10 @@ export default function SideNav({
   const [collapsed, setCollapsed] = useState(
     () => !mobile && window.localStorage.getItem(storageKey) === 'true',
   );
-  const [openKeys, setOpenKeys] = useState<string[]>(() => (routeParent ? [routeParent] : []));
-
-  useEffect(() => {
-    const parent = findParentMenuKey(location.pathname);
-    if (parent) {
-      setOpenKeys((keys) => (keys.includes(parent) ? keys : [...keys, parent]));
-    }
-  }, [location.pathname]);
+  const [requestedOpenKeys, setRequestedOpenKeys] = useState<string[]>([]);
+  const openKeys = routeParent && !requestedOpenKeys.includes(routeParent)
+    ? [...requestedOpenKeys, routeParent]
+    : requestedOpenKeys;
 
   const onClick: MenuProps['onClick'] = ({ key }) => {
     navigate(key);
@@ -63,7 +59,7 @@ export default function SideNav({
       inlineCollapsed={mobile ? undefined : collapsed}
       selectedKeys={[findSelectedMenuKey(location.pathname)]}
       openKeys={openKeys}
-      onOpenChange={setOpenKeys}
+      onOpenChange={setRequestedOpenKeys}
       items={items}
       onClick={onClick}
     />
