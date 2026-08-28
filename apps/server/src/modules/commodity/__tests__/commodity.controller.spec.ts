@@ -10,7 +10,7 @@ describe('CommodityController', () => {
     const data = { items: [], meta: { page: 2, pageSize: 10, total: 0 } };
     service.findAll.mockResolvedValue(data);
     await expect(controller.findAll({ page: 2, pageSize: 10, keyword: 'rice' })).resolves.toEqual({ success: true, data });
-    expect(service.findAll).toHaveBeenCalledWith(2, 10, 'rice');
+    expect(service.findAll).toHaveBeenCalledWith(2, 10, 'rice', undefined, undefined);
   });
 
   it('returns one commodity', async () => {

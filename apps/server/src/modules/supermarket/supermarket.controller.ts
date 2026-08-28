@@ -62,8 +62,8 @@ export class SupermarketController {
   @ApiQuery(pageSizeQuery)
   @ApiQuery(keywordQuery('搜索关键词：匹配超市名/备注（模糊、不区分大小写）', '端氏'))
   @ApiOkResponse({ description: '超市分页列表', schema: pagedOkBody(supermarketItemSchema, '超市对象数组') })
-  async findAll(@Query(new ZodValidationPipe(paginationSchema)) query: { page: number; pageSize: number; keyword?: string }) {
-    const data = await this.service.findAll(query.page, query.pageSize, query.keyword);
+  async findAll(@Query(new ZodValidationPipe(paginationSchema)) query: { page: number; pageSize: number; keyword?: string; sortBy?: string; sortOrder?: string }) {
+    const data = await this.service.findAll(query.page, query.pageSize, query.keyword, query.sortBy, query.sortOrder);
     return { success: true, data };
   }
 

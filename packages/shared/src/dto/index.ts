@@ -68,6 +68,7 @@ export interface OrderDto {
   description?: string;
   marketId?: string;
   market?: MarketDto;
+  totalAmount?: number;
   items?: OrderItemDto[];
   createdAt: string;
   updatedAt: string;

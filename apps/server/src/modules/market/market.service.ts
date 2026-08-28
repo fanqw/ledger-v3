@@ -16,7 +16,7 @@ export class MarketService {
   constructor(private readonly prisma: PrismaService) {}
 
   /** 分页 + keyword 搜索（name/关联城市 place/备注），include 所属城市 */
-  async findAll(page: number, pageSize: number, keyword?: string) {
+  async findAll(page: number, pageSize: number, keyword?: string, sortBy?: string, sortOrder?: string) {
     const where: Prisma.MarketWhereInput = { deletedAt: null };
     if (keyword) {
       where.OR = [
@@ -29,7 +29,7 @@ export class MarketService {
       this.prisma.market.findMany({
         where,
         include: { city: true },
-        orderBy: { createdAt: 'asc' },
+        orderBy: sortBy ? ({ [sortBy]: sortOrder === 'desc' ? 'desc' : 'asc' } as Prisma.MarketOrderByWithRelationInput) : { createdAt: 'asc' },
         skip: (page - 1) * pageSize,
         take: pageSize,
       }),

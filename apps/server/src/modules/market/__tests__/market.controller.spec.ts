@@ -10,7 +10,7 @@ describe('MarketController', () => {
     const data = { items: [], meta: { page: 1, pageSize: 10, total: 0 } };
     service.findAll.mockResolvedValue(data);
     await expect(controller.findAll({ page: 1, pageSize: 10, keyword: '长治' })).resolves.toEqual({ success: true, data });
-    expect(service.findAll).toHaveBeenCalledWith(1, 10, '长治');
+    expect(service.findAll).toHaveBeenCalledWith(1, 10, '长治', undefined, undefined);
   });
 
   it('returns one market', async () => {

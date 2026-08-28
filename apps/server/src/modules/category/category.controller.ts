@@ -88,8 +88,8 @@ export class CategoryController {
   @ApiQuery(pageSizeQuery)
   @ApiQuery(keywordQuery('搜索关键词：匹配分类名称或备注（模糊、不区分大小写）', '蔬菜'))
   @ApiOkResponse({ description: '分类分页列表', schema: pagedOkBody(categoryItemSchema, '分类对象数组') })
-  async findAll(@Query(new ZodValidationPipe(paginationSchema)) query: { page: number; pageSize: number; keyword?: string }) {
-    const data = await this.service.findAll(query.page, query.pageSize, query.keyword);
+  async findAll(@Query(new ZodValidationPipe(paginationSchema)) query: { page: number; pageSize: number; keyword?: string; sortBy?: string; sortOrder?: string }) {
+    const data = await this.service.findAll(query.page, query.pageSize, query.keyword, query.sortBy, query.sortOrder);
     return { success: true, data };
   }
 

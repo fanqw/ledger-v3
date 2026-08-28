@@ -69,8 +69,8 @@ export class PurchasePlaceController {
   @ApiQuery(pageSizeQuery)
   @ApiQuery(keywordQuery('搜索关键词：匹配进货地/备注（模糊、不区分大小写）', '晋城'))
   @ApiOkResponse({ description: '进货地分页列表', schema: pagedOkBody(purchasePlaceItemSchema, '进货地对象数组') })
-  async findAll(@Query(new ZodValidationPipe(paginationSchema)) query: { page: number; pageSize: number; keyword?: string }) {
-    const data = await this.service.findAll(query.page, query.pageSize, query.keyword);
+  async findAll(@Query(new ZodValidationPipe(paginationSchema)) query: { page: number; pageSize: number; keyword?: string; sortBy?: string; sortOrder?: string }) {
+    const data = await this.service.findAll(query.page, query.pageSize, query.keyword, query.sortBy, query.sortOrder);
     return { success: true, data };
   }
 

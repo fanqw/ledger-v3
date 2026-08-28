@@ -17,15 +17,15 @@ describe('OrderController', () => {
   beforeEach(() => jest.clearAllMocks());
 
   it('returns next order name', async () => {
-    service.getNextName.mockResolvedValue({ name: '20260824-01' });
-    await expect(controller.nextName()).resolves.toEqual({ success: true, data: { name: '20260824-01' } });
+    service.getNextName.mockResolvedValue({ name: '20260824120000' });
+    await expect(controller.nextName()).resolves.toEqual({ success: true, data: { name: '20260824120000' } });
   });
 
   it('returns a paginated list', async () => {
     const data = { items: [], meta: { page: 1, pageSize: 20, total: 0 } };
     service.findAll.mockResolvedValue(data);
     await expect(controller.findAll({ page: 1, pageSize: 20, keyword: 'x' })).resolves.toEqual({ success: true, data });
-    expect(service.findAll).toHaveBeenCalledWith(1, 20, 'x');
+    expect(service.findAll).toHaveBeenCalledWith(1, 20, 'x', undefined, undefined, { name: undefined, cityId: undefined, marketId: undefined, description: undefined });
   });
 
   it('returns one order', async () => {

@@ -26,7 +26,7 @@ export class CommodityService {
    *   { unit: { name: { contains } } }     —— 搜「单位名」
    * findMany include category+unit，count 不带 include（计数不需要关联）
    */
-  async findAll(page: number, pageSize: number, keyword?: string) {
+  async findAll(page: number, pageSize: number, keyword?: string, sortBy?: string, sortOrder?: string) {
     const where: Prisma.CommodityWhereInput = { deletedAt: null };
     if (keyword) {
       where.OR = [
@@ -39,7 +39,7 @@ export class CommodityService {
     const [items, total] = await Promise.all([
       this.prisma.commodity.findMany({
         where,
-        orderBy: { createdAt: 'desc' },
+        orderBy: sortBy ? ({ [sortBy]: sortOrder === 'desc' ? 'desc' : 'asc' } as Prisma.CommodityOrderByWithRelationInput) : { createdAt: 'desc' },
         skip: (page - 1) * pageSize,
         take: pageSize,
         include: { category: true, unit: true },

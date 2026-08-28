@@ -12,12 +12,12 @@ import {
   idSchema,
   paginationSchema,
 } from '@ledger-v3/shared/validators';
+import { z } from 'zod';
 import type {
   OrderCreateInput,
   OrderUpdateInput,
   OrderItemCreateInput,
   OrderItemUpdateInput,
-  PaginationInput,
 } from '@ledger-v3/shared/validators';
 import { ZodValidationPipe } from '../../common/zod-validation.pipe';
 import {
@@ -109,6 +109,15 @@ const orderUpdateBodySchema = {
   properties: orderCreateBodySchema.properties,
 };
 
+/** 订单列表查询：分页 + 搜索（名称/进货地/进货市场/备注）+ 服务端排序（含进货金额） */
+const orderListQuerySchema = paginationSchema.extend({
+  name: z.string().trim().optional(),
+  cityId: z.string().optional(),
+  marketId: z.string().optional(),
+  description: z.string().trim().optional(),
+  sortBy: z.enum(['createdAt', 'updatedAt', 'amount']).optional(),
+});
+
 /** Swagger 文档：添加明细请求体（路径 A 引用已有商品 / 路径 B 即输即建） */
 const orderItemCreateBodySchema = {
   type: 'object',
@@ -184,18 +193,30 @@ export class OrderController {
   }
 
   /**
-   * GET /api/orders?page=1&pageSize=10&keyword=客户 —— 订单分页列表
-   * keyword 搜 订单名/备注/市场(市场名/所属城市)
-   * 列表只带 market 联表（不含 items，列表页不需要明细，避免大响应）
+   * GET /api/orders?page=1&pageSize=10&name=&cityId=&marketId=&description=&sortBy=&sortOrder= —— 订单分页列表
+   * 搜索：订单名称/进货地(cityId)/进货市场(marketId)/备注；排序：createdAt/updatedAt/amount
    */
   @Get()
   @ApiOperation({ summary: '获取订单分页列表' })
   @ApiQuery(pageQuery)
   @ApiQuery(pageSizeQuery)
   @ApiQuery(keywordQuery('搜索关键词：匹配订单名/备注/市场（市场名或所属城市）', '20260827'))
+  @ApiQuery({ name: 'name', required: false, description: '订单名称模糊匹配' })
+  @ApiQuery({ name: 'cityId', required: false, description: '进货地（城市）ID 精确筛选' })
+  @ApiQuery({ name: 'marketId', required: false, description: '进货市场 ID 精确筛选' })
+  @ApiQuery({ name: 'description', required: false, description: '备注模糊匹配' })
+  @ApiQuery({ name: 'sortBy', required: false, enum: ['createdAt', 'updatedAt', 'amount'], description: '排序字段（缺省不排序）' })
+  @ApiQuery({ name: 'sortOrder', required: false, enum: ['asc', 'desc'], description: '排序方向' })
   @ApiOkResponse({ description: '订单分页列表（不含明细）', schema: pagedOkBody(orderListSchema, '订单对象数组') })
-  async findAll(@Query(new ZodValidationPipe(paginationSchema)) query: PaginationInput) {
-    const data = await this.service.findAll(query.page, query.pageSize, query.keyword);
+  async findAll(@Query(new ZodValidationPipe(orderListQuerySchema)) query: {
+    page: number; pageSize: number; keyword?: string;
+    name?: string; cityId?: string; marketId?: string; description?: string;
+    sortBy?: string; sortOrder?: string;
+  }) {
+    const data = await this.service.findAll(
+      query.page, query.pageSize, query.keyword, query.sortBy, query.sortOrder,
+      { name: query.name, cityId: query.cityId, marketId: query.marketId, description: query.description },
+    );
     return { success: true, data };
   }
 

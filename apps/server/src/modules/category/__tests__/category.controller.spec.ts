@@ -10,7 +10,7 @@ describe('CategoryController', () => {
     const data = { items: [], meta: { page: 2, pageSize: 10, total: 0 } };
     service.findAll.mockResolvedValue(data);
     await expect(controller.findAll({ page: 2, pageSize: 10, keyword: 'food' })).resolves.toEqual({ success: true, data });
-    expect(service.findAll).toHaveBeenCalledWith(2, 10, 'food');
+    expect(service.findAll).toHaveBeenCalledWith(2, 10, 'food', undefined, undefined);
   });
 
   it('returns one category', async () => {

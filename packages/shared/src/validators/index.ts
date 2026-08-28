@@ -16,6 +16,9 @@ export const paginationSchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(100).default(10),
   keyword: z.string().trim().max(100, '关键词长度不能超过100').optional(),
+  // 服务端排序：sortBy 缺省时不排序（列表保持默认顺序），仅用户点击列头才传
+  sortBy: z.enum(['createdAt', 'updatedAt']).optional(),
+  sortOrder: z.enum(['asc', 'desc']).optional(),
 });
 
 export const categorySchema = z.object({
