@@ -61,7 +61,7 @@ export default function OrdersPage() {
     const delay = filters.name || filters.description ? 300 : 0;
     const task = setTimeout(() => { void fetchData(pagination.page, pagination.pageSize, sort.sortBy, sort.sortOrder, filters); }, delay);
     return () => clearTimeout(task);
-  }, [filters.name, filters.cityId, filters.marketId, filters.description, pagination.page, pagination.pageSize, sort.sortBy, sort.sortOrder, fetchData]);
+  }, [filters, pagination.page, pagination.pageSize, sort.sortBy, sort.sortOrder, fetchData]);
 
   // 加载进货地（城市）与市场（市场带所属城市）
   const loadOptions = async () => {
