@@ -129,6 +129,23 @@ body {
 }
 .sidebar-collapse-trigger--collapsed:hover { color: var(--accent); }
 [data-theme='dark'] .sidebar-collapse-trigger--collapsed::before { box-shadow: 0 1px 3px rgba(0, 0, 0, .18); }
+
+/* 折叠态 submenu 弹框即时切换：禁用 zoom-big 缩放/淡入淡出动画（高频率 hover 下动画是"闪"的根源）。
+   用 0.01ms 极小时长而非 animation:none，保证 animationend 事件触发、rc-motion 正常收尾。 */
+.ant-menu-submenu-popup.ant-zoom-big-appear,
+.ant-menu-submenu-popup.ant-zoom-big-appear-prepare,
+.ant-menu-submenu-popup.ant-zoom-big-appear-start,
+.ant-menu-submenu-popup.ant-zoom-big-appear-active,
+.ant-menu-submenu-popup.ant-zoom-big-leave,
+.ant-menu-submenu-popup.ant-zoom-big-leave-start,
+.ant-menu-submenu-popup.ant-zoom-big-leave-active {
+  animation-duration: 0.01ms !important;
+  animation-delay: 0ms !important;
+}
+.ant-menu-submenu-popup.ant-zoom-big-appear-prepare {
+  opacity: 0;
+}
+
 .mobile-nav-drawer .ant-drawer-body { padding: 8px; }
 .mobile-nav-drawer .ant-menu { background: transparent; border-inline-end: 0 !important; }
 

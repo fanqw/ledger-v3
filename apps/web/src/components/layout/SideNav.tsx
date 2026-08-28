@@ -63,8 +63,10 @@ export default function SideNav({
       onOpenChange={setRequestedOpenKeys}
       items={items}
       onClick={onClick}
-      // 折叠态弹框切换：新弹框快开、旧弹框缓关，避免鼠标经过空隙时新旧之间出现空档闪烁
-      subMenuOpenDelay={0.05}
+      // 折叠态弹框切换：新弹框即时打开、旧弹框 0.3s 缓冲关闭（配合 index.css 禁用 zoom-big 动画），
+      // 覆盖鼠标从旧 submenu 移向新 submenu 的移动时间，避免"先消失再展开"的空档闪烁；
+      // 移出菜单后 0.3s 弹框即时消失（无动画，干脆不拖沓）
+      subMenuOpenDelay={0}
       subMenuCloseDelay={0.3}
     />
   );
