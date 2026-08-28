@@ -60,6 +60,70 @@ body {
 .orders-table .ant-table-tbody > tr:hover > td { background: #eef2ff !important; }
 [data-theme='dark'] .orders-table .ant-table-tbody > tr:hover > td { background: #1e2433 !important; }
 
+/* 订单详情：列分隔线与分类分组边界 */
+.order-detail-table .ant-table-cell { border-right: 1px solid var(--line); }
+.order-detail-table .ant-table-cell:last-child { border-right: 0; }
+.order-detail-table .ant-table-tbody > tr.group-start > td {
+  border-top: 2px solid #94a3b8 !important;
+}
+[data-theme='dark'] .order-detail-table .ant-table-tbody > tr.group-start > td {
+  border-top: 2px solid #3f4a5f !important;
+}
+
+/* 订单详情：两层分类汇总，与表格形成连续边界 */
+.order-summary {
+  flex: 0 0 auto;
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-bottom: 0;
+  border-radius: 8px 8px 0 0;
+}
+.order-summary__categories {
+  display: flex;
+  align-items: stretch;
+  flex-wrap: wrap;
+  padding: 4px 8px;
+}
+.order-summary__category {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  padding: 9px 12px;
+  border-right: 1px solid var(--line);
+}
+.order-summary__category:last-child { border-right: 0; }
+.order-summary__name { color: var(--text); font-weight: 600; }
+.order-summary__count { color: var(--muted); font-size: 12px; }
+.order-summary__amount {
+  color: var(--accent);
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+.order-summary__overview {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 44px;
+  padding: 10px 20px;
+  color: var(--muted);
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+  border-top: 1px solid var(--line);
+}
+.order-summary__scale { font-size: 13px; }
+.order-summary__total {
+  color: var(--accent);
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+}
+.order-detail-table-wrap .ant-table-container {
+  border-radius: 0 0 8px 8px;
+}
+[data-theme='dark'] .order-summary__overview {
+  background: color-mix(in srgb, var(--accent) 14%, var(--surface));
+}
+
 /* 暗黑主题 Table 覆盖 */
 [data-theme='dark'] .ant-table-wrapper .ant-table-thead > tr > th { background: #1f1f1f; color: #9ca3af; border-bottom: 1px solid var(--line); }
 [data-theme='dark'] .ant-table-wrapper .ant-table-tbody > tr > td { border-bottom: 1px solid #1f1f1f; }
@@ -185,6 +249,20 @@ body {
   .page-header__actions > .ant-space > .ant-space-item > .ant-btn { width: 100%; }
   .page-header__actions > .ant-btn:only-child { grid-column: 1 / -1; }
   .order-detail-meta { flex-direction: column; gap: 4px !important; }
+  .order-summary__categories { padding: 4px; }
+  .order-summary__category {
+    flex: 1 1 100%;
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .order-summary__category:last-child { border-bottom: 0; }
+  .order-summary__overview {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+    padding: 10px 16px;
+  }
+  .order-summary__total { font-size: 17px; }
   .responsive-data__mobile { padding: 0 12px; }
   .responsive-data__desktop .ant-pagination { justify-content: center; flex-wrap: wrap; gap: 4px; }
   .responsive-data__desktop .ant-pagination-options { display: none; }
