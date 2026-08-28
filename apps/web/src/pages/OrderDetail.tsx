@@ -1,8 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useState, useEffect, useCallback, useLayoutEffect, useRef } from 'react';
+import type { ReactNode } from 'react';
+import { useParams, useNavigate, useOutletContext } from 'react-router-dom';
 import { Table, Button, Input, InputNumber, Modal, Select, AutoComplete, Space, Card, Descriptions, App as AntdApp, Typography, Spin } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { ArrowLeftOutlined, PlusOutlined, DownloadOutlined } from '@ant-design/icons';
+import { PlusOutlined, DownloadOutlined } from '@ant-design/icons';
 import { toast } from '../lib/toast';
 import { authFetch } from '../lib/api';
 import ExcelJS from 'exceljs';
@@ -93,6 +94,21 @@ export default function OrderDetailPage() {
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // 面包屑行插槽：注册「返回」按钮
+  const { setBreadcrumbExtra } = useOutletContext<{
+    setBreadcrumbExtra?: (node: ReactNode | null) => void;
+  }>();
+  useEffect(() => {
+    setBreadcrumbExtra?.(
+      <Button type="text" size="small" onClick={() => navigate('/orders')}>返回</Button>,
+    );
+    return () => setBreadcrumbExtra?.(null);
+  }, [setBreadcrumbExtra, navigate]);
+
+  // 明细表格容器高度测量（动态 scroll.y）
+  const tableWrapRef = useRef<HTMLDivElement>(null);
+  const [tableScrollY, setTableScrollY] = useState<number>(0);
+
   // item dialog
   const [itemDialogOpen, setItemDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<OrderItem | null>(null);
@@ -137,6 +153,20 @@ export default function OrderDetailPage() {
     };
     load();
   }, [id]);
+
+  // 明细表格滚动高度：测量容器高度，动态计算 scroll.y（表头约 55px + 底部 12px 下边距）
+  useLayoutEffect(() => {
+    const el = tableWrapRef.current;
+    if (!el) return;
+    const update = () => {
+      const h = el.clientHeight;
+      setTableScrollY(Math.max(120, h - 55 - 12));
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [loading]);
 
   // ============ LineTotal（纯函数 + 函数式更新）============
 
@@ -347,18 +377,16 @@ export default function OrderDetailPage() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16, height: 'calc(100vh - 112px)', overflow: 'hidden' }}>
       {/* 上方：订单信息卡片（Descriptions 展示核心字段） */}
-      <Card
-        title={order.name}
-        extra={
-          <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/orders')}>返回</Button>
-        }
-      >
+      <Card title={order.name}>
         <Descriptions column={3} size="small">
           <Descriptions.Item label="进货地">{order.market?.city?.place || '-'}</Descriptions.Item>
           <Descriptions.Item label="进货市场">{order.market?.name || '-'}</Descriptions.Item>
-          <Descriptions.Item label="进货金额">{fmt(grandTotal)}</Descriptions.Item>
+          <Descriptions.Item label="进货金额">¥{fmt(grandTotal)}</Descriptions.Item>
           <Descriptions.Item label="创建时间">{fmtDate(order.createdAt)}</Descriptions.Item>
           <Descriptions.Item label="修改时间">{fmtDate(order.updatedAt)}</Descriptions.Item>
+        </Descriptions>
+        {/* 备注独立 Descriptions，独占整行（antd 按 column 顺序填充，span 跨列无法独立成行） */}
+        <Descriptions column={1} size="small" style={{ marginTop: 4 }}>
           <Descriptions.Item label="备注">{order.description || '-'}</Descriptions.Item>
         </Descriptions>
       </Card>
@@ -368,41 +396,65 @@ export default function OrderDetailPage() {
         style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}
         styles={{ body: { flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' } }}
       >
+        {/* 明细标题 + 操作按钮同行 */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexShrink: 0 }}>
-          <Space size={8}>
-            <span style={{ fontWeight: 500 }}>明细列表</span>
-            <Typography.Text type="secondary" style={{ fontSize: 12 }}>共 {displayItems.length} 项</Typography.Text>
-          </Space>
+          <Typography.Title level={5} style={{ margin: 0 }}>明细列表</Typography.Title>
           <Space>
             <Button icon={<DownloadOutlined />} onClick={() => exportToExcel(order)}>导出 Excel</Button>
             <Button type="primary" icon={<PlusOutlined />} onClick={openAddItem}>添加明细</Button>
           </Space>
         </div>
+        {/* 分类总结栏（两层结构，完整展示所有分类） */}
+        {groups.length > 0 && (
+          <section className="order-summary" aria-label="明细分类汇总">
+            <div className="order-summary__categories">
+              {groups.map((group) => (
+                <div className="order-summary__category" key={group.categoryId}>
+                  <span className="order-summary__name">{group.categoryName}</span>
+                  <span className="order-summary__count">
+                    {new Set(group.items.map((item) => item.commodityId)).size} 种
+                  </span>
+                  <span className="order-summary__amount">¥{fmt(group.subtotal)}</span>
+                </div>
+              ))}
+            </div>
+            <div className="order-summary__overview">
+              <span className="order-summary__scale">
+                共 {groups.length} 个分类 · {displayItems.length} 项明细
+              </span>
+              <strong className="order-summary__total">总计 ¥{fmt(grandTotal)}</strong>
+            </div>
+          </section>
+        )}
         {displayItems.length === 0 ? (
           <div style={{ textAlign: 'center', padding: 48 }}>
             <Typography.Text type="secondary">暂无明细</Typography.Text>
           </div>
         ) : (
-          <Table<OrderItem>
-            rowKey="id"
-            columns={columns}
-            dataSource={displayItems}
-            pagination={false}
-            size="middle"
-            scroll={{ x: 1040, y: 'calc(100vh - 383px)' }}
-            summary={() => (
-              <Table.Summary fixed>
-                <Table.Summary.Row>
-                  <Table.Summary.Cell index={0} colSpan={9}>
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
-                      <b>总计</b>
-                      <b style={{ fontSize: 15 }}>{fmt(grandTotal)}</b>
-                    </div>
-                  </Table.Summary.Cell>
-                </Table.Summary.Row>
-              </Table.Summary>
-            )}
-          />
+          <div ref={tableWrapRef} className="order-detail-table-wrap" style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
+            <Table<OrderItem>
+              rowKey="id"
+              className="order-detail-table"
+              columns={columns}
+              dataSource={displayItems}
+              pagination={false}
+              size="middle"
+              onRow={(record) => ({ className: groupMeta(record).rowSpan > 0 ? 'group-start' : '' })}
+              scroll={{ x: 1040, y: tableScrollY }}
+              summary={() => (
+                <Table.Summary fixed>
+                  <Table.Summary.Row>
+                    <Table.Summary.Cell index={0} colSpan={9}>
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
+                        <b>总计</b>
+                        <b style={{ fontSize: 15 }}>{fmt(grandTotal)}</b>
+                      </div>
+                    </Table.Summary.Cell>
+                  </Table.Summary.Row>
+                </Table.Summary>
+              )}
+            />
+          </div>
         )}
       </Card>
 

@@ -115,3 +115,20 @@ test('complex pages keep visible titles and responsive detail behavior', () => {
   assert.match(detail, /scroll=\{\{\s*x:\s*1040,/);
   assert.match(read('src/pages/Analytics.tsx'), /数据分析工作台/);
 });
+
+test('order detail exposes a two-level fully visible category summary', () => {
+  const detail = read('src/pages/OrderDetail.tsx');
+  const css = read('src/index.css');
+
+  assert.match(detail, /order-summary/);
+  assert.match(detail, /order-summary__categories/);
+  assert.match(detail, /groups\.map/);
+  assert.match(detail, /order-summary__overview/);
+  assert.match(detail, /groups\.length[^\n]*个分类/);
+  assert.match(detail, /displayItems\.length[^\n]*项明细/);
+  assert.match(detail, /order-summary__total/);
+  assert.doesNotMatch(css, /\.order-summary[^}]*overflow-x:\s*(auto|scroll)/s);
+  assert.match(css, /\.order-summary__categories\s*\{[^}]*flex-wrap:\s*wrap/s);
+  assert.match(css, /\.order-summary__overview\s*\{[^}]*justify-content:\s*space-between/s);
+  assert.match(css, /@media \(max-width: 479px\)[\s\S]*\.order-summary__overview\s*\{[^}]*flex-direction:\s*column/s);
+});
