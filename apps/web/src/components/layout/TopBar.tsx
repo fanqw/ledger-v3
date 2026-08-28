@@ -23,7 +23,7 @@ export default function TopBar({
         height: 56,
         lineHeight: '56px',
         background: 'var(--surface)',
-        padding: '0 16px',
+        padding: '0 20px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
@@ -61,7 +61,7 @@ export default function TopBar({
         <span style={{ fontWeight: 'bold', fontSize: 15, color: 'var(--text)' }}>台帐系统</span>
       </div>
 
-      {/* 右侧：主题切换 + 用户名 + 头像 */}
+      {/* 右侧：主题切换 + 头像 + 名称（名称在头像右侧） */}
       <Space size={12}>
         <Button
           type="text"
@@ -69,14 +69,16 @@ export default function TopBar({
           onClick={toggle}
           aria-label="切换主题"
         />
-        <span style={{ fontSize: 13, color: 'var(--muted)' }}>{user?.username || '用户'}</span>
         <Dropdown
           menu={{ items: [{ key: 'logout', icon: <LogoutOutlined />, label: '退出登录', onClick: logout }] }}
           placement="bottomRight"
         >
-          <Avatar style={{ background: '#3B82F6', cursor: 'pointer' }} icon={<UserOutlined />}>
-            {initials}
-          </Avatar>
+          <Space size={8} style={{ cursor: 'pointer' }}>
+            <Avatar size={24} style={{ background: '#3B82F6' }} icon={<UserOutlined />}>
+              {initials}
+            </Avatar>
+            <span style={{ fontSize: 13, color: 'var(--muted)' }}>{user?.username || '用户'}</span>
+          </Space>
         </Dropdown>
       </Space>
     </Header>

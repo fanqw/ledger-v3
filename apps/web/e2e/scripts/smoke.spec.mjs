@@ -54,7 +54,7 @@ try {
   await page.fill('input[placeholder*="密码"]', 'admin123');
   await page.click('button[type="submit"]');
   await page.waitForTimeout(2000);
-  check('登录跳转', page.url().includes('/dashboard'), page.url());
+  check('登录跳转', page.url().includes('/analytics'), page.url());
   const navVisible = await page.locator('nav').count() > 0;
   check('侧边栏可见', navVisible, 'nav 存在');
 

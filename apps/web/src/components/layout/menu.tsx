@@ -1,5 +1,4 @@
 import {
-  DashboardOutlined,
   BarChartOutlined,
   ProfileOutlined,
   BankOutlined,
@@ -27,14 +26,8 @@ export interface MenuDataItem {
 
 // 菜单结构：一级入口 + 可展开的父子导航
 export const MENU_ITEMS: MenuDataItem[] = [
-  { key: '/dashboard', path: '/dashboard', name: '仪表台', icon: <DashboardOutlined /> },
   { key: '/analytics', path: '/analytics', name: '数据分析', icon: <BarChartOutlined /> },
-  {
-    key: 'orders',
-    name: '订单管理',
-    icon: <ProfileOutlined />,
-    children: [{ key: '/orders', path: '/orders', name: '订单列表' }],
-  },
+  { key: '/orders', path: '/orders', name: '订单管理', icon: <ProfileOutlined /> },
   {
     key: 'materials',
     name: '物料管理',
