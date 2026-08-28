@@ -85,8 +85,8 @@ export class CommodityController {
   @ApiQuery(pageSizeQuery)
   @ApiQuery(keywordQuery('搜索关键词：匹配商品名/备注/分类名/单位名（模糊、不区分大小写）', '西红柿'))
   @ApiOkResponse({ description: '商品分页列表（每条含联表的分类/单位）', schema: pagedOkBody(commodityItemSchema, '商品对象数组') })
-  async findAll(@Query(new ZodValidationPipe(paginationSchema)) query: { page: number; pageSize: number; keyword?: string }) {
-    const data = await this.service.findAll(query.page, query.pageSize, query.keyword);
+  async findAll(@Query(new ZodValidationPipe(paginationSchema)) query: { page: number; pageSize: number; keyword?: string; sortBy?: string; sortOrder?: string }) {
+    const data = await this.service.findAll(query.page, query.pageSize, query.keyword, query.sortBy, query.sortOrder);
     return { success: true, data };
   }
 

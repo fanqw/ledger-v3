@@ -28,7 +28,7 @@ export class CategoryService {
    * - orderBy createdAt asc：插入顺序（对齐 V1 无显式排序的 _id 升序）
    * - 返回 { items, meta: { page, pageSize, total } } 是项目统一分页协议
    */
-  async findAll(page: number, pageSize: number, keyword?: string) {
+  async findAll(page: number, pageSize: number, keyword?: string, sortBy?: string, sortOrder?: string) {
     const where: Prisma.CategoryWhereInput = { deletedAt: null };
     if (keyword) {
       where.OR = [
@@ -40,7 +40,7 @@ export class CategoryService {
     const [items, total] = await Promise.all([
       this.prisma.category.findMany({
         where,
-        orderBy: { createdAt: 'asc' },
+        orderBy: sortBy ? ({ [sortBy]: sortOrder === 'desc' ? 'desc' : 'asc' } as Prisma.CategoryOrderByWithRelationInput) : { createdAt: 'asc' },
         skip: (page - 1) * pageSize,
         take: pageSize,
       }),

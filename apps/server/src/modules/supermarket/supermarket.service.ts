@@ -15,7 +15,7 @@ export class SupermarketService {
   constructor(private readonly prisma: PrismaService) {}
 
   /** 分页 + keyword 搜索（name/备注） */
-  async findAll(page: number, pageSize: number, keyword?: string) {
+  async findAll(page: number, pageSize: number, keyword?: string, sortBy?: string, sortOrder?: string) {
     const where: Prisma.SupermarketWhereInput = { deletedAt: null };
     if (keyword) {
       where.OR = [
@@ -24,7 +24,7 @@ export class SupermarketService {
       ];
     }
     const [items, total] = await Promise.all([
-      this.prisma.supermarket.findMany({ where, orderBy: { createdAt: 'asc' }, skip: (page - 1) * pageSize, take: pageSize }),
+      this.prisma.supermarket.findMany({ where, orderBy: sortBy ? ({ [sortBy]: sortOrder === 'desc' ? 'desc' : 'asc' } as Prisma.SupermarketOrderByWithRelationInput) : { createdAt: 'asc' }, skip: (page - 1) * pageSize, take: pageSize }),
       this.prisma.supermarket.count({ where }),
     ]);
     return { items, meta: { page, pageSize, total } };

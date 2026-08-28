@@ -16,7 +16,7 @@ export class PurchasePlaceService {
   constructor(private readonly prisma: PrismaService) {}
 
   /** 分页 + keyword 搜索（place/备注） */
-  async findAll(page: number, pageSize: number, keyword?: string) {
+  async findAll(page: number, pageSize: number, keyword?: string, sortBy?: string, sortOrder?: string) {
     const where: Prisma.PurchasePlaceWhereInput = { deletedAt: null };
     if (keyword) {
       where.OR = [
@@ -25,7 +25,7 @@ export class PurchasePlaceService {
       ];
     }
     const [items, total] = await Promise.all([
-      this.prisma.purchasePlace.findMany({ where, orderBy: { updatedAt: 'desc' }, skip: (page - 1) * pageSize, take: pageSize }),
+      this.prisma.purchasePlace.findMany({ where, orderBy: sortBy ? ({ [sortBy]: sortOrder === 'desc' ? 'desc' : 'asc' } as Prisma.PurchasePlaceOrderByWithRelationInput) : { updatedAt: 'desc' }, skip: (page - 1) * pageSize, take: pageSize }),
       this.prisma.purchasePlace.count({ where }),
     ]);
     return { items, meta: { page, pageSize, total } };

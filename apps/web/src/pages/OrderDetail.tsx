@@ -485,7 +485,7 @@ export default function OrderDetailPage() {
           </div>
           <div>
             <label style={{ fontSize: 13, fontWeight: 500 }}>备注</label>
-            <Input value={itemForm.description} onChange={(e) => setItemForm(f => ({ ...f, description: e.target.value }))} placeholder="输入备注（可选）" />
+            <Input.TextArea rows={3} value={itemForm.description} onChange={(e) => setItemForm(f => ({ ...f, description: e.target.value }))} placeholder="输入备注（可选）" />
           </div>
         </div>
       </Modal>

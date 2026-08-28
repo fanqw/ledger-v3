@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Table, Button, Input, Modal, Form, Space, App as AntdApp, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
+import type { TableProps } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { toast } from '../lib/toast';
 import { authFetch } from '../lib/api';
@@ -10,6 +11,8 @@ interface Supermarket {
   id: string;
   name: string;
   description: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export default function SupermarketsPage() {
@@ -18,16 +21,19 @@ export default function SupermarketsPage() {
   const [data, setData] = useState<Supermarket[]>([]);
   const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState({ page: 1, pageSize: 10, total: 0 });
+  const [sort, setSort] = useState<{ sortBy?: string; sortOrder?: string }>({});
   const [keyword, setKeyword] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Supermarket | null>(null);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  const fetchData = useCallback(async (page: number, kw: string, pageSize: number) => {
+  const fetchData = useCallback(async (page: number, kw: string, pageSize: number, sortBy?: string, sortOrder?: string) => {
     setLoading(true);
     try {
       const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
+      if (sortBy) params.set('sortBy', sortBy);
+      if (sortOrder) params.set('sortOrder', sortOrder);
       if (kw) params.set('keyword', kw);
       const res = await authFetch(`/api/supermarkets?${params}`);
       const json = await res.json();
@@ -38,9 +44,9 @@ export default function SupermarketsPage() {
 
   useEffect(() => {
     const delay = keyword.trim() ? 300 : 0;
-    const task = setTimeout(() => { void fetchData(pagination.page, keyword, pagination.pageSize); }, delay);
+    const task = setTimeout(() => { void fetchData(pagination.page, keyword, pagination.pageSize, sort.sortBy, sort.sortOrder); }, delay);
     return () => clearTimeout(task);
-  }, [keyword, pagination.page, pagination.pageSize, fetchData]);
+  }, [keyword, pagination.page, pagination.pageSize, sort.sortBy, sort.sortOrder, fetchData]);
 
   const openCreate = () => { setEditing(null); form.resetFields(); setDialogOpen(true); };
   const openEdit = (row: Supermarket) => {
@@ -68,7 +74,7 @@ export default function SupermarketsPage() {
       if (json.success) {
         toast.success(editing ? '更新成功' : '创建成功');
         setDialogOpen(false);
-        fetchData(pagination.page, keyword, pagination.pageSize);
+        fetchData(pagination.page, keyword, pagination.pageSize, sort.sortBy, sort.sortOrder);
       } else {
         toast.error(json.error?.message || '操作失败');
       }
@@ -84,7 +90,7 @@ export default function SupermarketsPage() {
       const json = await res.json();
       if (json.success) {
         toast.success('删除成功');
-        fetchData(pagination.page, keyword, pagination.pageSize);
+        fetchData(pagination.page, keyword, pagination.pageSize, sort.sortBy, sort.sortOrder);
       } else {
         toast.error(json.error?.message || '删除失败');
       }
@@ -102,9 +108,21 @@ export default function SupermarketsPage() {
     });
   };
 
-  const columns: ColumnsType<Supermarket> = [
+    const formatDate = (dateStr: string) => new Date(dateStr).toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' });
+  const sortDir = (key: string) => (sort.sortBy === key ? (sort.sortOrder === 'asc' ? 'ascend' : 'descend') : null);
+  const handleTableChange: TableProps<Supermarket>['onChange'] = (paginationInfo, _filters, sorter) => {
+    const s = Array.isArray(sorter) ? sorter[0] : sorter;
+    const key = String(s?.field ?? s?.columnKey ?? '');
+    const sortBy = key && ['createdAt', 'updatedAt'].includes(key) ? key : undefined;
+    const sortOrder = s?.order === 'ascend' ? 'asc' : s?.order === 'descend' ? 'desc' : undefined;
+    setPagination((p) => ({ ...p, page: paginationInfo.current ?? 1, pageSize: paginationInfo.pageSize ?? 10 }));
+    setSort({ sortBy, sortOrder });
+  };
+const columns: ColumnsType<Supermarket> = [
     { title: '超市名称', dataIndex: 'name' },
     { title: '备注', dataIndex: 'description', render: (v) => v || '-' },
+    { title: '创建时间', dataIndex: 'createdAt', key: 'createdAt', sorter: true, sortOrder: sortDir('createdAt'), render: (v) => formatDate(v as string) },
+    { title: '修改时间', dataIndex: 'updatedAt', key: 'updatedAt', sorter: true, sortOrder: sortDir('updatedAt'), render: (v) => formatDate(v as string) },
     {
       title: '操作',
       width: 120,
@@ -127,7 +145,7 @@ export default function SupermarketsPage() {
             style={{ width: 320 }}
             allowClear
             onChange={(e) => setKeyword(e.target.value)}
-            onSearch={(v) => fetchData(1, v, pagination.pageSize)}
+            onSearch={(v) => fetchData(1, v, pagination.pageSize, sort.sortBy, sort.sortOrder)}
           />
           <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>新增超市</Button>
         </div>
@@ -137,12 +155,12 @@ export default function SupermarketsPage() {
         columns={columns}
         dataSource={data}
         loading={loading}
+        onChange={handleTableChange}
         pagination={{
           current: pagination.page,
           pageSize: pagination.pageSize,
           total: pagination.total,
           showTotal: (t) => `共 ${t} 条`,
-          onChange: (page, pageSize) => setPagination((p) => ({ ...p, page, pageSize })),
         }}
       />} renderMobileItem={(row) => <button className="mobile-record" onClick={() => openEdit(row)}><span className="mobile-record__title">{row.name}</span><span className="mobile-record__meta"><span>{row.description || '无备注'}</span><span>编辑 ›</span></span></button>} />
       </div>
@@ -161,7 +179,7 @@ export default function SupermarketsPage() {
             <Input placeholder="输入超市名称（如端氏）" />
           </Form.Item>
           <Form.Item name="description" label="备注">
-            <Input placeholder="输入备注（可选）" />
+            <Input.TextArea rows={3}/>
           </Form.Item>
         </Form>
       </Modal>

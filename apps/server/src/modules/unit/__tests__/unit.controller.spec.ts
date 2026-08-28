@@ -16,7 +16,7 @@ describe('UnitController', () => {
     const data = { items: [], meta: { page: 2, pageSize: 10, total: 0 } };
     service.findAll.mockResolvedValue(data);
     await expect(controller.findAll({ page: 2, pageSize: 10, keyword: 'kg' })).resolves.toEqual({ success: true, data });
-    expect(service.findAll).toHaveBeenCalledWith(2, 10, 'kg');
+    expect(service.findAll).toHaveBeenCalledWith(2, 10, 'kg', undefined, undefined);
   });
 
   it('returns one unit', async () => {

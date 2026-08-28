@@ -26,29 +26,35 @@ export class OrderService {
   // ==================== Order CRUD ====================
 
   /**
-   * 生成默认订单名：YYYYMMDD-序号
-   * 序号 = 今天（本地零点起）已创建的订单数 + 1（例如第 3 单 → 20260827-03）
-   * 注意：这是「乐观」序号（没有并发锁），仅用于预填名称，用户可改
+   * 生成默认订单名：时间戳格式（YYYYMMDDHHMMSS，对齐 V1 迁移数据）
+   * 如 20260821140807。秒级唯一；用户可改
    */
   async getNextName() {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const count = await this.prisma.order.count({
-      where: { deletedAt: null, createdAt: { gte: today } },
-    });
-    const seq = String(count + 1).padStart(2, '0');
-    const y = today.getFullYear();
-    const m = String(today.getMonth() + 1).padStart(2, '0');
-    const d = String(today.getDate()).padStart(2, '0');
-    return { name: `${y}${m}${d}-${seq}` };
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    const h = String(now.getHours()).padStart(2, '0');
+    const min = String(now.getMinutes()).padStart(2, '0');
+    const sec = String(now.getSeconds()).padStart(2, '0');
+    return { name: `${y}${m}${d}${h}${min}${sec}` };
   }
 
   /**
    * 订单分页列表
-   * keyword 搜索：订单名/备注 + 市场(市场名/所属城市) —— 用关系字段搜
-   * 含 totalAmount（进货金额）：未删除明细 lineTotal 之和，用于列表展示；不含明细数组
+   * 搜索：keyword（名称/备注/市场/城市 模糊）或 独立字段（name/cityId/marketId/description）
+   * 排序：createdAt/updatedAt 走 Prisma；amount（进货金额）因 Prisma 不支持 relation _sum
+   * orderBy，改为内存计算金额后排序再手动分页（订单量千级，性能可接受）
+   * 返回含 totalAmount（未删除明细 lineTotal 之和）；不含明细数组
    */
-  async findAll(page: number, pageSize: number, keyword?: string) {
+  async findAll(
+    page: number,
+    pageSize: number,
+    keyword?: string,
+    sortBy?: string,
+    sortOrder?: string,
+    filters: { name?: string; cityId?: string; marketId?: string; description?: string } = {},
+  ) {
     const where: Prisma.OrderWhereInput = { deletedAt: null };
     if (keyword) {
       where.OR = [
@@ -58,10 +64,42 @@ export class OrderService {
         { market: { city: { place: { contains: keyword, mode: 'insensitive' } } } },
       ];
     }
+    if (filters.name) where.name = { contains: filters.name, mode: 'insensitive' };
+    if (filters.description) where.description = { contains: filters.description, mode: 'insensitive' };
+    if (filters.marketId) where.marketId = filters.marketId;
+    if (filters.cityId) where.market = { cityId: filters.cityId };
+
+    const dir = sortOrder === 'desc' ? 'desc' : 'asc';
+
+    // 进货金额排序：内存计算后排序 + 手动分页
+    if (sortBy === 'amount') {
+      const all = await this.prisma.order.findMany({
+        where,
+        include: {
+          market: { include: { city: true } },
+          items: { where: { deletedAt: null }, select: { lineTotal: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+      const list = all
+        .map(({ items: orderItems, ...order }) => ({
+          ...order,
+          totalAmount: orderItems.reduce((sum, item) => sum + Number(item.lineTotal), 0),
+        }))
+        .sort((a, b) => (dir === 'desc' ? b.totalAmount - a.totalAmount : a.totalAmount - b.totalAmount));
+      return {
+        items: list.slice((page - 1) * pageSize, page * pageSize),
+        meta: { page, pageSize, total: list.length },
+      };
+    }
+
+    const orderBy = sortBy
+      ? ({ [sortBy]: dir } as Prisma.OrderOrderByWithRelationInput)
+      : { createdAt: 'desc' as const };
     const [items, total] = await Promise.all([
       this.prisma.order.findMany({
         where,
-        orderBy: { createdAt: 'desc' },
+        orderBy,
         skip: (page - 1) * pageSize,
         take: pageSize,
         include: {

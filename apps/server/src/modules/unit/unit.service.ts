@@ -20,7 +20,7 @@ export class UnitService {
    * 分页 + keyword 搜索（name/description，不区分大小写）
    * Promise.all 并行查 findMany + count；skip/take 实现分页
    */
-  async findAll(page: number, pageSize: number, keyword?: string) {
+  async findAll(page: number, pageSize: number, keyword?: string, sortBy?: string, sortOrder?: string) {
     const where: Prisma.UnitWhereInput = { deletedAt: null };
     if (keyword) {
       where.OR = [
@@ -29,7 +29,7 @@ export class UnitService {
       ];
     }
     const [items, total] = await Promise.all([
-      this.prisma.unit.findMany({ where, orderBy: { createdAt: 'asc' }, skip: (page - 1) * pageSize, take: pageSize }),
+      this.prisma.unit.findMany({ where, orderBy: sortBy ? ({ [sortBy]: sortOrder === 'desc' ? 'desc' : 'asc' } as Prisma.UnitOrderByWithRelationInput) : { createdAt: 'asc' }, skip: (page - 1) * pageSize, take: pageSize }),
       this.prisma.unit.count({ where }),
     ]);
     return { items, meta: { page, pageSize, total } };

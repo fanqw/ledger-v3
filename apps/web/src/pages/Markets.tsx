@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Table, Button, Input, Modal, Form, Select, Space, App as AntdApp, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
+import type { TableProps } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { toast } from '../lib/toast';
 import { authFetch } from '../lib/api';
@@ -14,6 +15,8 @@ interface Market {
   cityId: string;
   city?: City | null;
   description: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export default function MarketsPage() {
@@ -22,6 +25,7 @@ export default function MarketsPage() {
   const [data, setData] = useState<Market[]>([]);
   const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState({ page: 1, pageSize: 10, total: 0 });
+  const [sort, setSort] = useState<{ sortBy?: string; sortOrder?: string }>({});
   const [keyword, setKeyword] = useState('');
   const [cities, setCities] = useState<City[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -29,10 +33,12 @@ export default function MarketsPage() {
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  const fetchData = useCallback(async (page: number, kw: string, pageSize: number) => {
+  const fetchData = useCallback(async (page: number, kw: string, pageSize: number, sortBy?: string, sortOrder?: string) => {
     setLoading(true);
     try {
       const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
+      if (sortBy) params.set('sortBy', sortBy);
+      if (sortOrder) params.set('sortOrder', sortOrder);
       if (kw) params.set('keyword', kw);
       const res = await authFetch(`/api/markets?${params}`);
       const json = await res.json();
@@ -43,9 +49,9 @@ export default function MarketsPage() {
 
   useEffect(() => {
     const delay = keyword.trim() ? 300 : 0;
-    const task = setTimeout(() => { void fetchData(pagination.page, keyword, pagination.pageSize); }, delay);
+    const task = setTimeout(() => { void fetchData(pagination.page, keyword, pagination.pageSize, sort.sortBy, sort.sortOrder); }, delay);
     return () => clearTimeout(task);
-  }, [keyword, pagination.page, pagination.pageSize, fetchData]);
+  }, [keyword, pagination.page, pagination.pageSize, sort.sortBy, sort.sortOrder, fetchData]);
 
   const loadCities = async () => {
     try {
@@ -88,7 +94,7 @@ export default function MarketsPage() {
       if (json.success) {
         toast.success(editing ? '更新成功' : '创建成功');
         setDialogOpen(false);
-        fetchData(pagination.page, keyword, pagination.pageSize);
+        fetchData(pagination.page, keyword, pagination.pageSize, sort.sortBy, sort.sortOrder);
       } else {
         toast.error(json.error?.message || '操作失败');
       }
@@ -104,7 +110,7 @@ export default function MarketsPage() {
       const json = await res.json();
       if (json.success) {
         toast.success('删除成功');
-        fetchData(pagination.page, keyword, pagination.pageSize);
+        fetchData(pagination.page, keyword, pagination.pageSize, sort.sortBy, sort.sortOrder);
       } else {
         toast.error(json.error?.message || '删除失败');
       }
@@ -123,10 +129,22 @@ export default function MarketsPage() {
     });
   };
 
-  const columns: ColumnsType<Market> = [
+    const formatDate = (dateStr: string) => new Date(dateStr).toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' });
+  const sortDir = (key: string) => (sort.sortBy === key ? (sort.sortOrder === 'asc' ? 'ascend' : 'descend') : null);
+  const handleTableChange: TableProps<Market>['onChange'] = (paginationInfo, _filters, sorter) => {
+    const s = Array.isArray(sorter) ? sorter[0] : sorter;
+    const key = String(s?.field ?? s?.columnKey ?? '');
+    const sortBy = key && ['createdAt', 'updatedAt'].includes(key) ? key : undefined;
+    const sortOrder = s?.order === 'ascend' ? 'asc' : s?.order === 'descend' ? 'desc' : undefined;
+    setPagination((p) => ({ ...p, page: paginationInfo.current ?? 1, pageSize: paginationInfo.pageSize ?? 10 }));
+    setSort({ sortBy, sortOrder });
+  };
+const columns: ColumnsType<Market> = [
     { title: '市场名称', dataIndex: 'name' },
     { title: '所属城市', render: (_, row) => row.city?.place ?? '-' },
     { title: '备注', dataIndex: 'description', render: (v) => v || '-' },
+    { title: '创建时间', dataIndex: 'createdAt', key: 'createdAt', sorter: true, sortOrder: sortDir('createdAt'), render: (v) => formatDate(v as string) },
+    { title: '修改时间', dataIndex: 'updatedAt', key: 'updatedAt', sorter: true, sortOrder: sortDir('updatedAt'), render: (v) => formatDate(v as string) },
     {
       title: '操作',
       width: 120,
@@ -149,7 +167,7 @@ export default function MarketsPage() {
             style={{ width: 320 }}
             allowClear
             onChange={(e) => setKeyword(e.target.value)}
-            onSearch={(v) => fetchData(1, v, pagination.pageSize)}
+            onSearch={(v) => fetchData(1, v, pagination.pageSize, sort.sortBy, sort.sortOrder)}
           />
           <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>新增市场</Button>
         </div>
@@ -159,12 +177,12 @@ export default function MarketsPage() {
         columns={columns}
         dataSource={data}
         loading={loading}
+        onChange={handleTableChange}
         pagination={{
           current: pagination.page,
           pageSize: pagination.pageSize,
           total: pagination.total,
           showTotal: (t) => `共 ${t} 条`,
-          onChange: (page, pageSize) => setPagination((p) => ({ ...p, page, pageSize })),
         }}
       />} renderMobileItem={(row) => <button className="mobile-record" onClick={() => openEdit(row)}><span className="mobile-record__title">{row.name}</span><span className="mobile-record__meta"><span>{row.city?.place ?? '未选城市'}</span><span>编辑 ›</span></span></button>} />
       </div>
@@ -189,7 +207,7 @@ export default function MarketsPage() {
             />
           </Form.Item>
           <Form.Item name="description" label="备注">
-            <Input placeholder="输入备注（可选）" />
+            <Input.TextArea rows={3}/>
           </Form.Item>
         </Form>
       </Modal>

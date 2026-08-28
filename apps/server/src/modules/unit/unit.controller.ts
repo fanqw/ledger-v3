@@ -71,8 +71,8 @@ export class UnitController {
   @ApiQuery(pageSizeQuery)
   @ApiQuery(keywordQuery('搜索关键词：匹配单位名称或备注（模糊、不区分大小写）', '千克'))
   @ApiOkResponse({ description: '单位分页列表', schema: pagedOkBody(unitItemSchema, '单位对象数组') })
-  async findAll(@Query(new ZodValidationPipe(paginationSchema)) query: { page: number; pageSize: number; keyword?: string }) {
-    const data = await this.service.findAll(query.page, query.pageSize, query.keyword);
+  async findAll(@Query(new ZodValidationPipe(paginationSchema)) query: { page: number; pageSize: number; keyword?: string; sortBy?: string; sortOrder?: string }) {
+    const data = await this.service.findAll(query.page, query.pageSize, query.keyword, query.sortBy, query.sortOrder);
     return { success: true, data };
   }
 

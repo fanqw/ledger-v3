@@ -16,7 +16,7 @@ describe('PurchasePlaceController', () => {
     const data = { items: [], meta: { page: 2, pageSize: 10, total: 0 } };
     service.findAll.mockResolvedValue(data);
     await expect(controller.findAll({ page: 2, pageSize: 10, keyword: 'market' })).resolves.toEqual({ success: true, data });
-    expect(service.findAll).toHaveBeenCalledWith(2, 10, 'market');
+    expect(service.findAll).toHaveBeenCalledWith(2, 10, 'market', undefined, undefined);
   });
 
   it('returns one purchase place', async () => {

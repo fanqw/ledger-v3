@@ -46,24 +46,16 @@ describe('OrderService', () => {
     );
   });
 
-  it('getNextName 当天无订单返回 YYYYMMDD-01', async () => {
-    prisma.order.count.mockResolvedValue(0);
+  it('getNextName 返回时间戳格式 YYYYMMDDHHMMSS（对齐迁移数据）', async () => {
     const result = await service.getNextName();
-    const today = new Date();
-    const y = today.getFullYear();
-    const m = String(today.getMonth() + 1).padStart(2, '0');
-    const d = String(today.getDate()).padStart(2, '0');
-    expect(result).toEqual({ name: `${y}${m}${d}-01` });
-  });
-
-  it('getNextName 当天已有 1 条返回 YYYYMMDD-02', async () => {
-    prisma.order.count.mockResolvedValue(1);
-    const result = await service.getNextName();
-    const today = new Date();
-    const y = today.getFullYear();
-    const m = String(today.getMonth() + 1).padStart(2, '0');
-    const d = String(today.getDate()).padStart(2, '0');
-    expect(result).toEqual({ name: `${y}${m}${d}-02` });
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    const h = String(now.getHours()).padStart(2, '0');
+    const min = String(now.getMinutes()).padStart(2, '0');
+    const sec = String(now.getSeconds()).padStart(2, '0');
+    expect(result).toEqual({ name: `${y}${m}${d}${h}${min}${sec}` });
   });
 
   it('订单未找到时抛出 NotFoundException', async () => {

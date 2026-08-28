@@ -10,7 +10,7 @@ describe('SupermarketController', () => {
     const data = { items: [], meta: { page: 1, pageSize: 10, total: 0 } };
     service.findAll.mockResolvedValue(data);
     await expect(controller.findAll({ page: 1, pageSize: 10, keyword: '端氏' })).resolves.toEqual({ success: true, data });
-    expect(service.findAll).toHaveBeenCalledWith(1, 10, '端氏');
+    expect(service.findAll).toHaveBeenCalledWith(1, 10, '端氏', undefined, undefined);
   });
 
   it('returns one supermarket', async () => {
