@@ -10,28 +10,20 @@ const { Sider } = Layout;
 
 export default function SideNav({
   mobile = false,
+  activeTop,
   onNavigate,
 }: {
   mobile?: boolean;
+  activeTop: string;
   onNavigate?: () => void;
 }) {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
 
-  // 经典模式：一级独立项 + 分组二级（antd Menu group）
-  const items = MENU_ITEMS.flatMap((t): ItemType[] => {
-    if (t.children) {
-      return [
-        {
-          type: 'group',
-          label: t.label,
-          children: t.children.map((c) => ({ key: c.key, label: c.label, icon: c.icon })),
-        },
-      ];
-    }
-    return [{ key: t.key, label: t.label, icon: t.icon }];
-  });
+  // mix 布局：侧边显示当前一级的二级菜单（经典 sub 模式）
+  const top = MENU_ITEMS.find((t) => t.key === activeTop);
+  const items: ItemType[] = (top?.children || []).map((c) => ({ key: c.key, label: c.label, icon: c.icon }));
 
   const onClick: MenuProps['onClick'] = ({ key }) => {
     navigate(key);
@@ -55,7 +47,7 @@ export default function SideNav({
         onClick={onClick}
         style={{ borderRight: 0, background: 'transparent', paddingBottom: 48 }}
       />
-      {/* 折叠按钮：sider 与内容区交界处，横跨两侧各 50%，高 48px */}
+      {/* 折叠按钮：sider 与内容区交界处，横跨两侧，高 48px */}
       {!mobile && (
         <div
           onClick={() => setCollapsed((c) => !c)}
