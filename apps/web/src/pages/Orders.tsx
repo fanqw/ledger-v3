@@ -166,7 +166,7 @@ export default function OrdersPage() {
     { title: '订单名称', dataIndex: 'name' },
     { title: '进货地', render: (_, row) => row.market?.city?.place ?? '-' },
     { title: '进货市场', render: (_, row) => row.market?.name ?? '-' },
-    { title: '进货金额', align: 'right', sorter: true, sortOrder: sortDir('amount'), render: (_, row) => formatAmount(row.totalAmount) },
+    { title: '进货金额', align: 'right', key: 'amount', sorter: true, sortOrder: sortDir('amount'), render: (_, row) => formatAmount(row.totalAmount) },
     { title: '创建时间', dataIndex: 'createdAt', sorter: true, sortOrder: sortDir('createdAt'), render: (v) => formatDate(v as string) },
     { title: '修改时间', dataIndex: 'updatedAt', sorter: true, sortOrder: sortDir('updatedAt'), render: (v) => formatDate(v as string) },
     {

@@ -158,12 +158,12 @@ const columns: ColumnsType<Category> = [
           columns={columns}
           dataSource={data}
           loading={loading}
+          onChange={handleTableChange}
           pagination={{
             current: pagination.page,
             pageSize: pagination.pageSize,
             total: pagination.total,
             showTotal: (t) => `共 ${t} 条`,
-            onChange: (page, pageSize) => setPagination((p) => ({ ...p, page, pageSize })),
           }}
         />} renderMobileItem={(row) => <button className="mobile-record" onClick={() => openEdit(row)}><span className="mobile-record__title">{row.name}</span><span className="mobile-record__meta"><span>{row.description || '无备注'}</span><span>编辑 ›</span></span></button>} />
       </div>
