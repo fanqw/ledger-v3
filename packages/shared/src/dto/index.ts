@@ -39,7 +39,24 @@ export interface CommodityDto {
 export interface PurchasePlaceDto {
   id: string;
   place: string;
-  marketName: string;
+  description?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MarketDto {
+  id: string;
+  name: string;
+  cityId: string;
+  city?: PurchasePlaceDto;
+  description?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SupermarketDto {
+  id: string;
+  name: string;
   description?: string;
   createdAt: string;
   updatedAt: string;
@@ -49,8 +66,8 @@ export interface OrderDto {
   id: string;
   name: string;
   description?: string;
-  purchasePlaceId?: string;
-  purchasePlace?: PurchasePlaceDto;
+  marketId?: string;
+  market?: MarketDto;
   items?: OrderItemDto[];
   createdAt: string;
   updatedAt: string;
@@ -92,8 +109,8 @@ export interface CategoryDonutDto {
   orderCount: number;
 }
 
-export interface PurchasePlaceDonutDto {
-  purchasePlaceName: string;
+export interface MarketDonutDto {
+  marketName: string;
   amount: number;
   percentage: number;
   orderCount: number;

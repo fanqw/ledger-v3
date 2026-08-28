@@ -9,7 +9,7 @@ import type {
   AnalyticsDailyTrendItem,
   AnalyticsTopCommodities,
   AnalyticsCategoryShare,
-  AnalyticsPurchasePlaceShare,
+  AnalyticsMarketShare,
   AnalyticsOrderSizeBucket,
 } from '@ledger-v3/shared/validators';
 
@@ -181,7 +181,7 @@ function TopCommoditiesCard({ data, loading }: { data: AnalyticsTopCommodities; 
   );
 }
 
-// 环形图（分类/进货地占比）
+// 环形图（分类/市场占比）
 function DonutChart({ title, data, loading, centerLabel }: {
   title: string;
   data: { name: string; value: number }[];
@@ -319,7 +319,7 @@ export default function AnalyticsPage() {
 
   const kpis = data?.kpis;
   const categoryData = (data?.categoryShare ?? []).map((c: AnalyticsCategoryShare) => ({ name: c.name, value: c.amount }));
-  const placeData = (data?.purchasePlaceShare ?? []).map((p: AnalyticsPurchasePlaceShare) => ({ name: p.name, value: p.amount }));
+  const placeData = (data?.marketShare ?? []).map((p: AnalyticsMarketShare) => ({ name: p.name, value: p.amount }));
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -392,8 +392,8 @@ export default function AnalyticsPage() {
         <ChartCard title="分类金额占比" loading={loading}>
           <DonutChart title="分类" data={categoryData} loading={loading} centerLabel="总金额" />
         </ChartCard>
-        <ChartCard title="进货地金额占比" loading={loading}>
-          <DonutChart title="进货地" data={placeData} loading={loading} centerLabel="总金额" />
+        <ChartCard title="市场金额占比" loading={loading}>
+          <DonutChart title="市场" data={placeData} loading={loading} centerLabel="总金额" />
         </ChartCard>
         <ChartCard title="订单规模分布" loading={loading}>
           <OrderSizeHistogram data={data?.orderSizeDistribution ?? []} loading={loading} />

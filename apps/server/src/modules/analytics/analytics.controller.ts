@@ -75,14 +75,14 @@ const workbenchOkBody = {
             },
           },
         },
-        purchasePlaceShare: {
+        marketShare: {
           type: 'array',
-          description: '进货地销售占比（金额降序，未指定压底）',
+          description: '市场占比（金额降序，未指定压底）',
           items: {
             type: 'object',
             properties: {
-              purchasePlaceId: { type: 'string', nullable: true, description: '进货地 ID（null=未指定）', example: '507f1f77bcf86cd799439011' },
-              name: { type: 'string', description: '进货地名（地点-市场名）', example: '中关村-中发电子批发市场' },
+              marketId: { type: 'string', nullable: true, description: '市场 ID（null=未指定）', example: '507f1f77bcf86cd799439011' },
+              name: { type: 'string', description: '市场名（含所属城市）', example: '长治市场 (晋城)' },
               amount: { type: 'number', description: '金额（元）', example: 1800000 },
               percentage: { type: 'number', description: '占比（%，1 位小数）', example: 18.2 },
               orderCount: { type: 'integer', description: '覆盖订单数', example: 150 },
@@ -136,7 +136,7 @@ export class AnalyticsController {
    *
    * 返回结构（AnalyticsWorkbenchResponse）：
    *   { kpis, dailyTrend, topCommodities, categoryShare,
-   *     purchasePlaceShare, orderSizeDistribution }
+   *     marketShare, orderSizeDistribution }
    *   分别对应前端 4 个 KPI 卡片 + 每日趋势堆叠图 + 热购 Top10 +
    *   分类/进货地占比环形图 + 订单规模分布
    */

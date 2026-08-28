@@ -45,8 +45,8 @@ export class OrderService {
 
   /**
    * 订单分页列表
-   * keyword 搜索：订单名/备注 + 进货地(place/marketName) —— 用关系字段搜
-   * 只 include purchasePlace（不含 items，列表页不需要明细，避免响应过大）
+   * keyword 搜索：订单名/备注 + 市场(市场名/所属城市) —— 用关系字段搜
+   * 只 include market（不含 items，列表页不需要明细，避免响应过大）
    */
   async findAll(page: number, pageSize: number, keyword?: string) {
     const where: Prisma.OrderWhereInput = { deletedAt: null };
@@ -54,8 +54,8 @@ export class OrderService {
       where.OR = [
         { name: { contains: keyword, mode: 'insensitive' } },
         { description: { contains: keyword, mode: 'insensitive' } },
-        { purchasePlace: { place: { contains: keyword, mode: 'insensitive' } } },
-        { purchasePlace: { marketName: { contains: keyword, mode: 'insensitive' } } },
+        { market: { name: { contains: keyword, mode: 'insensitive' } } },
+        { market: { city: { place: { contains: keyword, mode: 'insensitive' } } } },
       ];
     }
     const [items, total] = await Promise.all([
@@ -64,7 +64,7 @@ export class OrderService {
         orderBy: { createdAt: 'desc' },
         skip: (page - 1) * pageSize,
         take: pageSize,
-        include: { purchasePlace: true },
+        include: { market: { include: { city: true } } },
       }),
       this.prisma.order.count({ where }),
     ]);
@@ -90,7 +90,7 @@ export class OrderService {
     const record = await this.prisma.order.findFirst({
       where: { id, deletedAt: null },
       include: {
-        purchasePlace: true,
+        market: { include: { city: true } },
         items: {
           where: { deletedAt: null },
           include: {
@@ -132,17 +132,17 @@ export class OrderService {
   /**
    * 创建订单
    * 校验顺序：
-   *   1. 若传了 purchasePlaceId → 校验进货地存在且未删除（缺失 422 VALIDATION_ERROR）
+   *   1. 若传了 marketId → 校验市场存在且未删除（缺失 422 VALIDATION_ERROR）
    *   2. 名称查重 → 重复 409 ORDER_EXISTS
-   *   3. create + include purchasePlace（返回带进货地对象）
+   *   3. create + include market（返回带市场对象）
    * 注意：新建订单不带明细（明细通过 addItem 逐个加）
    */
-  async create(data: { name: string; purchasePlaceId?: string | null; description?: string }) {
+  async create(data: { name: string; marketId?: string | null; description?: string }) {
     const name = data.name.trim();
 
-    if (data.purchasePlaceId) {
-      const pp = await this.prisma.purchasePlace.findFirst({
-        where: { id: data.purchasePlaceId, deletedAt: null },
+    if (data.marketId) {
+      const pp = await this.prisma.market.findFirst({
+        where: { id: data.marketId, deletedAt: null },
       });
       if (!pp)
         throw new UnprocessableEntityException({
@@ -161,19 +161,19 @@ export class OrderService {
       });
 
     return this.prisma.order.create({
-      data: { name, description: data.description?.trim() || null, purchasePlaceId: data.purchasePlaceId || null },
-      include: { purchasePlace: true },
+      data: { name, description: data.description?.trim() || null, marketId: data.marketId || null },
+      include: { market: { include: { city: true } } },
     });
   }
 
   /**
    * 更新订单
    * 学习点（Prisma 关系操作的两种写法）：
-   * - purchasePlaceId = null → { disconnect: true }  断开关系（清空进货地）
-   * - purchasePlaceId = id  → 先校验存在，再 { connect: { id } }  连接关系
+   * - marketId = null → { disconnect: true }  断开关系（清空市场）
+   * - marketId = id  → 先校验存在，再 { connect: { id } }  连接关系
    * 改名查重排除自身（id: { not }）
    */
-  async update(id: string, data: { name?: string; description?: string; purchasePlaceId?: string | null }) {
+  async update(id: string, data: { name?: string; description?: string; marketId?: string | null }) {
     await this.findById(id);
     const updateData: Prisma.OrderUpdateInput = {};
 
@@ -190,28 +190,28 @@ export class OrderService {
       updateData.name = name;
     }
     if (data.description !== undefined) updateData.description = data.description.trim() || null;
-    if (data.purchasePlaceId !== undefined) {
-      if (data.purchasePlaceId === null) {
-        // 显式清空进货地
-        updateData.purchasePlace = { disconnect: true };
+    if (data.marketId !== undefined) {
+      if (data.marketId === null) {
+        // 显式清空市场
+        updateData.market = { disconnect: true };
       } else {
         // connect 前校验存在性/软删除（与 create() 一致）
-        const pp = await this.prisma.purchasePlace.findFirst({
-          where: { id: data.purchasePlaceId, deletedAt: null },
+        const pp = await this.prisma.market.findFirst({
+          where: { id: data.marketId, deletedAt: null },
         });
         if (!pp)
           throw new UnprocessableEntityException({
             success: false,
             error: { code: ERROR_CODES.VALIDATION_ERROR, message: ERROR_MESSAGES[ERROR_CODES.VALIDATION_ERROR] },
           });
-        updateData.purchasePlace = { connect: { id: data.purchasePlaceId } };
+        updateData.market = { connect: { id: data.marketId } };
       }
     }
 
     return this.prisma.order.update({
       where: { id },
       data: updateData,
-      include: { purchasePlace: true },
+      include: { market: { include: { city: true } } },
     });
   }
 

@@ -12,7 +12,7 @@ import ExcelJS from 'exceljs';
 interface Category { id: string; name: string; }
 interface Unit { id: string; name: string; }
 interface Commodity { id: string; name: string; category: Category; unit: Unit; }
-interface PurchasePlace { id: string; place: string; marketName: string; }
+interface Market { id: string; name: string; city?: { id: string; place: string } | null; }
 interface OrderItem {
   id: string; commodityId: string; commodity: Commodity;
   quantity: number; unitPrice: number; lineTotal: number;
@@ -20,7 +20,7 @@ interface OrderItem {
 }
 interface Order {
   id: string; name: string; description: string | null;
-  purchasePlaceId: string | null; purchasePlace: PurchasePlace | null;
+  marketId: string | null; market: Market | null;
   items: OrderItem[]; createdAt: string; updatedAt: string;
 }
 interface ItemGroup { categoryId: string; categoryName: string; items: OrderItem[]; subtotal: number; }
@@ -54,7 +54,7 @@ async function exportToExcel(order: Order) {
   const center = { horizontal: 'center', vertical: 'middle' } as const;
   s.mergeCells('A1:I1'); const t = s.getCell('A1'); t.value = `订单: ${order.name}`; t.font = { bold: true, size: 14 }; t.alignment = center;
   s.mergeCells('A2:I2'); const parts: string[] = [];
-  if (order.purchasePlace) parts.push(`进货地: ${order.purchasePlace.place} - ${order.purchasePlace.marketName}`);
+  if (order.market) parts.push(`进货市场: ${order.market.name} (${order.market.city?.place ?? ''})`);
   parts.push(`创建时间: ${fmtDate(order.createdAt)}`); s.getCell('A2').value = parts.join('    '); s.getCell('A2').alignment = center;
   const hdrs = ['分类', '名称', '数量', '单位', '单价', '金额', '备注', '分类金额', '总金额'];
   const hr = s.getRow(4);
@@ -348,7 +348,7 @@ export default function OrderDetailPage() {
         }
       >
         <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', fontSize: 13, color: 'var(--muted)' }}>
-          {order.purchasePlace && <span>进货地: {order.purchasePlace.place} - {order.purchasePlace.marketName}</span>}
+          {order.market && <span>进货市场: {order.market.name} ({order.market.city?.place})</span>}
           <span>创建时间: {fmtDate(order.createdAt)}</span>
           {order.description && <span>备注: {order.description}</span>}
         </div>

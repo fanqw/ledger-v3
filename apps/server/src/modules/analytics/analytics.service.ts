@@ -5,7 +5,7 @@ import type {
   AnalyticsDailyTrendItem,
   AnalyticsTopCommodities,
   AnalyticsCategoryShare,
-  AnalyticsPurchasePlaceShare,
+  AnalyticsMarketShare,
   AnalyticsOrderSizeBucket,
   AnalyticsWorkbenchResponse,
 } from '@ledger-v3/shared/validators';
@@ -25,14 +25,14 @@ interface ItemRow {
   };
 }
 
-// 订单（含 items + purchasePlace）
+// 订单（含 items + market）
 interface OrderRow {
   id: string;
   name: string;
   description?: string | null;
   createdAt: Date | string;
-  purchasePlaceId: string | null;
-  purchasePlace: { id: string; place: string; marketName: string } | null;
+  marketId: string | null;
+  market: { id: string; name: string; city: { id: string; place: string } | null } | null;
   items: ItemRow[];
 }
 
@@ -70,7 +70,7 @@ export class AnalyticsService {
    * 工作台聚合入口
    * 1. 把 [start, end] 转成查询边界：gte = start 00:00，lt = end+1天 00:00
    *    （半开区间保证 end 当天 23:59:59 以内的订单都被包含）
-   * 2. 一次 findMany 拉回订单 + 明细 + 商品（含分类/单位）+ 进货地
+   * 2. 一次 findMany 拉回订单 + 明细 + 商品（含分类/单位）+ 市场
    * 3. 交给 compute() 做全部聚合（纯函数）
    */
   async getWorkbench(start: string, end: string): Promise<AnalyticsWorkbenchResponse> {
@@ -86,7 +86,7 @@ export class AnalyticsService {
           where: { deletedAt: null },
           include: { commodity: { include: { category: true, unit: true } } },
         },
-        purchasePlace: true,
+        market: { include: { city: true } },
       },
       orderBy: { createdAt: 'asc' },
     })) as unknown as OrderRow[];
@@ -105,7 +105,7 @@ export class AnalyticsService {
     const dailyTrend = this.computeDailyTrend(orders);
     const topCommodities = this.computeTopCommodities(orders);
     const categoryShare = this.computeCategoryShare(orders);
-    const purchasePlaceShare = this.computePurchasePlaceShare(orders);
+    const marketShare = this.computeMarketShare(orders);
     const orderSizeDistribution = this.computeOrderSizeDistribution(orders);
 
     return {
@@ -113,7 +113,7 @@ export class AnalyticsService {
       dailyTrend,
       topCommodities,
       categoryShare,
-      purchasePlaceShare,
+      marketShare,
       orderSizeDistribution,
     };
   }
@@ -317,19 +317,19 @@ export class AnalyticsService {
   }
 
   /**
-   * 进货地占比：按订单归组（进货地挂在订单上，不在明细上）
-   * - 金额 = 该进货地所有订单的 orderAmountFen 之和
-   * - 无进货地订单归 '未指定'（purchasePlaceId = null），排序压到最末尾
+   * 市场占比：按订单归组（市场挂在订单上，不在明细上）
+   * - 金额 = 该市场所有订单的 orderAmountFen 之和
+   * - 无市场订单归 '未指定'（marketId = null），排序压到最末尾
    * - percentage / orderCount（去重订单数）同分类占比模式
    */
-  private computePurchasePlaceShare(orders: OrderRow[]): AnalyticsPurchasePlaceShare[] {
-    const map = new Map<string, { purchasePlaceId: string | null; name: string; amountFen: number; orderIds: Set<string> }>();
+  private computeMarketShare(orders: OrderRow[]): AnalyticsMarketShare[] {
+    const map = new Map<string, { marketId: string | null; name: string; amountFen: number; orderIds: Set<string> }>();
     let totalFen = 0;
     for (const o of orders) {
-      const pid = o.purchasePlaceId;
+      const pid = o.marketId;
       const key = pid || '__none__';
-      const name = o.purchasePlace ? `${o.purchasePlace.place} - ${o.purchasePlace.marketName}` : '未指定';
-      const entry = map.get(key) ?? { purchasePlaceId: pid, name, amountFen: 0, orderIds: new Set() };
+      const name = o.market ? `${o.market.name} (${o.market.city?.place ?? ''})` : '未指定';
+      const entry = map.get(key) ?? { marketId: pid, name, amountFen: 0, orderIds: new Set() };
       entry.amountFen += this.orderAmountFen(o);
       entry.orderIds.add(o.id);
       map.set(key, entry);
@@ -338,7 +338,7 @@ export class AnalyticsService {
 
     const result = [...map.values()]
       .map((e) => ({
-        purchasePlaceId: e.purchasePlaceId,
+        marketId: e.marketId,
         name: e.name,
         amount: this.fenToYuan(e.amountFen),
         percentage: totalFen > 0 ? this.round1((e.amountFen / totalFen) * 100) : 0,
@@ -346,8 +346,8 @@ export class AnalyticsService {
       }))
       .sort((a, b) => {
         // "未指定"（null）置于末尾
-        const aNull = a.purchasePlaceId === null ? 1 : 0;
-        const bNull = b.purchasePlaceId === null ? 1 : 0;
+        const aNull = a.marketId === null ? 1 : 0;
+        const bNull = b.marketId === null ? 1 : 0;
         if (aNull !== bNull) return aNull - bNull;
         return b.amount - a.amount || (a.name < b.name ? -1 : a.name > b.name ? 1 : 0);
       });

@@ -62,28 +62,53 @@ model Commodity {
 model PurchasePlace {
   id          String    @id @default(cuid())
   place       String
-  marketName  String
   description String?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   deletedAt   DateTime?
+  markets     Market[]
+
+  @@index([place])
+}
+
+model Market {
+  id          String         @id @default(cuid())
+  name        String
+  cityId      String
+  description String?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  deletedAt   DateTime?
+  city        PurchasePlace  @relation(fields: [cityId], references: [id], onDelete: Restrict)
   orders      Order[]
 
-  @@index([place, marketName])
+  @@index([name])
+  @@index([cityId])
+}
+
+model Supermarket {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  @@index([name])
 }
 
 model Order {
-  id              String         @id @default(cuid())
-  name            String
-  description     String?
-  purchasePlaceId String?
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
-  deletedAt       DateTime?
-  purchasePlace   PurchasePlace? @relation(fields: [purchasePlaceId], references: [id], onDelete: Restrict)
-  items           OrderItem[]
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  marketId    String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+  market      Market?   @relation(fields: [marketId], references: [id], onDelete: Restrict)
+  items       OrderItem[]
 
-  @@index([purchasePlaceId])
+  @@index([marketId])
   @@index([name])
 }
 
