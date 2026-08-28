@@ -1,4 +1,4 @@
-import { Layout, Button, Space, Avatar, Dropdown } from 'antd';
+import { Layout, Button, Space, Avatar, Tooltip } from 'antd';
 import { MenuOutlined, SunOutlined, MoonOutlined, UserOutlined, LogoutOutlined } from '@ant-design/icons';
 import { useAuth } from '../../lib/auth';
 import { useThemeMode } from '../../lib/theme';
@@ -61,25 +61,29 @@ export default function TopBar({
         <span style={{ fontWeight: 'bold', fontSize: 15, color: 'var(--text)' }}>台帐系统</span>
       </div>
 
-      {/* 右侧：主题切换 + 头像 + 名称（名称在头像右侧） */}
-      <Space size={12}>
+      {/* 右侧：主题切换 + 头像 + 名称 + 退出登录图标 */}
+      <Space size={8}>
         <Button
           type="text"
           icon={mode === 'dark' ? <SunOutlined /> : <MoonOutlined />}
           onClick={toggle}
           aria-label="切换主题"
         />
-        <Dropdown
-          menu={{ items: [{ key: 'logout', icon: <LogoutOutlined />, label: '退出登录', onClick: logout }] }}
-          placement="bottomRight"
-        >
-          <Space size={8} style={{ cursor: 'pointer' }}>
-            <Avatar size={24} style={{ background: '#3B82F6' }} icon={<UserOutlined />}>
-              {initials}
-            </Avatar>
-            <span style={{ fontSize: 13, color: 'var(--muted)' }}>{user?.username || '用户'}</span>
-          </Space>
-        </Dropdown>
+        <Space size={8}>
+          <Avatar size={24} style={{ background: '#3B82F6' }} icon={<UserOutlined />}>
+            {initials}
+          </Avatar>
+          <span style={{ fontSize: 13, color: 'var(--muted)' }}>{user?.username || '用户'}</span>
+        </Space>
+        <Tooltip title="退出登录">
+          <Button
+            type="text"
+            icon={<LogoutOutlined />}
+            onClick={logout}
+            aria-label="退出登录"
+            style={{ color: 'var(--muted)' }}
+          />
+        </Tooltip>
       </Space>
     </Header>
   );
