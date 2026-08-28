@@ -43,11 +43,12 @@ test('application shell uses narrow sider and mobile drawer', () => {
 
 test('navigation exposes direct items and expandable parent menus', () => {
   const menu = read('src/components/layout/menu.tsx');
-  assert.match(menu, /key:\s*'\/dashboard'/);
   assert.match(menu, /key:\s*'\/analytics'/);
-  assert.match(menu, /key:\s*'orders'[\s\S]*children:/);
+  assert.match(menu, /key:\s*'\/orders'/);
   assert.match(menu, /key:\s*'materials'[\s\S]*children:/);
-  assert.match(menu, /findParentMenuKey/);
+  assert.match(menu, /key:\s*'purchasing'[\s\S]*children:/);
+  assert.match(menu, /getMatchMenu/);
+  assert.match(menu, /getNavMenuItems/);
 });
 
 test('desktop sidebar persists pro-style collapse state', () => {
@@ -58,8 +59,8 @@ test('desktop sidebar persists pro-style collapse state', () => {
   assert.match(side, /trigger=\{null\}/);
   assert.match(side, /sidebar-collapse-trigger/);
   assert.match(side, /aria-label=\{collapsed \? '展开导航' : '收起导航'\}/);
-  assert.match(side, /openKeys=\{openKeys\}/);
-  assert.match(side, /findParentMenuKey/);
+  assert.match(side, /collapsed && !mobile \? \{\} : \{ openKeys/);
+  assert.match(side, /getMatchMenu/);
 });
 
 test('sidebar trigger matches the reference boundary treatment', () => {

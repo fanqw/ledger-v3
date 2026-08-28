@@ -129,8 +129,8 @@ const columns: ColumnsType<Unit> = [
       fixed: 'right',
       render: (_, row) => (
         <Space size={4}>
-          <Button type="link" size="small" onClick={() => openEdit(row)}>编辑</Button>
-          <Button type="link" size="small" danger onClick={() => confirmDelete(row)}>删除</Button>
+          <Button type="link" size="small" aria-label={`编辑${row.name}`} onClick={() => openEdit(row)}>编辑</Button>
+          <Button type="link" size="small" danger aria-label={`删除${row.name}`} onClick={() => confirmDelete(row)}>删除</Button>
         </Space>
       ),
     },
