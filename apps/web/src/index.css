@@ -60,6 +60,18 @@ body {
 [data-theme='dark'] .ant-table-wrapper .ant-table-tbody > tr > td { border-bottom: 1px solid #1f1f1f; }
 [data-theme='dark'] .ant-table-wrapper .ant-table-tbody > tr:hover > td { background: #1a1a1a; }
 .topbar-location { display: flex; align-items: center; gap: 6px; min-width: 0; }
+
+/* antd pro 风格折叠 trigger：匹配主题表面色 + hover 主色 */
+.ant-layout-sider-trigger {
+  background: var(--surface) !important;
+  color: var(--muted);
+  border-top: 1px solid var(--line);
+  transition: background 0.2s, color 0.2s;
+}
+.ant-layout-sider-trigger:hover {
+  background: var(--accent) !important;
+  color: #fff;
+}
 .mobile-nav-drawer .ant-drawer-body { padding: 8px; }
 
 :where(button, a, input, [tabindex]):focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
