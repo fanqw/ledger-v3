@@ -1,4 +1,4 @@
-import { BarChartOutlined, ProfileOutlined, BankOutlined, TagsOutlined, AppstoreOutlined, ShoppingCartOutlined, EnvironmentOutlined } from '@ant-design/icons';
+import { DashboardOutlined, BarChartOutlined, ProfileOutlined, BankOutlined, TagsOutlined, AppstoreOutlined, ShoppingCartOutlined, EnvironmentOutlined } from '@ant-design/icons';
 import type { ReactNode } from 'react';
 
 export interface MenuChild {
@@ -14,8 +14,9 @@ export interface TopMenuItem {
   children?: MenuChild[];
 }
 
-// 菜单结构：分组（sider 经典模式展示）
+// 菜单结构：一级入口 + 可展开的父子导航
 export const MENU_ITEMS: TopMenuItem[] = [
+  { key: '/dashboard', label: '仪表台', icon: <DashboardOutlined /> },
   { key: '/analytics', label: '数据分析', icon: <BarChartOutlined /> },
   {
     key: 'orders',
@@ -35,6 +36,11 @@ export const MENU_ITEMS: TopMenuItem[] = [
     ],
   },
 ];
+
+/** 返回当前页面所属的一级父菜单。 */
+export function findParentMenuKey(pathname: string): string | undefined {
+  return MENU_ITEMS.find((item) => item.children?.some((child) => pathname.startsWith(child.key)))?.key;
+}
 
 /** 面包屑：基于路径返回 [分组, 页面] */
 export function findBreadcrumb(pathname: string): string[] {

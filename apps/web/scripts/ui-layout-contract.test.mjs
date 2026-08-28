@@ -41,6 +41,15 @@ test('application shell uses narrow sider and mobile drawer', () => {
   assert.match(top, /打开导航/);
 });
 
+test('navigation exposes direct items and expandable parent menus', () => {
+  const menu = read('src/components/layout/menu.tsx');
+  assert.match(menu, /key:\s*'\/dashboard'/);
+  assert.match(menu, /key:\s*'\/analytics'/);
+  assert.match(menu, /key:\s*'orders'[\s\S]*children:/);
+  assert.match(menu, /key:\s*'materials'[\s\S]*children:/);
+  assert.match(menu, /findParentMenuKey/);
+});
+
 test('tablet and phone breakpoints prioritize usable workspace width', () => {
   const shell = read('src/components/layout/AppShell.tsx');
   const css = read('src/index.css');
