@@ -235,6 +235,7 @@ export default function OrdersPage() {
         columns={columns}
         dataSource={data}
         loading={loading}
+        onRow={(record) => ({ onClick: () => navigate(`/orders/${record.id}`) })}
         scroll={{ x: 'max-content' }}
         onChange={handleTableChange}
         pagination={{
