@@ -21,6 +21,9 @@ export default function SideNav({
     () => !mobile && window.localStorage.getItem(storageKey) === 'true',
   );
   const [openKeys, setOpenKeys] = useState<string[]>([]);
+  // 导航后自增，强制重建 Menu，清空 rc-menu 的 hover 弹窗状态，
+  // 避免点击选中子菜单后鼠标仍 hover 父级导致弹窗"关闭又重开"闪烁
+  const [menuKey, setMenuKey] = useState(0);
 
   // 路由匹配链（antd pro matchMenuKeys）：叶子 = selectedKeys，父级 = 展开态自动展开
   const matchMenuKeys = useMemo(
@@ -41,6 +44,7 @@ export default function SideNav({
 
   const onClick: MenuProps['onClick'] = ({ key }) => {
     navigate(key);
+    setMenuKey((k) => k + 1); // 重建 Menu，清空 hover 弹窗状态，避免导航后弹窗重开闪烁
     onNavigate?.();
   };
 
@@ -48,12 +52,15 @@ export default function SideNav({
   // 不传 openKeys/onOpenChange，避免受控状态下旧父级延迟移除导致双弹窗/残留。
   const menu = (
     <Menu
+      key={menuKey}
       mode={collapsed && !mobile ? 'vertical' : 'inline'}
       inlineIndent={16}
       selectedKeys={selectedKeys}
       {...(collapsed && !mobile ? {} : { openKeys, onOpenChange: setOpenKeys })}
       items={items}
       onClick={onClick}
+      // 悬浮到父级立即展示子菜单弹窗（antd pro 默认 openDelay 0.1s 有延迟感）
+      subMenuOpenDelay={0}
     />
   );
 
