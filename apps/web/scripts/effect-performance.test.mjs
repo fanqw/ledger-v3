@@ -47,8 +47,10 @@ test('list pages use one cancellable effect for initial load and debounced searc
     const source = readFileSync(new URL(`../${target}`, import.meta.url), 'utf8')
 
     assert.doesNotMatch(source, /mountedRef/, `${target} must not use a StrictMode-fragile mount guard`)
-    assert.match(source, /const delay = keyword\.trim\(\) \? 300 : 0/)
-    assert.match(source, /setTimeout\(\(\) => \{ void fetchData\(1, keyword\); \}, delay\)/)
+    // 防抖延迟：列表页用 keyword.trim()，订单页用 filters.name/description（多字段搜索）
+    assert.match(source, /const delay = .*\? 300 : 0/, `${target} must debounce the search`)
+    // 单一可取消 effect：setTimeout 调度 fetchData（服务端排序后签名含分页/排序参数，Orders 另含 filters）
+    assert.match(source, /setTimeout\(\(\) => \{ void fetchData\([^}]*\); \}, delay\)/, `${target} must schedule one cancellable load`)
     assert.match(source, /return \(\) => clearTimeout\(task\)/, `${target} must cancel the scheduled request`)
   }
 })
