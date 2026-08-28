@@ -22,10 +22,14 @@ describe('OrderService', () => {
   // ==================== Order CRUD ====================
 
   it('返回分页订单列表并支持关键词搜索', async () => {
-    prisma.order.findMany.mockResolvedValue([{ id: 'order-1' }]);
+    prisma.order.findMany.mockResolvedValue([{
+      id: 'order-1',
+      market: null,
+      items: [{ lineTotal: 100 }, { lineTotal: 50 }],
+    }]);
     prisma.order.count.mockResolvedValue(1);
     await expect(service.findAll(2, 10, 'test')).resolves.toEqual({
-      items: [{ id: 'order-1' }],
+      items: [{ id: 'order-1', market: null, totalAmount: 150 }],
       meta: { page: 2, pageSize: 10, total: 1 },
     });
     expect(prisma.order.findMany).toHaveBeenCalledWith(

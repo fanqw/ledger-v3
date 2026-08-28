@@ -55,6 +55,11 @@ body {
 .ant-table-wrapper .ant-table-tbody > tr > td { border-bottom: 1px solid #f1f5f9; }
 .ant-table-wrapper .ant-table-tbody > tr:hover > td { background: #f8fafc; }
 
+/* 订单列表：整行可点击进入详情，hover 增强 */
+.orders-table .ant-table-tbody > tr { cursor: pointer; }
+.orders-table .ant-table-tbody > tr:hover > td { background: #eef2ff !important; }
+[data-theme='dark'] .orders-table .ant-table-tbody > tr:hover > td { background: #1e2433 !important; }
+
 /* 暗黑主题 Table 覆盖 */
 [data-theme='dark'] .ant-table-wrapper .ant-table-thead > tr > th { background: #1f1f1f; color: #9ca3af; border-bottom: 1px solid var(--line); }
 [data-theme='dark'] .ant-table-wrapper .ant-table-tbody > tr > td { border-bottom: 1px solid #1f1f1f; }

@@ -2,26 +2,28 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Table, Button, Input, Modal, Form, Select, Space, App as AntdApp, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined } from '@ant-design/icons';
+import { PlusOutlined } from '@ant-design/icons';
 import { toast } from '../lib/toast';
 import { authFetch } from '../lib/api';
 import { fetchAllPages } from '../lib/paged-request';
 import ResponsiveDataView from '../components/page/ResponsiveDataView';
 
-interface Market { id: string; name: string; city?: { id: string; place: string } | null; }
+interface City { id: string; place: string; }
+interface Market { id: string; name: string; cityId?: string; city?: { id: string; place: string } | null; }
 interface Order {
   id: string;
   name: string;
   description: string | null;
   marketId: string | null;
   market: Market | null;
+  totalAmount?: number;
   createdAt: string;
 }
 
 export default function OrdersPage() {
   const navigate = useNavigate();
   const { modal } = AntdApp.useApp();
-  const [form] = Form.useForm<{ name: string; description?: string; marketId?: string }>();
+  const [form] = Form.useForm<{ name: string; description?: string; cityId?: string; marketId?: string }>();
   const [data, setData] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState({ page: 1, pageSize: 10, total: 0 });
@@ -30,7 +32,9 @@ export default function OrdersPage() {
   const [editing, setEditing] = useState<Order | null>(null);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [cities, setCities] = useState<City[]>([]);
   const [markets, setMarkets] = useState<Market[]>([]);
+  const selectedCityId = Form.useWatch('cityId', form);
 
   const fetchData = useCallback(async (page: number, kw: string, pageSize: number) => {
     setLoading(true);
@@ -51,19 +55,27 @@ export default function OrdersPage() {
     return () => clearTimeout(task);
   }, [keyword, pagination.page, pagination.pageSize, fetchData]);
 
-  const loadMarkets = async () => {
+  // 加载进货地（城市）与市场（市场带所属城市）
+  const loadOptions = async () => {
     try {
-      const items = await fetchAllPages<Market>(
-        (page, pageSize) => authFetch(`/api/markets?page=${page}&pageSize=${pageSize}`), 100,
-      );
-      setMarkets(items);
-    } catch { toast.error('市场加载失败'); }
+      const [cityItems, marketItems] = await Promise.all([
+        fetchAllPages<City>((page, pageSize) => authFetch(`/api/purchase-places?page=${page}&pageSize=${pageSize}`), 100),
+        fetchAllPages<Market>((page, pageSize) => authFetch(`/api/markets?page=${page}&pageSize=${pageSize}`), 100),
+      ]);
+      setCities(cityItems);
+      setMarkets(marketItems);
+    } catch { toast.error('进货地/市场加载失败'); }
   };
+
+  // 进货市场选项：当前选中进货地（城市）下的市场
+  const marketOptions = markets
+    .filter((m) => !selectedCityId || m.cityId === selectedCityId)
+    .map((m) => ({ value: m.id, label: m.name }));
 
   const openCreate = async () => {
     setEditing(null);
     form.resetFields();
-    loadMarkets();
+    loadOptions();
     try {
       const res = await authFetch('/api/orders/next-name');
       const json = await res.json();
@@ -72,12 +84,13 @@ export default function OrdersPage() {
     setDialogOpen(true);
   };
 
-  const openEdit = (row: Order) => {
+  const openEdit = async (row: Order) => {
     setEditing(row);
-    loadMarkets();
+    await loadOptions();
     form.setFieldsValue({
       name: row.name,
       description: row.description || '',
+      cityId: row.market?.cityId || undefined,
       marketId: row.marketId || undefined,
     });
     setDialogOpen(true);
@@ -85,7 +98,7 @@ export default function OrdersPage() {
 
   const handleSave = async () => {
     if (saving) return;
-    let values: { name: string; description?: string; marketId?: string };
+    let values: { name: string; description?: string; cityId?: string; marketId?: string };
     try {
       values = await form.validateFields();
     } catch { return; }
@@ -96,7 +109,7 @@ export default function OrdersPage() {
       const body: Record<string, string | null | undefined> = {
         name: values.name.trim(),
         description: values.description?.trim() || undefined,
-        // null 表示清空市场；undefined 表示不修改
+        // 城市由市场推导（订单只存 marketId）
         marketId: values.marketId || null,
       };
       const res = await authFetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
@@ -107,7 +120,8 @@ export default function OrdersPage() {
     finally { setSaving(false); }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
     if (deleting) return;
     setDeleting(true);
     try {
@@ -126,25 +140,26 @@ export default function OrdersPage() {
       okText: '删除',
       okButtonProps: { danger: true },
       cancelText: '取消',
-      onOk: () => handleDelete(row.id),
+      onOk: () => handleDelete(new MouseEvent('click') as never, row.id),
     });
   };
 
   const formatDate = (dateStr: string) => new Date(dateStr).toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' });
+  const formatAmount = (n?: number) => (n ?? 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   const columns: ColumnsType<Order> = [
     { title: '订单名称', dataIndex: 'name' },
-    { title: '进货市场', render: (_, row) => row.market ? `${row.market.name} (${row.market.city?.place ?? ''})` : '-' },
-    { title: '备注', dataIndex: 'description', render: (v) => v || '-' },
+    { title: '进货地', render: (_, row) => row.market?.city?.place ?? '-' },
+    { title: '进货市场', render: (_, row) => row.market?.name ?? '-' },
+    { title: '进货金额', align: 'right', render: (_, row) => formatAmount(row.totalAmount) },
     { title: '创建时间', dataIndex: 'createdAt', render: (v) => formatDate(v as string) },
     {
       title: '操作',
-      width: 140,
+      width: 120,
       render: (_, row) => (
-        <Space size={4}>
-          <Button type="link" size="small" aria-label={`查看${row.name}`} icon={<EyeOutlined />} onClick={() => navigate(`/orders/${row.id}`)} />
-          <Button type="link" size="small" aria-label={`编辑${row.name}`} icon={<EditOutlined />} onClick={() => openEdit(row)} />
-          <Button type="link" size="small" danger aria-label={`删除${row.name}`} icon={<DeleteOutlined />} onClick={() => confirmDelete(row)} />
+        <Space size={12}>
+          <Button type="link" size="small" onClick={(e) => { e.stopPropagation(); openEdit(row); }}>编辑</Button>
+          <Button type="link" size="small" danger onClick={(e) => { e.stopPropagation(); confirmDelete(row); }}>删除</Button>
         </Space>
       ),
     },
@@ -167,9 +182,11 @@ export default function OrdersPage() {
         <div style={{ fontSize: 13, color: 'var(--muted)' }}>共 {pagination.total} 项</div>
         <ResponsiveDataView items={data} rowKey={(row) => row.id} desktop={<Table<Order>
         rowKey="id"
+        className="orders-table"
         columns={columns}
         dataSource={data}
         loading={loading}
+        onRow={(record) => ({ onClick: () => navigate(`/orders/${record.id}`) })}
         pagination={{
           current: pagination.page,
           pageSize: pagination.pageSize,
@@ -177,7 +194,7 @@ export default function OrdersPage() {
           showTotal: (t) => `共 ${t} 条`,
           onChange: (page, pageSize) => setPagination((p) => ({ ...p, page, pageSize })),
         }}
-      />} renderMobileItem={(row) => <button className="mobile-record" onClick={() => navigate(`/orders/${row.id}`)}><span className="mobile-record__title">{row.name}</span><span className="mobile-record__meta"><span>{row.market ? `${row.market.name} (${row.market.city?.place ?? ''})` : '未设置市场'}</span><span>{formatDate(row.createdAt)} ›</span></span></button>} />
+      />} renderMobileItem={(row) => <button className="mobile-record" onClick={() => navigate(`/orders/${row.id}`)}><span className="mobile-record__title">{row.name}</span><span className="mobile-record__meta"><span>{row.market ? `${row.market.city?.place ?? ''} / ${row.market.name}` : '未设置'}</span><span>{formatAmount(row.totalAmount)} ›</span></span></button>} />
       </div>
 
       <Modal
@@ -193,11 +210,18 @@ export default function OrdersPage() {
           <Form.Item name="name" label="订单名称" rules={[{ required: true, message: '请输入订单名称' }]}>
             <Input placeholder="输入订单名称" />
           </Form.Item>
-          <Form.Item name="marketId" label="进货市场">
+          <Form.Item name="cityId" label="进货地" rules={[{ required: true, message: '请选择进货地' }]}>
             <Select
-              placeholder="选择进货市场（可选）"
-              allowClear
-              options={markets.map((m) => ({ value: m.id, label: m.city ? `${m.name} (${m.city.place})` : m.name }))}
+              placeholder="选择进货地（城市）"
+              options={cities.map((c) => ({ value: c.id, label: c.place }))}
+              onChange={() => form.setFieldValue('marketId', undefined)}
+            />
+          </Form.Item>
+          <Form.Item name="marketId" label="进货市场" rules={[{ required: true, message: '请选择进货市场' }]}>
+            <Select
+              placeholder="选择进货市场"
+              options={marketOptions}
+              disabled={!selectedCityId}
             />
           </Form.Item>
           <Form.Item name="description" label="备注">

@@ -46,7 +46,7 @@ export class OrderService {
   /**
    * 订单分页列表
    * keyword 搜索：订单名/备注 + 市场(市场名/所属城市) —— 用关系字段搜
-   * 只 include market（不含 items，列表页不需要明细，避免响应过大）
+   * 含 totalAmount（进货金额）：未删除明细 lineTotal 之和，用于列表展示；不含明细数组
    */
   async findAll(page: number, pageSize: number, keyword?: string) {
     const where: Prisma.OrderWhereInput = { deletedAt: null };
@@ -64,11 +64,18 @@ export class OrderService {
         orderBy: { createdAt: 'desc' },
         skip: (page - 1) * pageSize,
         take: pageSize,
-        include: { market: { include: { city: true } } },
+        include: {
+          market: { include: { city: true } },
+          items: { where: { deletedAt: null }, select: { lineTotal: true } },
+        },
       }),
       this.prisma.order.count({ where }),
     ]);
-    return { items, meta: { page, pageSize, total } };
+    const list = items.map(({ items: orderItems, ...order }) => ({
+      ...order,
+      totalAmount: orderItems.reduce((sum, item) => sum + Number(item.lineTotal), 0),
+    }));
+    return { items: list, meta: { page, pageSize, total } };
   }
 
   /**
